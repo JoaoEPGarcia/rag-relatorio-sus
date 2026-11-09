@@ -57,7 +57,7 @@ class _Impressos:
 
     def _anotar(self, chave: str, valor, descricao: str, formato: str) -> str:
         nova = f"figura_{self.nome}_{chave}"
-        self.numeros[nova] = Numero(nova, valor, f"{descricao} (na figura {self.arquivo})", formato, (self.arquivo,))
+        self.numeros[nova] = Numero(nova, valor, f"{descricao}, impresso na figura", formato, (self.arquivo,))
         return formatar(valor, formato)
 
     def valor(self, chave: str):
@@ -209,8 +209,7 @@ def textos_erros(registro: dict[str, dict]) -> TextosDaFigura:
 
     n = t.novo("n_perguntas", sum(t.valor(f"com_rag_tipo_{tipo}_n") for tipo in linhas),
                "Perguntas da Rodada principal com RAG, respondíveis e sem resposta", "inteiro")
-    subtitulo = (f"Perguntas com erro, por Classe de erro e Tipo de pergunta, nas {n} Perguntas da Rodada "
-                 "principal com RAG. Entre parênteses, quantas Perguntas há do Tipo e quantos erros há na "
-                 "Classe. A resposta inventada só existe nas sem resposta; as demais, só nas respondíveis.")
+    subtitulo = (f"Perguntas com erro nas {n} da Rodada principal com RAG. Entre parênteses, as Perguntas do "
+                 "Tipo e os erros da Classe. Resposta inventada só há nas sem resposta; as demais, nas respondíveis.")
     return TextosDaFigura(arquivo, titulo, subtitulo, rotulos, tuple(t.numeros.values()),
                           linhas=linhas, colunas=colunas, destaque=destaque)
