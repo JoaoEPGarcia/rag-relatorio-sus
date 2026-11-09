@@ -17,7 +17,6 @@ from pathlib import Path
 
 from rag_sus.avaliacao.sinteticas import rodada_sintetica
 
-
 # O que a extração e o índice gravam, relativo à raiz (os mesmos caminhos de config).
 # Se tudo existe, o passo é pulado: o índice exige o modelo de embeddings de 2,24 GB.
 EXTRAIDOS = ("dados/trechos.jsonl", "dados/texto_completo.txt")
