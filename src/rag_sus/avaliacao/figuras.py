@@ -19,6 +19,8 @@ from dataclasses import dataclass, field
 
 from rag_sus.assistente import CONDICOES
 from rag_sus.avaliacao.estatistica import NIVEL
+from rag_sus.avaliacao.gabarito import TIPOS_RESPONDIVEIS
+from rag_sus.avaliacao.resultados import CLASSES_DE_ERRO, NOMES_TIPO
 from rag_sus.numeros import Numero, formatar
 
 
@@ -29,6 +31,9 @@ class TextosDaFigura:
     subtitulo: str
     rotulos: dict[str, str] = field(default_factory=dict)
     numeros: tuple[Numero, ...] = ()
+    linhas: tuple[str, ...] = ()  # ordem das categorias no eixo, de cima para baixo
+    colunas: tuple[str, ...] = ()  # ordem dos painéis, da esquerda para a direita
+    destaque: tuple[str, ...] = ()  # o que sai em DESTAQUE; o resto sai em NEUTRO
 
 
 class _Impressos:
@@ -87,4 +92,56 @@ def textos_acerto(registro: dict[str, dict]) -> TextosDaFigura:
     nivel = t.novo("nivel_ic", round(100 * NIVEL), "nível de confiança dos intervalos, em %", "inteiro")
     subtitulo = (f"Acerto da resposta nas {n} Perguntas respondíveis, Rodada principal. "
                  f"A linha fina é o intervalo de confiança de Wilson de {nivel}%.")
-    return TextosDaFigura(arquivo, titulo, subtitulo, rotulos, tuple(t.numeros.values()))
+    return TextosDaFigura(arquivo, titulo, subtitulo, rotulos, tuple(t.numeros.values()),
+                          linhas=CONDICOES, destaque=("com_rag",))
+
+
+def _em_lista(nomes: list[str]) -> str:
+    """["a x", "a y", "a z"] -> "a x, a y e a z"."""
+    return nomes[0] if len(nomes) == 1 else f"{', '.join(nomes[:-1])} e {nomes[-1]}"
+
+
+def textos_erros(registro: dict[str, dict]) -> TextosDaFigura:
+    """Classes de erro por Tipo de pergunta, na Condição com RAG; a classe mais comum em destaque."""
+    arquivo = "figuras/erros_por_tipo.png"
+    t = _Impressos(registro, "erros", arquivo)
+    nome_da_classe = {slug: classe for classe, slug in CLASSES_DE_ERRO.items()}
+    totais = {slug: t.valor(f"com_rag_erros_{slug}") for slug in CLASSES_DE_ERRO.values()}
+    maior = max(totais.values())
+    destaque = tuple(slug for slug, k in totais.items() if k == maior) if maior > 0 else ()
+
+    if not destaque:
+        titulo = "Com RAG, o assistente não errou nenhuma resposta nem citação"
+    elif len(destaque) == 1:
+        total = t.novo("total", sum(totais.values()), "erros com RAG, somadas todas as Classes de erro", "inteiro")
+        titulo = (f"Com RAG, a {nome_da_classe[destaque[0]]} é a Classe de erro mais comum: "
+                  f"{t(f'com_rag_erros_{destaque[0]}')} dos {total} erros")
+    else:
+        classes = _em_lista([f"a {nome_da_classe[s]}" for s in destaque])
+        titulo = (f"Com RAG, {classes} empatam como Classe de erro mais comum, "
+                  f"com {t(f'com_rag_erros_{destaque[0]}')} erros cada")
+
+    def erros_do_tipo(tipo: str) -> int:
+        return sum(t.valor(f"com_rag_tipo_{tipo}_{s}") for s in CLASSES_DE_ERRO.values() if s != "resposta_inventada")
+
+    linhas = (*sorted(TIPOS_RESPONDIVEIS, key=erros_do_tipo, reverse=True), "sem_resposta")
+    colunas = tuple(sorted(totais, key=totais.get, reverse=True))
+    rotulos: dict[str, str] = {}
+    for slug in colunas:
+        nome = nome_da_classe[slug]
+        rotulos[f"coluna/{slug}"] = f"{nome[:1].upper()}{nome[1:]} ({t(f'com_rag_erros_{slug}')})"
+    for tipo in linhas:
+        rotulos[tipo] = f"{NOMES_TIPO[tipo]} ({t(f'com_rag_tipo_{tipo}_n')})"
+        aplicaveis = ("resposta_inventada",) if tipo == "sem_resposta" else (
+            s for s in CLASSES_DE_ERRO.values() if s != "resposta_inventada")
+        for slug in aplicaveis:
+            if t.valor(f"com_rag_tipo_{tipo}_{slug}") > 0:
+                rotulos[f"{tipo}/{slug}"] = t(f"com_rag_tipo_{tipo}_{slug}")
+
+    n = t.novo("n_perguntas", sum(t.valor(f"com_rag_tipo_{tipo}_n") for tipo in linhas),
+               "Perguntas da Rodada principal com RAG, respondíveis e sem resposta", "inteiro")
+    subtitulo = (f"Perguntas com erro, por Classe de erro e Tipo de pergunta, nas {n} Perguntas da Rodada "
+                 "principal com RAG. Entre parênteses, quantas Perguntas há do Tipo e quantos erros há na "
+                 "Classe. A resposta inventada só existe nas sem resposta; as demais, só nas respondíveis.")
+    return TextosDaFigura(arquivo, titulo, subtitulo, rotulos, tuple(t.numeros.values()),
+                          linhas=linhas, colunas=colunas, destaque=destaque)

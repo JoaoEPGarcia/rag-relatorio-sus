@@ -10,7 +10,7 @@ figura em "Onde aparece". Os títulos esperados são escritos à mão.
 import re
 
 from rag_sus import numeros
-from rag_sus.avaliacao.figuras import textos_acerto
+from rag_sus.avaliacao.figuras import textos_acerto, textos_erros
 
 SCRIPT_04 = "scripts/04_analisar.py"
 
@@ -93,3 +93,66 @@ def test_figura_do_acerto_rotula_cada_condicao_com_o_ic_e_registra_o_que_imprime
     conferir_registrados(t, "figura_acerto_")
     por_chave = {n.chave: n for n in t.numeros}
     assert por_chave["figura_acerto_com_rag_acerto_resposta_inf"].valor == 0.67
+
+
+TIPOS = ("numero_prosa", "numero_tabela", "numero_legenda", "conceito", "sintese")
+CLASSES = ("falha_recuperacao", "falha_leitura", "abstencao_indevida", "citacao_errada")
+
+
+def erros(por_tipo, inventadas=0, n=10, n_sem=10):
+    """por_tipo: Tipo -> (falha de recuperação, falha de leitura, abstenção indevida, citação errada)."""
+    valores = {}
+    totais = dict.fromkeys(CLASSES, 0)
+    for tipo in TIPOS:
+        contagens = por_tipo.get(tipo, (0, 0, 0, 0))
+        valores[f"com_rag_tipo_{tipo}_n"] = (n, "inteiro")
+        for slug, k in zip(CLASSES, contagens, strict=True):
+            valores[f"com_rag_tipo_{tipo}_{slug}"] = (k, "inteiro")
+            totais[slug] += k
+    valores["com_rag_tipo_sem_resposta_n"] = (n_sem, "inteiro")
+    valores["com_rag_tipo_sem_resposta_resposta_inventada"] = (inventadas, "inteiro")
+    for slug, k in totais.items():
+        valores[f"com_rag_erros_{slug}"] = (k, "inteiro")
+    valores["com_rag_erros_resposta_inventada"] = (inventadas, "inteiro")
+    return valores
+
+
+def test_titulo_dos_erros_aponta_a_classe_mais_comum_e_quantos_erros_ela_explica():
+    r = registro(**erros({"sintese": (1, 3, 0, 0), "numero_tabela": (0, 2, 0, 1), "conceito": (1, 0, 1, 0)},
+                         inventadas=1))
+
+    t = textos_erros(r)
+
+    assert t.titulo == "Com RAG, a falha de leitura é a Classe de erro mais comum: 5 dos 10 erros"
+    assert t.destaque == ("falha_leitura",)
+
+
+def test_titulo_dos_erros_declara_o_empate_entre_classes():
+    r = registro(**erros({"sintese": (2, 2, 0, 0), "conceito": (0, 0, 1, 0)}))
+
+    t = textos_erros(r)
+
+    assert t.titulo == ("Com RAG, a falha de recuperação e a falha de leitura empatam como "
+                        "Classe de erro mais comum, com 2 erros cada")
+    assert t.destaque == ("falha_recuperacao", "falha_leitura")
+
+
+def test_titulo_dos_erros_sem_erro_nenhum():
+    assert textos_erros(registro(**erros({}))).titulo == "Com RAG, o assistente não errou nenhuma resposta nem citação"
+
+
+def test_figura_dos_erros_ordena_os_tipos_pelos_erros_rotula_so_o_que_existe_e_registra_o_que_imprime():
+    r = registro(**erros({"sintese": (1, 3, 0, 0), "numero_tabela": (0, 2, 0, 1), "conceito": (1, 0, 1, 0)},
+                         inventadas=1))
+
+    t = textos_erros(r)
+
+    assert t.arquivo == "figuras/erros_por_tipo.png"
+    assert t.linhas == ("sintese", "numero_tabela", "conceito", "numero_prosa", "numero_legenda", "sem_resposta")
+    assert t.colunas[0] == "falha_leitura"
+    assert t.rotulos["sintese"] == "Síntese entre páginas (10)"
+    assert t.rotulos["sintese/falha_leitura"] == "3"
+    assert t.rotulos["sem_resposta/resposta_inventada"] == "1"
+    assert "numero_prosa/falha_leitura" not in t.rotulos  # zero: sem barra e sem rótulo
+    assert t.rotulos["coluna/falha_leitura"] == "Falha de leitura (5)"
+    conferir_registrados(t, "figura_erros_")
