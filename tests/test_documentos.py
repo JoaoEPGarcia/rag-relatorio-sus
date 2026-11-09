@@ -17,11 +17,11 @@ from rag_sus.documentos import (
 )
 
 REGISTRO = {
-    "acerto_com_rag": {"valor": 0.8, "texto": "80,0%", "descricao": "acerto com RAG",
+    "acerto_com_rag": {"valor": 0.8, "texto": "80,0%", "texto_en": "80.0%", "descricao": "acerto com RAG",
                        "script": "scripts/04_analisar.py", "formato": "pct1"},
-    "corpus_trechos": {"valor": 570, "texto": "570", "descricao": "Trechos indexados",
+    "corpus_trechos": {"valor": 570, "texto": "570", "texto_en": "570", "descricao": "Trechos indexados",
                        "script": "scripts/01_extrair.py", "formato": "inteiro"},
-    "dif_repeticao1": {"valor": -0.05, "texto": "−5,0 p.p.", "descricao": "diferença",
+    "dif_repeticao1": {"valor": -0.05, "texto": "−5,0 p.p.", "texto_en": "−5.0 pp", "descricao": "diferença",
                        "script": "scripts/04_analisar.py", "formato": "pp1",
                        "aparece_em": ["figuras/acerto.png (título)"]},
 }
@@ -55,9 +55,26 @@ def test_preencher_readme_troca_os_marcadores():
     assert preencher_readme(base, REGISTRO) == "O assistente acerta 80,0% sobre 570 Trechos."
 
 
-def test_marcador_desconhecido_e_erro():
-    with pytest.raises(MarcadorDesconhecido, match="acerto_inventado"):
-        preencher_readme("{{acerto_inventado}}", REGISTRO)
+def test_marcador_en_usa_o_texto_em_ingles():
+    base = "Com RAG: {{acerto_com_rag}}, {{dif_repeticao1}}. With RAG: {{acerto_com_rag:en}}, {{ dif_repeticao1:en }}."
+    assert preencher_readme(base, REGISTRO) == "Com RAG: 80,0%, −5,0 p.p.. With RAG: 80.0%, −5.0 pp."
+
+
+def test_marcador_desconhecido_e_erro_e_lista_todos_os_que_faltam():
+    with pytest.raises(MarcadorDesconhecido, match="acerto_inventado.*outro_inventado"):
+        preencher_readme("{{acerto_inventado}} e {{outro_inventado:en}} e {{acerto_com_rag}}", REGISTRO)
+
+
+def test_marcador_en_sem_texto_em_ingles_no_registro_e_erro():
+    antigo = {"n": {"valor": 1236, "texto": "1.236", "descricao": "", "script": "scripts/01_extrair.py",
+                    "formato": "inteiro"}}
+    with pytest.raises(MarcadorDesconhecido, match="inglês.*scripts/01_extrair.py"):
+        preencher_readme("{{n:en}}", antigo)
+
+
+def test_marcador_en_conta_como_uso_e_nao_como_numero_digitado():
+    assert usos(REGISTRO, "In English: {{corpus_trechos:en}}", {})["corpus_trechos"] == ["README"]
+    assert digitos_soltos_no_markdown("Main findings: {{acerto_com_rag:en}} with RAG.") == []
 
 
 def test_usos_encontra_readme_relatorio_e_figuras():

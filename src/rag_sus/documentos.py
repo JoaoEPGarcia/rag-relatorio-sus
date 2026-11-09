@@ -4,7 +4,8 @@
 POR QUE ISTO EXISTE. A regra do portfólio é que nenhum número impresso seja
 digitado (ADR 0003). Este módulo transforma o registro resultados/numeros.json
 em três saídas: relatorio/numeros.tex (macros \\NumXxx), README.md (a partir
-de README.base.md, com marcadores {{chave}}) e NUMEROS_CANONICOS.md (uma
+de README.base.md, com marcadores {{chave}} em português e {{chave:en}} na
+seção em inglês) e NUMEROS_CANONICOS.md (uma
 linha por número, nas colunas do kit). Traz também os conferidores que
 procuram dígitos digitados à mão no Markdown e no LaTeX.
 """
@@ -18,7 +19,8 @@ _DIGITOS_POR_EXTENSO = {
     "0": "Zero", "1": "Um", "2": "Dois", "3": "Tres", "4": "Quatro",
     "5": "Cinco", "6": "Seis", "7": "Sete", "8": "Oito", "9": "Nove",
 }
-_MARCADOR = re.compile(r"\{\{\s*([a-z][a-z0-9_]*)\s*\}\}")
+# {{chave}} é o texto em português; {{chave:en}}, o mesmo número em inglês (seção "In English").
+_MARCADOR = re.compile(r"\{\{\s*([a-z][a-z0-9_]*)(?::(en))?\s*\}\}")
 
 
 class MarcadorDesconhecido(KeyError):
@@ -56,13 +58,36 @@ def gerar_numeros_tex(registro: dict[str, dict]) -> str:
 
 
 def preencher_readme(base: str, registro: dict[str, dict]) -> str:
-    def trocar(m: re.Match) -> str:
-        chave = m.group(1)
-        if chave not in registro:
-            raise MarcadorDesconhecido(f"marcador {{{{{chave}}}}} não está em resultados/numeros.json")
-        return registro[chave]["texto"]
+    """Troca {{chave}} pelo texto em português e {{chave:en}} pelo texto em inglês.
 
-    return _MARCADOR.sub(trocar, base)
+    Se algum marcador não tiver valor no registro, nada é gerado: o erro lista
+    todos os que faltam, para que nenhum README saia com marcador vazio.
+    """
+    faltam: list[str] = []
+    sem_ingles: list[str] = []
+
+    def trocar(m: re.Match) -> str:
+        chave, idioma = m.group(1), m.group(2)
+        entrada = registro.get(chave)
+        if entrada is None:
+            faltam.append(m.group(0))
+            return m.group(0)
+        if idioma == "en":
+            if "texto_en" not in entrada:
+                sem_ingles.append(f"{chave} ({entrada.get('script', '?')})")
+                return m.group(0)
+            return entrada["texto_en"]
+        return entrada["texto"]
+
+    preenchido = _MARCADOR.sub(trocar, base)
+    problemas = []
+    if faltam:
+        problemas.append(f"marcadores sem valor em resultados/numeros.json: {', '.join(faltam)}")
+    if sem_ingles:
+        problemas.append(f"números sem texto em inglês no registro (rode de novo o script): {', '.join(sem_ingles)}")
+    if problemas:
+        raise MarcadorDesconhecido("; ".join(problemas))
+    return preenchido
 
 
 # Arquivos de relatorio/ escritos por script, com dígitos de propósito: as macros
@@ -87,7 +112,7 @@ def textos_do_relatorio(pasta_relatorio: Path, raiz: Path) -> dict[str, str]:
 
 def usos(registro: dict[str, dict], readme_base: str, textos_tex: dict[str, str]) -> dict[str, list[str]]:
     """Onde cada número aparece: README, cada .tex e o que o script declarou (figuras)."""
-    no_readme = set(_MARCADOR.findall(readme_base))
+    no_readme = {chave for chave, _ in _MARCADOR.findall(readme_base)}
     saida: dict[str, list[str]] = {}
     for chave, entrada in registro.items():
         lugares = []
