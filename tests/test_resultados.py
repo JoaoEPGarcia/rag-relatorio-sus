@@ -147,6 +147,59 @@ def test_comparacao_escreve_a_diferenca_em_pontos_percentuais_com_o_sinal_de_men
     assert r["com_rag_x_sem_rag_p_mcnemar"]["texto"] == "< 0,001"
 
 
+def test_classes_de_erro_por_tipo_de_pergunta_com_rag(projeto):
+    linhas = condicao_simples("com_rag", 40, abstencoes_corretas=9)  # G41..G50 (síntese) e S10 erram
+    por_id = {l["id"]: l for l in linhas}
+    por_id["G01"].update(acerto_regra=False, acerto_citacao=False, acerto_recuperacao=False)  # número na prosa
+    por_id["G11"].update(acerto_regra=False, acerto_citacao=False, abstencao=True)  # número em tabela
+    por_id["G21"].update(acerto_citacao=False)  # número em legenda: acerta a resposta, erra a página
+    gravar_rodada(projeto["rodadas"], "principal", "com_rag", linhas)
+
+    r = rodar(projeto)
+
+    assert r["com_rag_tipo_numero_prosa_n"]["valor"] == 10
+    assert r["com_rag_tipo_numero_prosa_acertos"]["valor"] == 9
+    assert r["com_rag_tipo_numero_prosa_falha_recuperacao"]["valor"] == 1
+    assert r["com_rag_tipo_numero_tabela_abstencao_indevida"]["valor"] == 1
+    assert r["com_rag_tipo_numero_legenda_acertos"]["valor"] == 10
+    assert r["com_rag_tipo_numero_legenda_citacao_errada"]["valor"] == 1
+    assert r["com_rag_tipo_sintese_falha_leitura"]["valor"] == 10
+    assert r["com_rag_tipo_conceito_falha_leitura"]["valor"] == 0
+    assert r["com_rag_tipo_sem_resposta_n"]["valor"] == 10
+    assert r["com_rag_tipo_sem_resposta_acertos"]["valor"] == 9
+    assert r["com_rag_tipo_sem_resposta_resposta_inventada"]["valor"] == 1
+    # o total de cada Classe de erro na Condição
+    assert r["com_rag_erros_falha_leitura"]["valor"] == 10
+    assert r["com_rag_erros_resposta_inventada"]["valor"] == 1
+    assert r["sem_rag_erros_falha_recuperacao"]["valor"] == 0
+
+
+def test_citacao_recuperacao_tokens_latencia_e_fallbacks(projeto):
+    linhas = condicao_simples("com_rag", 40, abstencoes_corretas=9, tokens=2000, latencia=3.0)
+    for l in linhas[:5]:
+        l.update(acerto_recuperacao=False)  # G01..G05: a busca não trouxe a página
+    linhas[0].update(tokens_entrada=7000, latencia_s=40.0, usou_fallback=True)
+    gravar_rodada(projeto["rodadas"], "principal", "com_rag", linhas)
+
+    r = rodar(projeto)
+
+    inf, sup = proportion_confint(45, 50, alpha=0.05, method="wilson")
+    assert r["com_rag_acertos_recuperacao"]["valor"] == 45
+    assert r["com_rag_acerto_recuperacao_inf"]["valor"] == pytest.approx(inf, abs=1e-6)
+    assert r["com_rag_acerto_recuperacao_sup"]["valor"] == pytest.approx(sup, abs=1e-6)
+    assert "sem_rag_acerto_recuperacao" not in r  # só existe na Condição com RAG
+    assert r["com_rag_acertos_citacao"]["valor"] == 40
+    assert r["com_rag_acerto_citacao"]["valor"] == pytest.approx(0.8)
+
+    assert r["com_rag_tokens_entrada_total"]["valor"] == 59 * 2000 + 7000
+    assert r["com_rag_tokens_entrada_medio"]["valor"] == pytest.approx((59 * 2000 + 7000) / 60)
+    assert r["com_rag_tokens_entrada_medio"]["texto"] == "2.083"
+    assert r["com_rag_latencia_mediana_s"]["texto"] == "3,0"
+    assert r["com_rag_n_fallback"]["valor"] == 1
+    assert r["principal_n_fallback"]["valor"] == 1
+    assert r["principal_tokens_entrada_total"]["valor"] == 59 * 2000 + 7000 + 2 * 60 * 1000
+
+
 def test_falta_de_revisao_trava_a_analise_e_lista_as_perguntas_pendentes(projeto):
     com_juiz(projeto, "com_rag", {"G41": True, "G42": False})
     com_juiz(projeto, "sem_rag", {"G43": False})

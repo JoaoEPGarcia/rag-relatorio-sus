@@ -24,12 +24,29 @@ from pathlib import Path
 
 from rag_sus import config, numeros
 from rag_sus.assistente import CONDICOES
-from rag_sus.avaliacao.analise import comparar, resumir
+from rag_sus.avaliacao.analise import comparar, erros_por_tipo, resumir
+from rag_sus.avaliacao.gabarito import TIPOS_RESPONDIVEIS
 from rag_sus.avaliacao.rodada import RevisaoIncompleta, consolidar
 from rag_sus.numeros import Numero
 
 SCRIPT = "scripts/04_analisar.py"
 NOMES_CONDICAO = {"com_rag": "com RAG", "sem_rag": "sem RAG", "contexto_completo": "contexto completo"}
+NOMES_TIPO = {
+    "numero_prosa": "Número na prosa",
+    "numero_tabela": "Número em tabela",
+    "numero_legenda": "Número em legenda",
+    "conceito": "Conceito ou método",
+    "sintese": "Síntese entre páginas",
+    "sem_resposta": "Sem resposta",
+}
+# Classe de erro (como sai de pontuacao.classificar_erro) -> pedaço da chave no registro.
+CLASSES_DE_ERRO = {
+    "falha de recuperação": "falha_recuperacao",
+    "falha de leitura": "falha_leitura",
+    "abstenção indevida": "abstencao_indevida",
+    "citação errada": "citacao_errada",
+    "resposta inventada": "resposta_inventada",
+}
 # Com RAG contra cada uma das outras; a primeira é a comparação principal.
 COMPARADAS_COM_RAG = ("sem_rag", "contexto_completo")
 
@@ -49,6 +66,24 @@ def _numeros_da_condicao(c: str, r: dict) -> list[Numero]:
         Numero(f"{c}_acertos_resposta", r["acertos_resposta"], f"acertos da resposta {nome} (respondíveis)"),
     ]
     lista += _intervalo(f"{c}_acerto_resposta", r["acerto_resposta"], f"Acerto da resposta {nome} (respondíveis)")
+    lista.append(Numero(f"{c}_acertos_citacao", r["acertos_citacao"], f"acertos da citação {nome} (respondíveis)"))
+    lista += _intervalo(f"{c}_acerto_citacao", r["acerto_citacao"], f"Acerto da citação {nome} (respondíveis)")
+    if r["acerto_recuperacao"]:
+        lista.append(Numero(f"{c}_acertos_recuperacao", r["acertos_recuperacao"],
+                            f"acertos da recuperação {nome} (respondíveis)"))
+        lista += _intervalo(f"{c}_acerto_recuperacao", r["acerto_recuperacao"],
+                            f"Acerto da recuperação {nome} (respondíveis)")
+    lista += [
+        Numero(f"{c}_tokens_entrada_total", r["tokens_entrada_total"], f"tokens de entrada {nome}, soma da Rodada"),
+        Numero(f"{c}_tokens_entrada_medio", r["tokens_entrada_medio"], f"tokens de entrada {nome}, média por Pergunta",
+               "inteiro"),
+        Numero(f"{c}_tokens_saida_total", r["tokens_saida_total"], f"tokens de saída {nome}, soma da Rodada"),
+        Numero(f"{c}_tokens_cache_leitura_total", r["tokens_cache_leitura_total"],
+               f"tokens de entrada lidos do cache {nome}, soma da Rodada"),
+        Numero(f"{c}_latencia_mediana_s", r["latencia_mediana_s"], f"latência mediana por Pergunta {nome}, em segundos",
+               "dec1"),
+        Numero(f"{c}_n_fallback", r["n_fallback"], f"respostas {nome} dadas por outro modelo (fallback do servidor)"),
+    ]
     if r["abstencao_correta"]:
         lista += [
             Numero(f"{c}_n_sem_resposta", r["n_sem_resposta"], f"Perguntas sem resposta na Condição {nome}"),
@@ -88,6 +123,43 @@ def _consolidar_principal(principal: Path, folha: Path) -> dict[str, list[dict]]
     return consolidadas
 
 
+def _numeros_dos_erros(c: str, r: dict) -> list[Numero]:
+    nome = NOMES_CONDICAO[c]
+    return [
+        Numero(f"{c}_erros_{slug}", r["erros"].get(classe, 0), f"Classe de erro '{classe}' {nome} (Perguntas)")
+        for classe, slug in CLASSES_DE_ERRO.items()
+    ]
+
+
+def _numeros_por_tipo(linhas: list[dict]) -> list[Numero]:
+    """Classes de erro cruzadas com o Tipo de pergunta, na Condição com RAG."""
+    cruzamento = erros_por_tipo(linhas)
+    lista: list[Numero] = []
+    for tipo in TIPOS_RESPONDIVEIS:
+        celula = cruzamento.get(tipo, {})
+        nome = NOMES_TIPO[tipo]
+        acertos = sum(l["acerto_resposta"] for l in linhas if l["tipo"] == tipo)
+        lista += [
+            Numero(f"com_rag_tipo_{tipo}_n", celula.get("n", 0), f"Perguntas do Tipo '{nome}'"),
+            Numero(f"com_rag_tipo_{tipo}_acertos", acertos, f"acertos da resposta com RAG, Tipo '{nome}'"),
+        ]
+        lista += [
+            Numero(f"com_rag_tipo_{tipo}_{slug}", celula.get(classe, 0), f"'{classe}' com RAG, Tipo '{nome}'")
+            for classe, slug in CLASSES_DE_ERRO.items()
+            if classe != "resposta inventada"
+        ]
+    sem = [l for l in linhas if not l["respondivel"]]
+    lista += [
+        Numero("com_rag_tipo_sem_resposta_n", len(sem), "Perguntas sem resposta"),
+        Numero("com_rag_tipo_sem_resposta_acertos", sum(l["acerto_resposta"] for l in sem),
+               "abstenções corretas com RAG nas Perguntas sem resposta"),
+        Numero("com_rag_tipo_sem_resposta_resposta_inventada",
+               sum(l["classe_erro"] == "resposta inventada" for l in sem),
+               "'resposta inventada' com RAG nas Perguntas sem resposta"),
+    ]
+    return lista
+
+
 def _numeros_da_comparacao(outra: str, com_rag: list[dict], linhas_outra: list[dict]) -> list[Numero]:
     k = f"com_rag_x_{outra}"
     nome = f"com RAG × {NOMES_CONDICAO[outra]}"
@@ -103,6 +175,23 @@ def _numeros_da_comparacao(outra: str, com_rag: list[dict], linhas_outra: list[d
         Numero(f"{k}_diferenca_inf", d.inferior, f"{nome}: limite inferior do IC de Newcombe de 95%", "pp1"),
         Numero(f"{k}_diferenca_sup", d.superior, f"{nome}: limite superior do IC de Newcombe de 95%", "pp1"),
         Numero(f"{k}_p_mcnemar", c["p_mcnemar"], f"{nome}: valor-p do teste exato de McNemar", "p3"),
+    ]
+
+
+def _numeros_da_rodada(resumos: dict[str, dict]) -> list[Numero]:
+    """Totais da Rodada principal nas três Condições."""
+    def soma(campo: str) -> int:
+        return sum(r[campo] for r in resumos.values())
+
+    return [
+        Numero("principal_n_respostas", soma("n_respondiveis") + soma("n_sem_resposta"),
+               "respostas na Rodada principal (Perguntas × Condições)"),
+        Numero("principal_tokens_entrada_total", soma("tokens_entrada_total"),
+               "tokens de entrada na Rodada principal, três Condições"),
+        Numero("principal_tokens_saida_total", soma("tokens_saida_total"),
+               "tokens de saída na Rodada principal, três Condições"),
+        Numero("principal_n_fallback", soma("n_fallback"),
+               "respostas da Rodada principal dadas por outro modelo (fallback do servidor)"),
     ]
 
 
@@ -126,9 +215,12 @@ def analisar(
     """Registra os números da Rodada principal e devolve chave -> texto formatado."""
     consolidadas = _consolidar_principal(Path(pasta_rodadas) / "principal", folha)
     resumos = {c: resumir(consolidadas[c]) for c in CONDICOES}
-    lista: list[Numero] = _numeros_de_destaque(resumos) + _numeros_da_revisao(consolidadas)
+    lista: list[Numero] = (
+        _numeros_de_destaque(resumos) + _numeros_da_rodada(resumos) + _numeros_da_revisao(consolidadas)
+    )
     for c in CONDICOES:
-        lista += _numeros_da_condicao(c, resumos[c])
+        lista += _numeros_da_condicao(c, resumos[c]) + _numeros_dos_erros(c, resumos[c])
+    lista += _numeros_por_tipo(consolidadas["com_rag"])
     for outra in COMPARADAS_COM_RAG:
         lista += _numeros_da_comparacao(outra, consolidadas["com_rag"], consolidadas[outra])
     return numeros.registrar_do_script(SCRIPT, lista, caminho=numeros_json or config.NUMEROS)
