@@ -393,3 +393,50 @@ def test_sem_nenhum_erro_a_classe_mais_frequente_diz_isso(projeto):
     assert r["com_rag_erro_mais_frequente_n"]["valor"] == 0
     assert r["com_rag_erro_mais_frequente"]["texto"] == "nenhuma, porque não houve erro"
     assert r["com_rag_erro_mais_frequente"]["texto_en"] == "none, since there was no error"
+
+
+def test_tabela_de_concordancia_tem_uma_linha_por_repeticao_e_condicao_que_existir(projeto):
+    rodar(projeto)
+    assert ler_tabela(projeto, "concordancia.tex") == []  # sem repetição, a tabela sai vazia e o .tex compila
+    assert numeros.carregar(projeto["numeros"])["repeticoes_comparadas"]["valor"] == 0
+
+    gravar_rodada(projeto["rodadas"], "repeticao1", "com_rag", condicao_simples("com_rag", 34, abstencoes_corretas=9))
+    gravar_rodada(projeto["rodadas"], "repeticao2", "com_rag", condicao_simples("com_rag", 40, abstencoes_corretas=9))
+    gravar_rodada(projeto["rodadas"], "repeticao2", "sem_rag", condicao_simples("sem_rag", 15))
+    r = rodar(projeto)
+
+    assert ler_tabela(projeto, "concordancia.tex") == [
+        r"Primeira repetição & Com RAG & 90,0\% & 60 \\",
+        r"Segunda repetição & Com RAG & 100,0\% & 60 \\",
+        r"Segunda repetição & Sem RAG & 100,0\% & 60 \\",
+    ]
+    assert r["repeticoes_comparadas"]["valor"] == 2
+    assert "relatorio/tabelas/concordancia.tex" in r["concordancia_repeticao1_com_rag"]["aparece_em"]
+
+
+def gravar_execucao(p, rodada="principal", **parametros):
+    """O execucao.json que scripts/03_rodar_avaliacao.py grava ao lado da Rodada."""
+    dados = {"commit": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678", "parametros": {
+        "congelado": True, "alvo_palavras": 180, "sobreposicao_palavras": 30,
+        "modelo_embeddings": "intfloat/multilingual-e5-large", "k": 6,
+        "modelo_respondedor": "gemini-3.8-flash", "esforco_respondedor": "medium", "max_tokens_respondedor": 16000,
+        "modelo_juiz": "gemini-3.8-flash-lite", "esforco_juiz": "low", "max_tokens_juiz": 4000, "repeticoes": 2,
+        **parametros}}
+    (p["rodadas"] / rodada / "execucao.json").write_text(json.dumps(dados), encoding="utf-8")
+
+
+def test_parametros_da_rodada_principal_entram_no_registro(projeto):
+    gravar_execucao(projeto, k=8)
+    r = rodar(projeto)
+
+    assert r["parametros_k"]["valor"] == 8
+    assert r["parametros_k"]["texto"] == "8"
+    # textos com dígito (versão do modelo, hash do commit) também saem do registro, para o .tex não digitá-los
+    assert r["parametros_modelo_respondedor"]["texto"] == "gemini-3.8-flash"
+    assert r["parametros_modelo_juiz"]["texto"] == "gemini-3.8-flash-lite"
+    assert r["parametros_commit"]["texto"] == "a1b2c3d"
+
+
+def test_rodada_principal_sem_parametros_gravados_nao_registra_parametros(projeto):
+    r = rodar(projeto)
+    assert not [c for c in r if c.startswith("parametros_")]

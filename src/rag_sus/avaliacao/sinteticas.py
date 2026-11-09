@@ -234,12 +234,14 @@ def gerar_rodadas_sinteticas(
 
     itens = gabarito_sintetico()
     planos = {c: _planos(itens, c, random.Random(f"{semente}-{c}")) for c in CONDICOES}
+    # os parâmetros do projeto, gravados como scripts/03_rodar_avaliacao.py grava os da Rodada real
+    parametros = config.carregar_parametros(config.PROJETO / "parametros.toml").__dict__
     for numero, rodada in enumerate(RODADAS_PUBLICADAS[: repeticoes + 1]):
         pasta = pasta_rodadas / rodada
         pasta.mkdir(parents=True, exist_ok=True)
+        execucao = {"sintetica": True, "semente": semente, "commit": "sintetico", "parametros": parametros}
         (pasta / "execucao.json").write_text(
-            json.dumps({"sintetica": True, "semente": semente, "commit": "sintetico"}, ensure_ascii=False, indent=2)
-            + "\n", encoding="utf-8", newline="\n")
+            json.dumps(execucao, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
         for c in CONDICOES:
             plano = planos[c] if numero == 0 else _variar(planos[c], random.Random(f"{semente}-{rodada}-{c}"))
             assistente = _AssistenteSintetico(itens, plano, c, random.Random(f"{semente}-{rodada}-{c}-custo"))

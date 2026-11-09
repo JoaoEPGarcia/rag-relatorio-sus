@@ -18,12 +18,17 @@ a pasta das Rodadas e a folha de Revisão dos Veredictos e:
   números (a conclusão de cada comparação pelo IC da diferença e a Classe de
   erro mais frequente com RAG), em português e em inglês, para que nenhuma
   frase do README fixe um achado que o resultado não sustente;
+- registra os parâmetros com que a Rodada principal rodou (k, modelos,
+  commit), lidos do execucao.json dela, para o Relatório de avaliação
+  citá-los sem digitar;
 - grava cada número no registro, numa vez só, e escreve as linhas das tabelas
   do Relatório de avaliação, que o kit lê com \\linhasde.
 """
 
 from __future__ import annotations
 
+import json
+import re
 from dataclasses import replace
 from pathlib import Path
 
@@ -39,6 +44,8 @@ from rag_sus.documentos import texto_tex
 from rag_sus.numeros import Numero, Texto
 
 REPETICOES = tuple(r for r in RODADAS_PUBLICADAS if r != "principal")
+# O nome de cada repetição na tabela de concordância, por extenso (sem dígito digitado no Relatório).
+NOMES_REPETICAO = {"repeticao1": "Primeira repetição", "repeticao2": "Segunda repetição"}
 
 SCRIPT = "scripts/04_analisar.py"
 TABELAS_NO_PROJETO = "relatorio/tabelas"  # como a coluna "Onde aparece" cita os arquivos de linhas
@@ -283,6 +290,9 @@ def _numeros_da_concordancia(pasta_rodadas: Path) -> list[Numero]:
     comparação ser justa.
     """
     lista: list[Numero] = []
+    existentes = [r for r in REPETICOES if any(carregar_linhas(pasta_rodadas / r / f"{c}.jsonl") for c in CONDICOES)]
+    lista.append(Numero("repeticoes_comparadas", len(existentes),
+                        "repetições da Rodada principal comparadas com ela (Veredictos não revisados)"))
     for rodada in REPETICOES:
         for c in CONDICOES:
             repeticao = carregar_linhas(pasta_rodadas / rodada / f"{c}.jsonl")
@@ -297,6 +307,31 @@ def _numeros_da_concordancia(pasta_rodadas: Path) -> list[Numero]:
                 Numero(f"concordancia_{rodada}_{c}_n", len(comuns), f"Perguntas comparadas na {o_que}"),
             ]
     return lista
+
+
+def _numeros_dos_parametros(principal: Path) -> list[Numero | Texto]:
+    """Os parâmetros com que a Rodada principal rodou, lidos do execucao.json gravado ao lado dela.
+
+    Entram no registro para o Relatório de avaliação citá-los sem digitar: o k
+    e os nomes dos modelos e do commit, que têm dígitos. São os da Rodada, e
+    não os do parametros.toml de agora, que pode ter mudado depois dela.
+    Sem execucao.json com parâmetros, nada é registrado.
+    """
+    execucao = principal / "execucao.json"
+    dados = json.loads(execucao.read_text(encoding="utf-8")) if execucao.exists() else {}
+    p = dados.get("parametros")
+    if not p:
+        return []
+    commit = dados["commit"]
+    commit = commit[:7] if re.fullmatch(r"[0-9a-f]{40}", commit) else commit
+    return [
+        Numero("parametros_k", p["k"], "Trechos recuperados por Pergunta na Condição com RAG (Rodada principal)"),
+        Texto("parametros_modelo_respondedor", p["modelo_respondedor"], p["modelo_respondedor"],
+              "modelo que responde às Perguntas na Rodada principal"),
+        Texto("parametros_modelo_juiz", p["modelo_juiz"], p["modelo_juiz"], "modelo do Juiz na Rodada principal"),
+        Texto("parametros_commit", commit, commit,
+              "commit em que a Rodada principal rodou, com os parâmetros congelados"),
+    ]
 
 
 def _numeros_da_revisao(consolidadas: dict[str, list[dict]]) -> list[Numero]:
@@ -398,6 +433,14 @@ def _montar_tabelas(textos: dict[str, str]) -> dict[str, tuple[str, list[str]]]:
     tabelas["custo_por_condicao.tex"] = (_arquivo(
         "Condição; tokens de entrada (média por Pergunta); latência mediana (s); respostas com fallback",
         linhas), t.usadas)
+
+    # Uma linha por repetição e Condição que existir: o .tex não fixa quantas repetições houve.
+    t = _Celulas(textos)
+    linhas = [[NOMES_REPETICAO[rodada], _rotulo(c), t(f"concordancia_{rodada}_{c}"), t(f"concordancia_{rodada}_{c}_n")]
+              for rodada in REPETICOES for c in CONDICOES if f"concordancia_{rodada}_{c}" in textos]
+    tabelas["concordancia.tex"] = (_arquivo(
+        "Repetição; Condição; concordância dos Veredictos automáticos com a Rodada principal (não revisados); "
+        "Perguntas comparadas", linhas), t.usadas)
     return tabelas
 
 
@@ -426,6 +469,7 @@ def analisar(
         + _numeros_do_gabarito(consolidadas["com_rag"])
         + _numeros_da_rodada(resumos)
         + _numeros_da_revisao(consolidadas)
+        + _numeros_dos_parametros(pasta_rodadas / "principal")
     )
     for c in CONDICOES:
         lista += _numeros_da_condicao(c, resumos[c]) + _numeros_dos_erros(c, resumos[c])

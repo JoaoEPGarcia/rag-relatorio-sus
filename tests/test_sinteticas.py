@@ -9,7 +9,7 @@ e nada sintético chega ao registro de uma cópia do projeto.
 
 import pytest
 
-from rag_sus import numeros
+from rag_sus import config, numeros
 from rag_sus.avaliacao.resultados import analisar
 from rag_sus.avaliacao.sinteticas import RaizProibida, gerar_rodadas_sinteticas
 
@@ -36,7 +36,23 @@ def test_rodadas_sinteticas_viram_numeros_e_tabelas(tmp_path):
         for c in ("com_rag", "sem_rag", "contexto_completo"):
             assert r[f"concordancia_{rodada}_{c}_n"]["valor"] == 60
     assert sorted(p.name for p in (raiz / "relatorio" / "tabelas").iterdir()) == [
-        "comparacao_pareada.tex", "custo_por_condicao.tex", "erros_por_tipo.tex", "resultados_por_condicao.tex"]
+        "comparacao_pareada.tex", "concordancia.tex", "custo_por_condicao.tex", "erros_por_tipo.tex",
+        "resultados_por_condicao.tex"]
+
+
+def test_rodadas_sinteticas_gravam_os_parametros_do_projeto_como_a_rodada_real(tmp_path):
+    # o Relatório de avaliação cita o k e os modelos; na raiz sintética, são os do parametros.toml do projeto
+    raiz = tmp_path / "raiz"
+    gerar_rodadas_sinteticas(raiz, semente=7, repeticoes=0)
+
+    analisar_raiz(raiz)
+
+    r = numeros.carregar(raiz / "resultados" / "numeros.json")
+    p = config.carregar_parametros(config.PROJETO / "parametros.toml")
+    assert r["parametros_k"]["valor"] == p.k
+    assert r["parametros_modelo_respondedor"]["texto"] == p.modelo_respondedor
+    assert r["parametros_modelo_juiz"]["texto"] == p.modelo_juiz
+    assert r["parametros_commit"]["texto"] == "sintetico"  # só o hash de verdade é encurtado
 
 
 def test_raiz_sintetica_recebe_os_numeros_reais_do_corpus(tmp_path):
