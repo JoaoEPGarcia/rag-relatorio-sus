@@ -30,6 +30,42 @@ def test_formatar_em_portugues(valor, formato, esperado):
     assert formatar(valor, formato) == esperado
 
 
+@pytest.mark.parametrize(
+    "valor,formato,esperado",
+    [
+        (1236, "inteiro", "1,236"),
+        (1_000_000, "inteiro", "1,000,000"),
+        (-3, "inteiro", "−3"),
+        (2025, "ano", "2025"),
+        (0.0593, "dec4", "0.0593"),
+        (12345.5, "dec1", "12,345.5"),
+        (0.8, "pct1", "80.0%"),
+        (-0.05, "pp1", "−5.0 pp"),
+        (0.12345, "pp1", "12.3 pp"),
+        (0.0321, "p3", "0.032"),
+        (0.0004, "p3", "< 0.001"),
+        (2.5, "usd2", "US$ 2.50"),
+    ],
+)
+def test_formatar_em_ingles(valor, formato, esperado):
+    assert formatar(valor, formato, idioma="en") == esperado
+
+
+def test_idioma_desconhecido_e_recusado():
+    with pytest.raises(ValueError):
+        formatar(1, "inteiro", idioma="es")
+
+
+def test_registro_guarda_o_texto_em_portugues_e_em_ingles(tmp_path):
+    caminho = tmp_path / "numeros.json"
+    registrar("acerto", 0.8, "acerto", "s.py", formato="pct1", caminho=caminho)
+    registrar_do_script("t.py", [Numero("dif", -0.05, "diferença", "pp1")], caminho=caminho)
+
+    dados = carregar(caminho)
+    assert (dados["acerto"]["texto"], dados["acerto"]["texto_en"]) == ("80,0%", "80.0%")
+    assert (dados["dif"]["texto"], dados["dif"]["texto_en"]) == ("−5,0 p.p.", "−5.0 pp")
+
+
 def test_formato_desconhecido_e_recusado():
     with pytest.raises(ValueError):
         formatar(1, "chute")
@@ -43,7 +79,8 @@ def test_registrar_acumula_e_substitui_pela_chave(tmp_path):
     registrar("a", 11, "onze", "s1.py", caminho=caminho)
 
     dados = carregar(caminho)
-    assert dados["a"] == {"valor": 11, "texto": "11", "descricao": "onze", "script": "s1.py", "formato": "inteiro"}
+    assert dados["a"] == {"valor": 11, "texto": "11", "texto_en": "11", "descricao": "onze", "script": "s1.py",
+                          "formato": "inteiro"}
     assert dados["b"]["texto"] == "50,0%"
     # arquivo ordenado por chave: diff estável entre execuções
     assert list(json.loads(caminho.read_text(encoding="utf-8"))) == ["a", "b"]

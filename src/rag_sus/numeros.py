@@ -4,7 +4,9 @@
 POR QUE ISTO EXISTE. A regra do portfólio: todo número impresso (README,
 Relatório de avaliação, figuras) sai de um script e fica listado em
 NUMEROS_CANONICOS.md. Cada script que calcula um número o grava aqui, com o
-texto já formatado em português (vírgula decimal, ponto de milhar). O
+texto já formatado em português (vírgula decimal, ponto de milhar) em
+"texto" e em inglês (ponto decimal, vírgula de milhar) em "texto_en", este
+para a seção "In English" do README. O
 scripts/06_gerar_documentos.py lê este registro e gera relatorio/numeros.tex,
 NUMEROS_CANONICOS.md e README.md (ADR 0003). Ninguém digita número.
 
@@ -26,36 +28,41 @@ _CHAVE = re.compile(r"^[a-z][a-z0-9_]*$")
 _MENOS = "−"  # sinal de menos tipográfico
 
 
-def _milhar(inteiro: int) -> str:
-    return f"{inteiro:,}".replace(",", ".")
+IDIOMAS = ("pt", "en")
+_PONTOS_PERCENTUAIS = {"pt": " p.p.", "en": " pp"}
 
 
-def _decimal(valor: float, casas: int) -> str:
+def _decimal(valor: float, casas: int, idioma: str) -> str:
+    """Separador de milhar e vírgula decimal em português; vírgula de milhar e ponto em inglês."""
     texto = f"{abs(valor):,.{casas}f}"
-    texto = texto.replace(",", "\x00").replace(".", ",").replace("\x00", ".")
+    if idioma == "pt":
+        texto = texto.replace(",", "\x00").replace(".", ",").replace("\x00", ".")
     return (_MENOS if valor < 0 else "") + texto
 
 
-def formatar(valor: float | int, formato: str) -> str:
-    """Escreve o número em português.
+def formatar(valor: float | int, formato: str, idioma: str = "pt") -> str:
+    """Escreve o número em português (padrão) ou em inglês (`idioma="en"`).
 
     Formatos: inteiro, ano, decN (N casas), pct1 (proporção como %), pp1
     (diferença de proporções em pontos percentuais), p3 (valor-p), usd2.
+    O sinal de menos é o tipográfico nos dois idiomas.
     """
+    if idioma not in IDIOMAS:
+        raise ValueError(f"idioma desconhecido: {idioma}")
     if formato == "inteiro":
-        return (_MENOS if valor < 0 else "") + _milhar(abs(int(round(valor))))
+        return _decimal(int(round(valor)), 0, idioma)
     if formato == "ano":
         return str(int(valor))
     if formato.startswith("dec") and formato[3:].isdigit():
-        return _decimal(float(valor), int(formato[3:]))
+        return _decimal(float(valor), int(formato[3:]), idioma)
     if formato == "pct1":
-        return _decimal(100 * float(valor), 1) + "%"
+        return _decimal(100 * float(valor), 1, idioma) + "%"
     if formato == "pp1":
-        return _decimal(100 * float(valor), 1) + " p.p."
+        return _decimal(100 * float(valor), 1, idioma) + _PONTOS_PERCENTUAIS[idioma]
     if formato == "p3":
-        return "< 0,001" if valor < 0.001 else _decimal(float(valor), 3)
+        return "< " + _decimal(0.001, 3, idioma) if valor < 0.001 else _decimal(float(valor), 3, idioma)
     if formato == "usd2":
-        return "US$ " + _decimal(float(valor), 2)
+        return "US$ " + _decimal(float(valor), 2, idioma)
     raise ValueError(f"formato desconhecido: {formato}")
 
 
@@ -88,6 +95,7 @@ def _entrada(n: Numero, script: str) -> dict:
     entrada = {
         "valor": n.valor,
         "texto": formatar(n.valor, formato),
+        "texto_en": formatar(n.valor, formato, idioma="en"),
         "descricao": n.descricao,
         "script": script,
         "formato": formato,
