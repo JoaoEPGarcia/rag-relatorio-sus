@@ -200,6 +200,26 @@ def test_citacao_recuperacao_tokens_latencia_e_fallbacks(projeto):
     assert r["principal_tokens_entrada_total"]["valor"] == 59 * 2000 + 7000 + 2 * 60 * 1000
 
 
+def test_concordancia_so_com_repeticao_e_rotulada_como_nao_revisada(projeto):
+    r = rodar(projeto)
+    assert not [c for c in r if c.startswith("concordancia_")]
+
+    # repetição só da Condição com RAG: G35..G40 passam a errar (6 de 60 Perguntas mudam)
+    gravar_rodada(projeto["rodadas"], "repeticao1", "com_rag", condicao_simples("com_rag", 34, abstencoes_corretas=9))
+    r = rodar(projeto)
+
+    assert r["concordancia_repeticao1_com_rag"]["valor"] == pytest.approx(54 / 60)
+    assert r["concordancia_repeticao1_com_rag_n"]["valor"] == 60
+    assert "Veredictos não revisados" in r["concordancia_repeticao1_com_rag"]["descricao"]
+    assert "concordancia_repeticao1_sem_rag" not in r
+    assert "concordancia_repeticao2_com_rag" not in r
+
+    # a repetição some: o número velho sai do registro
+    (projeto["rodadas"] / "repeticao1" / "com_rag.jsonl").unlink()
+    r = rodar(projeto)
+    assert not [c for c in r if c.startswith("concordancia_")]
+
+
 def test_falta_de_revisao_trava_a_analise_e_lista_as_perguntas_pendentes(projeto):
     com_juiz(projeto, "com_rag", {"G41": True, "G42": False})
     com_juiz(projeto, "sem_rag", {"G43": False})

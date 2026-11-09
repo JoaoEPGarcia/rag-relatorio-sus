@@ -24,10 +24,13 @@ from pathlib import Path
 
 from rag_sus import config, numeros
 from rag_sus.assistente import CONDICOES
-from rag_sus.avaliacao.analise import comparar, erros_por_tipo, resumir
+from rag_sus.avaliacao.analise import comparar, concordancia, erros_por_tipo, resumir
 from rag_sus.avaliacao.gabarito import TIPOS_RESPONDIVEIS
-from rag_sus.avaliacao.rodada import RevisaoIncompleta, consolidar
+from rag_sus.avaliacao.rodada import RevisaoIncompleta, carregar_linhas, consolidar
+from rag_sus.avaliacao.travas import RODADAS_PUBLICADAS
 from rag_sus.numeros import Numero
+
+REPETICOES = tuple(r for r in RODADAS_PUBLICADAS if r != "principal")
 
 SCRIPT = "scripts/04_analisar.py"
 NOMES_CONDICAO = {"com_rag": "com RAG", "sem_rag": "sem RAG", "contexto_completo": "contexto completo"}
@@ -195,6 +198,30 @@ def _numeros_da_rodada(resumos: dict[str, dict]) -> list[Numero]:
     ]
 
 
+def _numeros_da_concordancia(pasta_rodadas: Path) -> list[Numero]:
+    """Concordância entre a Rodada principal e cada repetição que existir, por Condição.
+
+    Compara os Veredictos automáticos (Juiz ou regra), sem a Revisão: as
+    repetições não são revisadas, e a principal entra do mesmo jeito para a
+    comparação ser justa.
+    """
+    lista: list[Numero] = []
+    for rodada in REPETICOES:
+        for c in CONDICOES:
+            repeticao = carregar_linhas(pasta_rodadas / rodada / f"{c}.jsonl")
+            principal = carregar_linhas(pasta_rodadas / "principal" / f"{c}.jsonl")
+            if not repeticao:
+                continue
+            comuns = {l["id"] for l in principal} & {l["id"] for l in repeticao}
+            o_que = f"concordância entre a Rodada principal e a {rodada}, {NOMES_CONDICAO[c]}"
+            lista += [
+                Numero(f"concordancia_{rodada}_{c}", concordancia(principal, repeticao),
+                       f"{o_que} (Veredictos não revisados)", "pct1"),
+                Numero(f"concordancia_{rodada}_{c}_n", len(comuns), f"Perguntas comparadas na {o_que}"),
+            ]
+    return lista
+
+
 def _numeros_da_revisao(consolidadas: dict[str, list[dict]]) -> list[Numero]:
     do_juiz = [l for linhas in consolidadas.values() for l in linhas if l["veredicto_juiz"] is not None]
     revisados = [l for l in do_juiz if l["revisado_pelo_autor"]]
@@ -213,7 +240,8 @@ def analisar(
     pasta_tabelas: Path | None = None,
 ) -> dict[str, str]:
     """Registra os números da Rodada principal e devolve chave -> texto formatado."""
-    consolidadas = _consolidar_principal(Path(pasta_rodadas) / "principal", folha)
+    pasta_rodadas = Path(pasta_rodadas)
+    consolidadas = _consolidar_principal(pasta_rodadas / "principal", folha)
     resumos = {c: resumir(consolidadas[c]) for c in CONDICOES}
     lista: list[Numero] = (
         _numeros_de_destaque(resumos) + _numeros_da_rodada(resumos) + _numeros_da_revisao(consolidadas)
@@ -223,4 +251,5 @@ def analisar(
     lista += _numeros_por_tipo(consolidadas["com_rag"])
     for outra in COMPARADAS_COM_RAG:
         lista += _numeros_da_comparacao(outra, consolidadas["com_rag"], consolidadas[outra])
+    lista += _numeros_da_concordancia(pasta_rodadas)
     return numeros.registrar_do_script(SCRIPT, lista, caminho=numeros_json or config.NUMEROS)
