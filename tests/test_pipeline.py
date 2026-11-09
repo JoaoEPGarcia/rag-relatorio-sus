@@ -5,8 +5,15 @@ Os testes rápidos usam passos falsos e raízes temporárias; nenhum dispara a
 extração, o índice, o pdflatex nem o modelo.
 """
 
+import os
+import shutil
+import subprocess
+import sys
 from pathlib import Path
 
+import pytest
+
+from rag_sus import config
 from rag_sus.avaliacao.sinteticas import gerar_rodadas_sinteticas
 from rag_sus.pipeline import Passo, compilar_relatorio, passos_do_pipeline, rodar
 
@@ -170,3 +177,59 @@ def test_sem_pdflatex_diz_o_que_instalar(tmp_path, capsys):
 
     assert compilar_relatorio(tmp_path / "relatorio.tex", tmp_path, ausente) != 0
     assert "pdflatex não encontrado" in capsys.readouterr().out
+
+
+# --- scripts/reproduzir.py de verdade, sobre raízes temporárias ---
+
+SAIDAS = ("README.md", "NUMEROS_CANONICOS.md", "relatorio/numeros.tex", "relatorio/relatorio.pdf", "figuras")
+
+
+def reproduzir(raiz: Path) -> subprocess.CompletedProcess:
+    env = {**os.environ, "RAG_SUS_RAIZ": str(raiz)}
+    return subprocess.run([sys.executable, str(config.PROJETO / "scripts" / "reproduzir.py")], env=env, cwd=raiz,
+                          capture_output=True, text=True, encoding="utf-8")
+
+
+def test_sem_rodada_principal_para_na_analise(tmp_path):
+    r = reproduzir(raiz_com_corpus(tmp_path))
+
+    assert r.returncode != 0
+    assert "falta a Rodada principal" in r.stdout
+    assert "Pipeline parado no passo «análise»" in r.stdout
+    assert not any((tmp_path / s).exists() for s in SAIDAS)
+
+
+def test_revisao_faltando_para_na_analise_sem_documento_parcial(tmp_path):
+    gerar_rodadas_sinteticas(tmp_path, semente=2026, repeticoes=0)
+    folha = tmp_path / "avaliacao" / "revisao_veredictos.csv"
+    linhas = folha.read_text(encoding="utf-8").splitlines(keepends=True)
+    folha.write_text("".join(linhas[:-1]), encoding="utf-8")  # apaga a Revisão da última linha
+    registro = (tmp_path / "resultados" / "numeros.json").read_bytes()
+
+    r = reproduzir(tmp_path)
+
+    assert r.returncode != 0
+    assert "sem Revisão" in r.stdout
+    assert "Pipeline parado no passo «análise»" in r.stdout
+    assert not any((tmp_path / s).exists() for s in SAIDAS)
+    assert (tmp_path / "resultados" / "numeros.json").read_bytes() == registro
+
+
+@pytest.mark.lento
+@pytest.mark.skipif(shutil.which("pdflatex") is None, reason="precisa do pdflatex")
+def test_raiz_sintetica_de_ponta_a_ponta(tmp_path):
+    def saidas_do_projeto():
+        caminhos = ("README.md", "NUMEROS_CANONICOS.md", "relatorio/numeros.tex", "relatorio/relatorio.pdf",
+                    "resultados/numeros.json")
+        return {p: (config.PROJETO / p).read_bytes() if (config.PROJETO / p).exists() else None for p in caminhos}
+
+    antes = saidas_do_projeto()
+    gerar_rodadas_sinteticas(tmp_path, semente=2026, repeticoes=2)
+
+    r = reproduzir(tmp_path)
+
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "Conferência dos números: ok" in r.stdout
+    assert r.stdout.rstrip().endswith("Pipeline completo.")
+    assert (tmp_path / "relatorio" / "relatorio.pdf").exists()
+    assert saidas_do_projeto() == antes
