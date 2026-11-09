@@ -10,9 +10,11 @@
 % scripts/04_analisar.py e lido com \linhasde. As figuras vêm de ../figuras/,
 % escritas por scripts/05_figuras.py. Nenhum número é digitado aqui.
 %
-% Compilar, de dentro de relatorio/, depois dos scripts 04, 05 e 06:
+% Compilar: uv run python scripts/reproduzir.py roda os scripts 04, 05 e 06,
+% compila e confere. O pdflatex roda dentro da pasta relatorio/ da raiz (a
+% do projeto ou a de RAG_SUS_RAIZ), de onde lê numeros.tex, tabelas/ e
+% ../figuras/; este .tex nunca é copiado. À mão, de dentro de relatorio/:
 %   pdflatex -interaction=nonstopmode -halt-on-error relatorio.tex   (duas vezes)
-% ou latexmk -pdf relatorio.tex (só no Git Bash: no PowerShell falta o Perl).
 % Depois, scripts/conferir_numeros.py confere que nenhum número foi digitado.
 
 % ══════════════════════════════════════════════════════════════════════
