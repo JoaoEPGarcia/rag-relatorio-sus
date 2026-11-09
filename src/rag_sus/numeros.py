@@ -113,9 +113,15 @@ def registrar(
     script: str,
     formato: str | None = None,
     caminho: Path | None = None,
+    aparece_em: Iterable[str] = (),
 ) -> str:
-    """Grava (ou substitui) um número no registro e devolve o texto formatado."""
-    entrada = _entrada(Numero(chave, valor, descricao, formato), script)
+    """Grava (ou substitui) um número no registro e devolve o texto formatado.
+
+    `aparece_em` declara onde o número é impresso fora do README e do .tex
+    (uma figura, por exemplo), para a coluna "Onde aparece" do
+    NUMEROS_CANONICOS.md.
+    """
+    entrada = _entrada(Numero(chave, valor, descricao, formato, tuple(aparece_em)), script)
     caminho = caminho or config.NUMEROS
     dados = carregar(caminho)
     dados[chave] = entrada

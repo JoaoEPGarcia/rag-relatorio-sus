@@ -60,6 +60,17 @@ def test_chave_precisa_ser_identificador_simples(tmp_path):
         registrar("acerto-rag", 1, "x", "s.py", caminho=tmp_path / "n.json")
 
 
+def test_registrar_guarda_onde_o_numero_aparece_quando_declarado(tmp_path):
+    caminho = tmp_path / "numeros.json"
+    registrar("acerto", 0.8, "acerto", "scripts/05_figuras.py", formato="pct1", caminho=caminho,
+              aparece_em=["figuras/acerto_por_condicao.png (título)"])
+    registrar("trechos", 570, "Trechos", "scripts/01_extrair.py", caminho=caminho)
+
+    dados = carregar(caminho)
+    assert dados["acerto"]["aparece_em"] == ["figuras/acerto_por_condicao.png (título)"]
+    assert "aparece_em" not in dados["trechos"]
+
+
 def test_registrar_do_script_troca_de_uma_vez_os_numeros_do_script(tmp_path):
     caminho = tmp_path / "numeros.json"
     registrar("corpus_trechos", 570, "Trechos", "scripts/01_extrair.py", caminho=caminho)
