@@ -25,7 +25,7 @@ from pathlib import Path
 from rag_sus import config, numeros
 from rag_sus.assistente import CONDICOES
 from rag_sus.avaliacao.analise import resumir
-from rag_sus.avaliacao.rodada import consolidar
+from rag_sus.avaliacao.rodada import RevisaoIncompleta, consolidar
 from rag_sus.numeros import Numero
 
 SCRIPT = "scripts/04_analisar.py"
@@ -69,6 +69,34 @@ def _numeros_de_destaque(resumos: dict[str, dict]) -> list[Numero]:
     return lista
 
 
+def _consolidar_principal(principal: Path, folha: Path) -> dict[str, list[dict]]:
+    """Consolida as três Condições e, se faltar Revisão, lista as pendentes de todas de uma vez."""
+    consolidadas, pendentes = {}, []
+    for c in CONDICOES:
+        linhas = consolidar(principal / f"{c}.jsonl", folha, exigir_revisao=False)
+        consolidadas[c] = linhas
+        faltando = [l["id"] for l in linhas if l["veredicto_juiz"] is not None and not l["revisado_pelo_autor"]]
+        if faltando:
+            pendentes.append(f"{c}: {', '.join(faltando)}")
+    if pendentes:
+        raise RevisaoIncompleta(
+            f"há Veredicto do Juiz sem Revisão na Rodada principal ({'; '.join(pendentes)}). "
+            f"Preencha veredicto_revisado (certo/errado) em {Path(folha).name} e rode de novo."
+        )
+    return consolidadas
+
+
+def _numeros_da_revisao(consolidadas: dict[str, list[dict]]) -> list[Numero]:
+    do_juiz = [l for linhas in consolidadas.values() for l in linhas if l["veredicto_juiz"] is not None]
+    revisados = [l for l in do_juiz if l["revisado_pelo_autor"]]
+    mudados = [l for l in revisados if l["acerto_resposta"] != l["veredicto_juiz"]]
+    return [
+        Numero("revisao_veredictos_juiz", len(do_juiz), "Veredictos do Juiz na Rodada principal (três Condições)"),
+        Numero("revisao_veredictos_revisados", len(revisados), "Veredictos do Juiz revisados pelo autor"),
+        Numero("revisao_veredictos_mudados", len(mudados), "Veredictos do Juiz que a Revisão do autor mudou"),
+    ]
+
+
 def analisar(
     pasta_rodadas: Path,
     folha: Path,
@@ -76,10 +104,9 @@ def analisar(
     pasta_tabelas: Path | None = None,
 ) -> dict[str, str]:
     """Registra os números da Rodada principal e devolve chave -> texto formatado."""
-    principal = Path(pasta_rodadas) / "principal"
-    consolidadas = {c: consolidar(principal / f"{c}.jsonl", folha, exigir_revisao=False) for c in CONDICOES}
+    consolidadas = _consolidar_principal(Path(pasta_rodadas) / "principal", folha)
     resumos = {c: resumir(consolidadas[c]) for c in CONDICOES}
-    lista: list[Numero] = _numeros_de_destaque(resumos)
+    lista: list[Numero] = _numeros_de_destaque(resumos) + _numeros_da_revisao(consolidadas)
     for c in CONDICOES:
         lista += _numeros_da_condicao(c, resumos[c])
     return numeros.registrar_do_script(SCRIPT, lista, caminho=numeros_json or config.NUMEROS)

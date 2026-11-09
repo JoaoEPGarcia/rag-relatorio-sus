@@ -15,6 +15,7 @@ from statsmodels.stats.proportion import proportion_confint
 
 from rag_sus import numeros
 from rag_sus.avaliacao.resultados import analisar
+from rag_sus.avaliacao.rodada import RevisaoIncompleta
 
 TIPOS = ("numero_prosa", "numero_tabela", "numero_legenda", "conceito", "sintese")
 RESPONDIVEIS = [f"G{i:02d}" for i in range(1, 51)]  # 10 de cada Tipo, na ordem de TIPOS
@@ -106,6 +107,45 @@ def test_acerto_da_resposta_por_condicao_bate_com_wilson_independente(projeto):
         assert r[f"{condicao}_acerto_resposta_inf"]["valor"] == pytest.approx(inf, abs=1e-6)
         assert r[f"{condicao}_acerto_resposta_sup"]["valor"] == pytest.approx(sup, abs=1e-6)
     assert r["com_rag_acerto_resposta"]["texto"] == "80,0%"
+
+
+def com_juiz(p, condicao, juizes):
+    """Regrava a Rodada principal da Condição com Veredictos do Juiz nas Perguntas de `juizes` (id -> acerto)."""
+    caminho = p["rodadas"] / "principal" / f"{condicao}.jsonl"
+    linhas = [json.loads(l) for l in caminho.read_text(encoding="utf-8").splitlines()]
+    for l in linhas:
+        if l["id"] in juizes:
+            l["acerto_regra"], l["veredicto_juiz"] = None, juizes[l["id"]]
+    gravar_rodada(p["rodadas"], "principal", condicao, linhas)
+
+
+def test_falta_de_revisao_trava_a_analise_e_lista_as_perguntas_pendentes(projeto):
+    com_juiz(projeto, "com_rag", {"G41": True, "G42": False})
+    com_juiz(projeto, "sem_rag", {"G43": False})
+    gravar_folha(projeto["folha"], [("com_rag", "G41", "certo", "certo"), ("com_rag", "G42", "errado", ""),
+                                    ("sem_rag", "G43", "errado", "")])
+
+    with pytest.raises(RevisaoIncompleta) as erro:
+        rodar(projeto)
+
+    mensagem = str(erro.value)
+    assert "com_rag: G42" in mensagem and "sem_rag: G43" in mensagem and "G41" not in mensagem
+    assert not projeto["numeros"].exists()
+
+
+def test_revisao_do_autor_vence_o_juiz_e_o_registro_conta_as_mudancas(projeto):
+    # G41..G43 erraram pela regra na fixture (só as 40 primeiras acertam); o Juiz diz certo nas três
+    com_juiz(projeto, "com_rag", {"G41": True, "G42": True, "G43": True})
+    com_juiz(projeto, "sem_rag", {"G41": False})
+    gravar_folha(projeto["folha"], [("com_rag", "G41", "certo", "certo"), ("com_rag", "G42", "certo", "errado"),
+                                    ("com_rag", "G43", "certo", "errado"), ("sem_rag", "G41", "errado", "errado")])
+
+    r = rodar(projeto)
+
+    assert r["com_rag_acertos_resposta"]["valor"] == 41  # 40 da regra + G41; G42 e G43 o autor derrubou
+    assert r["revisao_veredictos_juiz"]["valor"] == 4
+    assert r["revisao_veredictos_revisados"]["valor"] == 4
+    assert r["revisao_veredictos_mudados"]["valor"] == 2
 
 
 def test_destaque_usa_so_as_respondiveis_e_as_sem_resposta_saem_a_parte(projeto):
