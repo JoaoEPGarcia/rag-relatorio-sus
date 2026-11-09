@@ -10,6 +10,7 @@ paga (scripts/03_rodar_avaliacao.py) nunca é um passo.
 
 from __future__ import annotations
 
+import subprocess
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -62,6 +63,46 @@ def passos_do_pipeline(
         Passo("conferidor de números", script("conferir_numeros.py")),
         Passo("conferência do Gabarito", script("conferir_gabarito.py"), so_pdf_real),
     ]
+
+
+def _pdflatex(comando: list[str], cwd: Path) -> tuple[int, str]:
+    r = subprocess.run(comando, cwd=cwd, capture_output=True)
+    return r.returncode, (r.stdout + r.stderr).decode("utf-8", errors="replace")
+
+
+# O que o pdflatex escreve no .log quando as referências pedem mais uma passada.
+_PEDE_OUTRA_PASSADA = ("Rerun to get", "Label(s) may have changed")
+
+
+def compilar_relatorio(
+    tex: Path, pasta_saida: Path, executar: Callable[[list[str], Path], tuple[int, str]] = _pdflatex
+) -> int:
+    """Compila o .tex com o pdflatex rodando em pasta_saida: duas passadas, três se o .log pedir.
+
+    O .tex é o do projeto (escrito à mão, como o README.base.md); numeros.tex,
+    tabelas/ e ../figuras/ ele acha a partir do diretório corrente, que é a
+    pasta relatorio/ da raiz, e é lá que o PDF sai. Assim nada é copiado e, sobre
+    uma raiz temporária, o PDF usa os números dela, e não os do projeto.
+    """
+    pasta_saida.mkdir(parents=True, exist_ok=True)
+    comando = ["pdflatex", "-interaction=nonstopmode", "-halt-on-error", str(tex)]
+    log = pasta_saida / (Path(tex).stem + ".log")
+    for passada in (1, 2, 3):
+        try:
+            codigo, saida = executar(comando, pasta_saida)
+        except FileNotFoundError:
+            print("pdflatex não encontrado: instale o MiKTeX (Windows) ou o TeX Live e ponha o pdflatex no PATH.")
+            return 1
+        if codigo != 0:
+            print("\n".join(saida.splitlines()[-30:]))
+            print(f"pdflatex falhou na passada {passada} (código {codigo}); o log completo está em {log}")
+            return codigo
+        pede_outra = log.exists() and any(t in log.read_text(encoding="utf-8", errors="replace")
+                                           for t in _PEDE_OUTRA_PASSADA)
+        if passada >= 2 and not pede_outra:
+            break
+    print(f"Relatório de avaliação compilado em {passada} passadas -> {pasta_saida / (Path(tex).stem + '.pdf')}")
+    return 0
 
 
 def rodar(passos: list[Passo]) -> int:
