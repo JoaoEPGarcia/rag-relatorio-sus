@@ -136,7 +136,7 @@ def gerar_numeros_canonicos(registro: dict[str, dict], onde: dict[str, list[str]
         "",
         "**Arquivo gerado** por `scripts/06_gerar_documentos.py` a partir de `resultados/numeros.json`. "
         "Não edite à mão. Para mudar um número, mude o script da coluna \"Sai de\", rode o pipeline "
-        "(`uv run python scripts/rodar_tudo.py`) e confira cada lugar da coluna \"Onde aparece\".",
+        "(`uv run python scripts/reproduzir.py`) e confira cada lugar da coluna \"Onde aparece\".",
         "",
         "| Número | Valor | O que é | Sai de | Onde aparece |",
         "|---|---|---|---|---|",

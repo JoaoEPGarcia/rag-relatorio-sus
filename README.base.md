@@ -33,7 +33,7 @@ Os números abaixo são os da Rodada principal, analisada por `scripts/04_analis
 | Caminho | O que é |
 |---|---|
 | `src/rag_sus/` | extração, quebra, busca, assistente, API e avaliação |
-| `scripts/` | o pipeline, em passos numerados (`rodar_tudo.py` roda todos) |
+| `scripts/` | o pipeline, em passos numerados (`reproduzir.py` roda todos, menos as Rodadas, que chamam o modelo) |
 | `avaliacao/` | Gabarito, Perguntas de desenvolvimento e folha de Revisão dos Veredictos |
 | `resultados/` | Rodadas, registro de números e resumo da análise |
 | `relatorio/` | Relatório de avaliação em LaTeX |
@@ -43,20 +43,25 @@ Os números abaixo são os da Rodada principal, analisada por `scripts/04_analis
 
 ## Como reproduzir
 
-1. Instale o [uv](https://docs.astral.sh/uv/) e as dependências: `uv sync --all-groups`.
-2. Configure a máquina com o roteiro guiado `bash scripts/configurar_maquina.sh`. Ele cria a chave do Gemini, liga (se você quiser) os créditos do Google AI Pro (ou instala o Ollama e baixa o modelo), grava no `.env`, instala o Docker Desktop e testa a API no contêiner. O `.env` não vai para o git.
-3. Rode o pipeline:
+1. Instale o [uv](https://docs.astral.sh/uv/) e as dependências, `uv sync --all-groups`, e um LaTeX com o `pdflatex` (MiKTeX no Windows, TeX Live no Linux).
+2. Refaça tudo a partir das Rodadas versionadas em `resultados/rodadas/`, sem chamar o modelo:
    ```
-   uv run python scripts/01_extrair.py
-   uv run python scripts/02_indexar.py
+   uv run python scripts/reproduzir.py
+   ```
+   O comando extrai o PDF e constrói o índice, só se faltarem (na primeira vez, o índice baixa o modelo de embeddings). Depois, refaz a análise, as figuras, o README, as macros LaTeX e o `NUMEROS_CANONICOS.md`, compila o Relatório de avaliação e roda o conferidor de números e a conferência mecânica do Gabarito. Ele para no primeiro erro e diz em que passo parou. Sem a Rodada principal, ou com Veredicto do Juiz sem Revisão, ele para na análise, antes de escrever qualquer documento.
+3. Para refazer as Rodadas, que chamam o Gemini, configure a máquina com o roteiro guiado `bash scripts/configurar_maquina.sh`. Ele cria a chave do Gemini, liga (se você quiser) os créditos do Google AI Pro (ou instala o Ollama e baixa o modelo), grava no `.env`, instala o Docker Desktop e testa a API no contêiner. O `.env` não vai para o git. Depois, rode a Rodada principal e o pipeline de novo:
+   ```
    uv run python scripts/03_rodar_avaliacao.py --rodada principal --confirmar
-   uv run python scripts/04_analisar.py
-   uv run python scripts/05_figuras.py
-   uv run python scripts/06_gerar_documentos.py
-   uv run python scripts/conferir_numeros.py
+   uv run python scripts/reproduzir.py
    ```
-   O passo `03` chama o Gemini e gasta a cota diária (ou os créditos do Google AI Pro, se o projeto for pré-pago); sem `--confirmar`, ele só mostra quantas chamadas faria. Se a cota ou o saldo acabar no meio, ele para, e o mesmo comando continua de onde parou no dia seguinte. As Rodadas já feitas estão versionadas em `resultados/rodadas/`, e os passos `04` a `06` refazem a análise a partir delas, sem chamar o modelo.
-4. Para compilar o Relatório de avaliação: `pdflatex relatorio.tex` dentro de `relatorio/`, duas passadas.
+   A Rodada gasta a cota diária do Gemini (ou os créditos do Google AI Pro, se o projeto for pré-pago), e por isso o pipeline nunca a roda; sem `--confirmar`, ela só mostra quantas chamadas faria. Se a cota ou o saldo acabar no meio, ela para, e o mesmo comando continua de onde parou no dia seguinte.
+4. Para ver o pipeline inteiro sem chave de API, sobre Rodadas sintéticas numa pasta temporária (no Git Bash):
+   ```
+   export RAG_SUS_RAIZ="$(mktemp -d)"
+   uv run python scripts/gerar_rodadas_sinteticas.py
+   uv run python scripts/reproduzir.py
+   ```
+   Os números dessas Rodadas são inventados; o README, o PDF e as figuras saem na pasta temporária, e nada chega a `resultados/`.
 5. Para subir a API: `docker compose up --build` e abra `http://localhost:8000/docs`. Na primeira subida, o contêiner baixa o modelo de embeddings e constrói o índice.
 6. Testes: `uv run pytest`.
 
