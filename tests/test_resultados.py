@@ -263,6 +263,14 @@ def test_numeros_das_tabelas_declaram_onde_aparecem(projeto):
     assert "relatorio/tabelas/comparacao_pareada.tex" in r["com_rag_x_sem_rag_p_mcnemar"]["aparece_em"]
 
 
+def test_tamanho_do_gabarito_avaliado(projeto):
+    r = rodar(projeto)
+    assert r["gabarito_n_perguntas"]["valor"] == 60
+    assert r["gabarito_n_respondiveis"]["valor"] == 50
+    assert r["gabarito_n_sem_resposta"]["valor"] == 10
+    assert r["gabarito_n_tipos"]["valor"] == 5
+
+
 def test_rodar_duas_vezes_nao_muda_o_registro_nem_as_tabelas(projeto):
     numeros.registrar("corpus_trechos", 570, "Trechos indexados", "scripts/01_extrair.py", caminho=projeto["numeros"])
     gravar_rodada(projeto["rodadas"], "repeticao2", "sem_rag", condicao_simples("sem_rag", 14))

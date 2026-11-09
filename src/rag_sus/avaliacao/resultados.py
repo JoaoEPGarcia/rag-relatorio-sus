@@ -190,6 +190,17 @@ def _numeros_da_comparacao(outra: str, com_rag: list[dict], linhas_outra: list[d
     ]
 
 
+def _numeros_do_gabarito(linhas: list[dict]) -> list[Numero]:
+    """O tamanho do Gabarito avaliado, contado nas linhas da Rodada principal com RAG."""
+    respondiveis = [l for l in linhas if l["respondivel"]]
+    return [
+        Numero("gabarito_n_perguntas", len(linhas), "Perguntas do Gabarito avaliadas"),
+        Numero("gabarito_n_respondiveis", len(respondiveis), "Perguntas respondíveis do Gabarito"),
+        Numero("gabarito_n_sem_resposta", len(linhas) - len(respondiveis), "Perguntas sem resposta do Gabarito"),
+        Numero("gabarito_n_tipos", len({l["tipo"] for l in respondiveis}), "Tipos de pergunta entre as respondíveis"),
+    ]
+
+
 def _numeros_da_rodada(resumos: dict[str, dict]) -> list[Numero]:
     """Totais da Rodada principal nas três Condições."""
     def soma(campo: str) -> int:
@@ -344,7 +355,10 @@ def analisar(
     consolidadas = _consolidar_principal(pasta_rodadas / "principal", folha)
     resumos = {c: resumir(consolidadas[c]) for c in CONDICOES}
     lista: list[Numero] = (
-        _numeros_de_destaque(resumos) + _numeros_da_rodada(resumos) + _numeros_da_revisao(consolidadas)
+        _numeros_de_destaque(resumos)
+        + _numeros_do_gabarito(consolidadas["com_rag"])
+        + _numeros_da_rodada(resumos)
+        + _numeros_da_revisao(consolidadas)
     )
     for c in CONDICOES:
         lista += _numeros_da_condicao(c, resumos[c]) + _numeros_dos_erros(c, resumos[c])
