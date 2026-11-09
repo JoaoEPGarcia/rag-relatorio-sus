@@ -16,11 +16,13 @@ e a da figura declara onde aparece. O valor é o mesmo, copiado do registro.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from rag_sus.assistente import CONDICOES
 from rag_sus.avaliacao.estatistica import NIVEL
 from rag_sus.avaliacao.gabarito import TIPOS_RESPONDIVEIS
 from rag_sus.avaliacao.resultados import CLASSES_DE_ERRO, NOMES_CONDICAO, NOMES_TIPO
+from rag_sus.avaliacao.sinteticas import RaizProibida, dentro_de_uma_copia_do_projeto, rodada_sintetica
 from rag_sus.numeros import Numero, formatar
 
 
@@ -136,6 +138,31 @@ def textos_custo(registro: dict[str, dict]) -> TextosDaFigura:
                  "losango: média). O acerto é o da resposta, nas Perguntas respondíveis.")
     return TextosDaFigura(arquivo, titulo, subtitulo, rotulos, tuple(t.numeros.values()),
                           linhas=CONDICOES, colunas=("tokens", "latencia"), destaque=("com_rag",))
+
+
+def textos_das_figuras(registro: dict[str, dict]) -> list[TextosDaFigura]:
+    """As três figuras, na ordem em que o Relatório de avaliação as apresenta."""
+    return [textos_acerto(registro), textos_erros(registro), textos_custo(registro)]
+
+
+def fonte_dos_dados(sintetica: bool) -> str:
+    """O rodapé das figuras; nas Rodadas sintéticas, avisa que os números são inventados."""
+    if sintetica:
+        return ("Fonte: Rodadas sintéticas de demonstração, com números inventados; "
+                "não é resultado do assistente.")
+    return ("Fonte: Rodada principal da avaliação do assistente sobre o relatório Gestão Hospitalar no SUS-SP, "
+            "com os Veredictos revisados pelo autor.")
+
+
+def recusar_sinteticas_no_projeto(pasta_rodadas: Path, *destinos: Path) -> None:
+    """Rodadas sintéticas não viram figura nem número dentro de uma cópia do projeto."""
+    if rodada_sintetica(Path(pasta_rodadas) / "principal") and any(
+        dentro_de_uma_copia_do_projeto(d) for d in destinos
+    ):
+        raise RaizProibida(
+            "as Rodadas sintéticas de demonstração não viram figura nem número numa cópia do projeto: "
+            "rode as figuras com RAG_SUS_RAIZ apontando para a raiz temporária"
+        )
 
 
 def _em_lista(nomes: list[str]) -> str:

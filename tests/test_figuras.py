@@ -9,8 +9,19 @@ figura em "Onde aparece". Os títulos esperados são escritos à mão.
 
 import re
 
+import pytest
+
 from rag_sus import numeros
-from rag_sus.avaliacao.figuras import textos_acerto, textos_custo, textos_erros
+from rag_sus.avaliacao.figuras import (
+    fonte_dos_dados,
+    recusar_sinteticas_no_projeto,
+    textos_acerto,
+    textos_custo,
+    textos_das_figuras,
+    textos_erros,
+)
+from rag_sus.avaliacao.resultados import analisar
+from rag_sus.avaliacao.sinteticas import RaizProibida, gerar_rodadas_sinteticas
 
 SCRIPT_04 = "scripts/04_analisar.py"
 
@@ -202,3 +213,40 @@ def test_figura_do_custo_rotula_acerto_tokens_e_latencia_de_cada_condicao_e_regi
     assert t.rotulos["contexto_completo/latencia"] == "mediana 10,4 s"
     assert "60 Perguntas" in t.subtitulo
     conferir_registrados(t, "figura_custo_")
+
+
+def test_sobre_rodadas_sinteticas_as_tres_figuras_registram_chaves_proprias_com_a_figura_em_onde_aparece(tmp_path):
+    raiz = tmp_path / "raiz"
+    pasta_rodadas = gerar_rodadas_sinteticas(raiz, semente=7, repeticoes=0)
+    numeros_json = raiz / "resultados" / "numeros.json"
+    analisar(pasta_rodadas, raiz / "avaliacao" / "revisao_veredictos.csv", numeros_json=numeros_json,
+             pasta_tabelas=raiz / "relatorio" / "tabelas")
+
+    figuras = textos_das_figuras(numeros.carregar(numeros_json))
+
+    assert [t.arquivo for t in figuras] == [
+        "figuras/acerto_por_condicao.png", "figuras/erros_por_tipo.png", "figuras/custo_por_condicao.png"]
+    chaves = [n.chave for t in figuras for n in t.numeros]
+    assert len(chaves) == len(set(chaves))
+    for t, prefixo in zip(figuras, ("figura_acerto_", "figura_erros_", "figura_custo_"), strict=True):
+        conferir_registrados(t, prefixo)
+
+
+def test_figuras_de_rodadas_sinteticas_nunca_vao_para_uma_copia_do_projeto(tmp_path):
+    raiz = tmp_path / "raiz"
+    pasta_rodadas = gerar_rodadas_sinteticas(raiz, semente=7, repeticoes=0)
+    projeto = tmp_path / "projeto"
+    projeto.mkdir()
+    (projeto / "pyproject.toml").write_text("", encoding="utf-8")
+
+    with pytest.raises(RaizProibida):
+        recusar_sinteticas_no_projeto(pasta_rodadas, projeto / "figuras")
+    with pytest.raises(RaizProibida):
+        recusar_sinteticas_no_projeto(pasta_rodadas, raiz / "figuras", projeto / "resultados" / "numeros.json")
+    recusar_sinteticas_no_projeto(pasta_rodadas, raiz / "figuras", raiz / "resultados" / "numeros.json")
+
+
+def test_a_fonte_no_rodape_avisa_quando_as_rodadas_sao_sinteticas():
+    assert "sintéticas" in fonte_dos_dados(sintetica=True)
+    assert "sintéticas" not in fonte_dos_dados(sintetica=False)
+    assert not NUMERO_IMPRESSO.search(fonte_dos_dados(sintetica=True) + fonte_dos_dados(sintetica=False))
