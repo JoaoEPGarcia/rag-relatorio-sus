@@ -1,0 +1,36 @@
+# Parâmetros do assistente e da avaliação.
+#
+# REGRA (docs/adr/0002): estes valores são ajustados só com as Perguntas de
+# desenvolvimento (avaliacao/perguntas_desenvolvimento.csv) e congelados por
+# commit ANTES da Rodada principal. Para congelar: mude `congelado` para true
+# e faça o commit. scripts/03_rodar_avaliacao.py recusa a Rodada principal
+# enquanto `congelado` for false ou este arquivo tiver mudança não commitada.
+
+[estado]
+congelado = false
+
+[quebra]
+# Máximo de palavras do corpo de um Trecho de texto (sem a linha da seção).
+# O e5 lê até 512 tokens; 180 palavras em português ficam bem abaixo disso.
+alvo_palavras = 180
+# Máximo de palavras repetidas do fim de um Trecho no começo do seguinte.
+sobreposicao_palavras = 30
+
+[busca]
+modelo_embeddings = "intfloat/multilingual-e5-large"
+# Número de Trechos recuperados por Pergunta na Condição com RAG.
+k = 6
+
+[respondedor]
+modelo = "claude-opus-5-5"
+esforco = "medium"
+max_tokens = 16000
+
+[juiz]
+modelo = "claude-opus-5-5"
+esforco = "medium"
+max_tokens = 4000
+
+[avaliacao]
+# Rodadas automáticas extras, só para medir a concordância entre Rodadas.
+repeticoes = 2

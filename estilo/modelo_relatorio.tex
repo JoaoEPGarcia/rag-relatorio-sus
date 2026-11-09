@@ -1,0 +1,332 @@
+% ══════════════════════════════════════════════════════════════════════
+% MODELO DE RELATÓRIO DO PORTFÓLIO
+% ══════════════════════════════════════════════════════════════════════
+% Preâmbulo e capa copiados do analises/latex/principal.tex do projeto de
+% gestão hospitalar, sem o que era específico dele (glosas de seção,
+% macros da fase qualitativa, cores da fórmula do DEA).
+%
+% Para começar um relatório novo: copie este arquivo, preencha o bloco
+% "DADOS DA CAPA" e troque a SEÇÃO DE EXEMPLO pelo conteúdo do projeto.
+% O preâmbulo não se edita por relatório: ele é o kit.
+%
+% Compilar: pdflatex modelo_relatorio.tex (duas passadas; três se houver
+% remissão a apêndice que vem depois de quem o cita). Ou latexmk -pdf.
+% Motor: pdfLaTeX (MiKTeX ou TeX Live).
+
+% ══════════════════════════════════════════════════════════════════════
+% PREÂMBULO DO KIT: daqui até "FIM DO PREÂMBULO DO KIT", não edite
+% ══════════════════════════════════════════════════════════════════════
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[brazilian]{babel}
+
+% A mancha: 15 cm de linha, cerca de 3,2 alfabetos de Libertine 11pt. As
+% figuras NÃO vivem nesta medida: ver \figwidth, mais abaixo.
+\usepackage[top=2cm, bottom=2cm, left=3cm, right=3cm]{geometry}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{float}
+\usepackage{amsmath}
+\usepackage{caption}
+% A opção `table` liga o colortbl, que é o que dá a zebra (\rowcolors).
+\usepackage[table]{xcolor}
+\usepackage{enumitem}
+% Capa: a curva em TikZ e os ícones vetoriais do Font Awesome.
+\usepackage{tikz}
+\usepackage{fontawesome5}
+
+% ── AS FONTES: serifa no corpo, Lato em tabela e figura ───────────────
+% `lato` SEM a opção `default`: o corpo não muda e o comando \lato fica
+% disponível. A `libertine` entra DEPOIS da `lato`, porque as duas mexem
+% em \sfdefault e a última vence. A matemática acompanha a Libertine.
+\usepackage{lato}
+\usepackage{libertine}
+\usepackage{libertinust1math}
+
+% ── AS CORES: ColorBrewer Set1 e a escala tirada do #0A0310 ───────────
+% Os mesmos hexadecimais do estilo_portfolio.py e do theme_portfolio.R.
+\definecolor{azul}{HTML}{377EB8}       % destaque principal
+\definecolor{vermelho}{HTML}{E41A1C}   % destaque secundário
+\definecolor{verde}{HTML}{4DAF4A}
+\definecolor{roxo}{HTML}{984EA3}
+\definecolor{laranja}{HTML}{FF7F00}
+\definecolor{marrom}{HTML}{A65628}
+\definecolor{rosa}{HTML}{F781BF}
+\definecolor{tinta}{HTML}{0A0310}      % o quase-preto do kit
+\definecolor{tinta2}{HTML}{403A45}     % GRAY_70: texto secundário
+\definecolor{tinta3}{HTML}{5D5961}     % GRAY_60: rodapé, nota
+% Versões de TEXTO das cores claras, escurecidas até 4,5:1 contra o branco
+% por cor_de_texto() do estilo_portfolio.py. Vermelho e roxo já passam.
+\definecolor{azulTexto}{HTML}{3579B1}
+\definecolor{verdeTexto}{HTML}{3C823B}
+
+% ── A ZEBRA, aplicada a TODA tabela sem editar tabela nenhuma ─────────
+% A alternância é ancorada no PRIMEIRO \midrule de cada tabular (o fim do
+% cabeçalho), e não no número da linha: assim a primeira linha de dado
+% sai sempre branca, com cabeçalho de uma ou de duas linhas.
+%
+% ⚠ A ordem {zebraclara}{white} é contraintuitiva e está certa: o
+% contador sobe ANTES de a cor ser escolhida. Invertê-la inverte a zebra.
+% ⚠ O reset vai dentro de \noalign, senão "Misplaced \noalign".
+\usepackage{etoolbox}
+\definecolor{zebraclara}{HTML}{F4F4F4}
+\newif\ifzebraprimeiromidrule
+\newcommand{\zebratabela}{%
+  \lato
+  \global\zebraprimeiromidruletrue
+  \rowcolors{1}{zebraclara}{white}%
+}
+\AtBeginEnvironment{tabular}{\zebratabela}
+\AtBeginEnvironment{longtable}{\zebratabela}
+\pretocmd{\midrule}{%
+  \noalign{%
+    \ifzebraprimeiromidrule
+      \global\zebraprimeiromidrulefalse
+      \global\rownum=0\relax
+    \fi}%
+}{}{\typeout{ATENCAO: o patch de \string\midrule\space para a zebra FALHOU}}
+
+% ── A BOLINHA DE ESTADO, para coluna sim/não de tabela ────────────────
+% É reforço, e não substituição: o texto fica ao lado. Os três tons têm o
+% mesmo contraste (2,3:1), calculado no projeto de origem. Glifo, e não
+% TikZ: \tikz dentro de \caption derruba a compilação.
+\definecolor{bolinhaSim}{HTML}{6DBD6B}
+\definecolor{bolinhaNao}{HTML}{F29192}
+\definecolor{bolinhaEmpate}{HTML}{B1AE28}
+\DeclareRobustCommand{\bolinha}[1]{\textcolor{#1}{%
+  \raisebox{-0.06ex}{\scalebox{2}{$\bullet$}}}}
+\DeclareRobustCommand{\marcasim}{\bolinha{bolinhaSim}\,sim}
+\DeclareRobustCommand{\marcanao}{\bolinha{bolinhaNao}\,não}
+\DeclareRobustCommand{\marcaempate}{\bolinha{bolinhaEmpate}\,empate}
+
+% ── A CAIXA DE DESTAQUE ───────────────────────────────────────────────
+% Para o achado principal de uma seção, uma por seção no máximo. Fio azul
+% à esquerda, fundo da zebra, título em Lato. Quebra entre páginas.
+%   \begin{destaque}[Título opcional] texto \end{destaque}
+\usepackage[most]{tcolorbox}
+\newtcolorbox{destaque}[1][Em uma frase]{%
+  enhanced, breakable,
+  colback=zebraclara, colframe=azul,
+  boxrule=0pt, leftrule=2.5pt, arc=0pt, outer arc=0pt,
+  left=10pt, right=10pt, top=8pt, bottom=8pt,
+  before skip=12pt, after skip=12pt,
+  % ⚠ A cor do título é `coltitle`: um \color antes de \tcbtitle não vale,
+  % porque o tcolorbox reaplica coltitle (branco por padrão) por dentro.
+  title={#1}, detach title, coltitle=azulTexto,
+  before upper={{\lato\bfseries\tcbtitle}\par\smallskip},
+}
+
+\usepackage{needspace}
+\usepackage[hidelinks]{hyperref}
+\setcounter{tocdepth}{2}
+\hypersetup{bookmarksdepth=3, bookmarksnumbered=true, bookmarksopen=false}
+
+\captionsetup{font=small, labelfont=bf}
+\captionsetup[sub]{font=footnotesize}
+
+\graphicspath{{figuras/}{exemplos/}}
+
+% Paginação: altura natural, sem esticar o espaço vertical; sem órfãs nem
+% viúvas; folga mínima de composição em vez de reescrever prosa.
+\raggedbottom
+\widowpenalty=10000
+\clubpenalty=10000
+\emergencystretch=1em
+
+% ── \figwidth: a figura é mais larga que a prosa ──────────────────────
+% A figura vive na medida de 1 cm de margem no papel (19 cm em A4), e não
+% na mancha de 15 cm. Definida pelo papel, e não por número copiado.
+\newlength{\figwidth}
+\setlength{\figwidth}{\dimexpr\paperwidth-2cm\relax}
+
+% \imagemplena[fração]{arquivo}: a imagem centrada sobre a mancha. A caixa
+% de largura declarada impede o transbordo só para a direita e não conta
+% como Overfull \hbox.
+\newcommand{\imagemplena}[2][1]{%
+  \makebox[\linewidth][c]{\includegraphics[width=#1\figwidth]{#2}}}
+
+% tabelaplena: a tabela que não cabe na mancha ganha a medida da figura.
+% Só para tabular (caixa não quebra entre páginas).
+\newsavebox{\tabelacaixa}
+\newenvironment{tabelaplena}
+  {\begin{lrbox}{\tabelacaixa}}
+  {\end{lrbox}\makebox[\linewidth][c]{\usebox{\tabelacaixa}}}
+
+% \subfig[largura]{arquivo}{legenda}: um painel por linha, na medida da figura.
+\newcommand{\subfig}[3][0.62\figwidth]{%
+  \makebox[\linewidth][c]{%
+  \begin{subfigure}[t]{#1}
+    \centering
+    \includegraphics[width=\linewidth]{#2}
+    \caption{#3}
+  \end{subfigure}}\par\medskip}
+% \linhasde{arquivo}: as linhas de uma tabela, escritas por script.
+% ⚠ Não use \input dentro de tabular: ele não é expansível, e o
+% \bottomrule seguinte derruba a compilação com "Misplaced \noalign". O
+% \@@input primitivo é expansível, e o espaço depois de #1 encerra o nome.
+\makeatletter
+\newcommand{\linhasde}[1]{\@@input #1 }
+\makeatother
+% ══════════════════════════════════════════════════════════════════════
+% FIM DO PREÂMBULO DO KIT
+% ══════════════════════════════════════════════════════════════════════
+
+% ── DADOS DA CAPA: preencha por relatório ─────────────────────────────
+\newcommand{\RotuloCapa}{RELATÓRIO ESTATÍSTICO \textperiodcentered\ PROJETO DE PORTFÓLIO}
+\newcommand{\TituloRelatorio}{Kit de Estilo do Portfólio}
+\newcommand{\SubtituloRelatorio}{Modelo de relatório, com uma seção de exemplo sobre dados fictícios}
+\newcommand{\DelimitacaoRelatorio}{Dados, recorte e período do estudo \\ Período: \NumAnoInicial{} a \NumAnoFinal}
+\newcommand{\AutorNome}{Seu Nome}
+\newcommand{\AutorPapel}{Estatístico responsável}
+\newcommand{\AutorLinkedIn}{https://www.linkedin.com/in/seu-perfil/}
+\newcommand{\AutorGitHub}{https://github.com/seu-usuario}
+\newcommand{\LocalCapa}{São Paulo -- SP}
+\newcommand{\DataCapa}{Novembro de 2026}
+
+% ── OS NÚMEROS DO RELATÓRIO: gerados por script, nunca digitados ──────
+% Cada \Num... vem de um arquivo escrito pelo script que calcula o número.
+% Ver GUIA_ESTILO.md, "A regra dos números".
+\input{exemplos/numeros_exemplo.tex}
+
+\title{\TituloRelatorio}
+
+\begin{document}
+
+% ══════════════════════════════ CAPA ══════════════════════════════════
+% Azul como destaque principal e vermelho como secundário. As quatro cores
+% principais da paleta aparecem juntas em um só lugar: os traços ao pé da
+% curva. Nenhum outro elemento da capa usa verde ou roxo.
+\begin{titlepage}
+  \centering
+  \vspace*{0.5cm}
+
+  {\color{tinta}\rule{\linewidth}{1.5pt}} \\[0.4cm]
+  {\small\bfseries\color{tinta2} \RotuloCapa} \\[0.2cm]
+  {\color{tinta}\rule{\linewidth}{0.5pt}}
+
+  \vspace{1.6cm}
+
+  % A curva ecoa a série temporal; ela e os quatro traços cobrem o mesmo vão.
+  \begin{tikzpicture}
+    \draw[line width=1.6pt, azul, smooth]
+      plot coordinates {(0.2,0.35) (1.7,0.62) (3.2,0.48) (4.7,0.95)
+                        (6.2,1.32) (7.7,1.12) (9.2,1.58) (10.7,1.42)};
+    \foreach \x/\c in {0.2/verde, 2.9/vermelho, 5.6/azul, 8.3/roxo}
+      \fill[\c] (\x,-0.28) rectangle ++(2.4,0.07);
+  \end{tikzpicture}
+
+  \vspace{1.2cm}
+
+  \begin{minipage}{0.94\textwidth}
+    \centering
+    {\Huge\bfseries\color{azul} \TituloRelatorio \par}
+    \vspace{0.5cm}
+    {\LARGE\bfseries\color{vermelho} \SubtituloRelatorio \par}
+  \end{minipage}
+
+  \vspace{1.1cm}
+
+  % Dois a quatro ícones, um por eixo do estudo; troque pelos do projeto.
+  % ⚠ Use os nomes sem sufixo `Alt` (\faMapMarker, \faCalendarDay): o
+  % fontawesome5 do MiKTeX não define os `...Alt`.
+  {\Large
+   \textcolor{azul}{\faDatabase}\hspace{1.1cm}
+   \textcolor{vermelho}{\faChartLine}\hspace{1.1cm}
+   \textcolor{azul}{\faCalculator}\hspace{1.1cm}
+   \textcolor{vermelho}{\faCalendarDay}\par}
+
+  \vspace{1.0cm}
+
+  {\large\itshape\color{tinta2} \DelimitacaoRelatorio \par}
+
+  \vspace{2.2cm}
+
+  {\large\bfseries\color{azul} Autoria} \\[0.6cm]
+
+  \begin{minipage}{0.85\textwidth}
+    \centering
+    {\large\bfseries \AutorNome} \\
+    {\normalsize\color{tinta2} \AutorPapel} \\[0.15cm]
+    {\footnotesize
+     \href{\AutorLinkedIn}{\color{vermelho}\textbf{LinkedIn}} \ \textperiodcentered\ \
+     \href{\AutorGitHub}{\color{vermelho}\textbf{GitHub}}}
+  \end{minipage}
+
+  \vfill
+
+  {\color{tinta2}\rule{4cm}{0.5pt}} \\[0.3cm]
+  {\small\color{tinta2} \LocalCapa \\ \bfseries \DataCapa}
+\end{titlepage}
+
+% Em relatório longo, ligue o sumário:
+% \tableofcontents
+% \clearpage
+
+% ══════════════════════════════════════════════════════════════════════
+% SEÇÃO DE EXEMPLO: troque pelo conteúdo do projeto
+% ══════════════════════════════════════════════════════════════════════
+% Todo número abaixo é uma macro \Num... escrita por
+% exemplos/exemplo_figura.py. Nenhum foi digitado.
+\section{A espera caiu onde a triagem mudou}
+
+Esta seção mostra o kit em uso sobre \textbf{dados fictícios}: seis
+unidades de atendimento, com o tempo médio de espera para a primeira
+consulta medido de \NumAnoInicial{} a \NumAnoFinal. Em \NumAnoMudanca, a \NumFoco{} adotou uma
+nova triagem; as outras cinco não mudaram nada.
+
+\begin{destaque}[O achado, em uma frase]
+  A \NumFoco{} passou de \NumEsperaAntes{} para \NumEsperaDepois{} dias de
+  espera entre \NumAnoAntes{} e \NumAnoFinal, uma queda de
+  \NumQuedaFoco\%. No mesmo período, nenhuma das outras unidades variou
+  mais de \NumVarOutrasMax\%.
+\end{destaque}
+
+A Figura~\ref{fig:exemplo} segue as regras do kit: o título afirma o
+achado, a série que importa tem a única cor da figura e as demais ficam no
+neutro, o nome vai na ponta da linha em vez de numa legenda e a fonte dos
+dados fica no rodapé. O eixo começa em zero, e a figura ocupa a medida de
+imagem (\verb|\imagemplena|), mais larga que a linha do texto.
+
+\begin{figure}[H]
+  \centering
+  \imagemplena[0.86]{exemplo_figura}
+  \caption{Tempo médio de espera para a primeira consulta, em dias, nas
+    seis unidades, de \NumAnoInicial{} a \NumAnoFinal. A \NumFoco{} (em vermelho) caiu
+    \NumQuedaFocoExata\% depois da nova triagem; a linha tracejada marca a
+    mudança. Dados fictícios, gerados com semente fixa pelo script de
+    exemplo do kit.}
+  \label{fig:exemplo}
+\end{figure}
+
+A Tabela~\ref{tab:exemplo} traz os mesmos números para quem precisa do
+valor exato. Ela está ordenada pela espera em \NumAnoFinal, e não pelo nome: a
+ordem já responde quem está mais perto da meta de \NumMetaDias{} dias.
+Das \NumUnidades{} unidades, \NumUnidadesNaMeta{} estão dentro dela.
+
+\begin{table}[H]
+  \centering
+  \caption{Espera média antes e depois da mudança, por unidade (dias).
+    A coluna da meta usa a bolinha como reforço do texto, e não no lugar
+    dele. Dados fictícios.}
+  \label{tab:exemplo}
+  \small
+  \begin{tabular}{@{}lrrrl@{}}
+    \toprule
+    Unidade & \NumAnoAntes & \NumAnoFinal & Variação & Meta de \NumMetaDias{} dias \\
+    \midrule
+    \linhasde{exemplos/tabela_exemplo.tex}
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{Limitações.} Os dados são fictícios e a comparação é
+descritiva: uma queda que coincide com a mudança não prova que a mudança a
+causou. Num projeto real, esta é a subseção em que se diz o que a análise
+não autoriza afirmar.
+
+\end{document}

@@ -1,0 +1,30 @@
+# Credenciais: só no .env local, nunca no git. O modelo está em .env.exemplo.
+.env
+
+# Ambiente virtual criado pelo uv; recria-se com `uv sync`.
+.venv/
+
+# Caches do Python, do pytest e do ruff: regenerados a cada execução.
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# Modelo de embeddings baixado pelo fastembed: centenas de MB, baixa sozinho.
+.cache/
+modelos/
+
+# Índice vetorial: derivado do PDF por scripts/02_indexar.py, regenerável.
+indice/
+
+# Auxiliares do pdfLaTeX. O PDF do Relatório de avaliação é versionado.
+relatorio/*.aux
+relatorio/*.log
+relatorio/*.out
+relatorio/*.toc
+relatorio/*.fls
+relatorio/*.fdb_latexmk
+relatorio/*.synctex.gz
+
+# Configuração local do Claude Code.
+.claude/settings.local.json

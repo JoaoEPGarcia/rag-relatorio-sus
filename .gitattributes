@@ -1,0 +1,4 @@
+# Quebra de linha LF no repositório: os scripts rodam também no Linux do Docker e do CI.
+* text=auto eol=lf
+*.pdf binary
+*.png binary

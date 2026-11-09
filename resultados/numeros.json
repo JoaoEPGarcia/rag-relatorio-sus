@@ -1,0 +1,72 @@
+{
+  "corpus_legendas": {
+    "valor": 104,
+    "texto": "104",
+    "descricao": "legendas de figura extraídas",
+    "script": "scripts/01_extrair.py",
+    "formato": "inteiro"
+  },
+  "corpus_paginas": {
+    "valor": 174,
+    "texto": "174",
+    "descricao": "páginas do Relatório-fonte no corpus (sem a capa)",
+    "script": "scripts/01_extrair.py",
+    "formato": "inteiro"
+  },
+  "corpus_palavras": {
+    "valor": 60370,
+    "texto": "60.370",
+    "descricao": "palavras extraídas do Relatório-fonte",
+    "script": "scripts/01_extrair.py",
+    "formato": "inteiro"
+  },
+  "corpus_tabelas": {
+    "valor": 28,
+    "texto": "28",
+    "descricao": "tabelas extraídas (blocos de tabela)",
+    "script": "scripts/01_extrair.py",
+    "formato": "inteiro"
+  },
+  "corpus_trechos": {
+    "valor": 570,
+    "texto": "570",
+    "descricao": "Trechos indexados",
+    "script": "scripts/01_extrair.py",
+    "formato": "inteiro"
+  },
+  "corpus_trechos_legenda": {
+    "valor": 109,
+    "texto": "109",
+    "descricao": "Trechos de legenda de figura",
+    "script": "scripts/01_extrair.py",
+    "formato": "inteiro"
+  },
+  "corpus_trechos_tabela": {
+    "valor": 71,
+    "texto": "71",
+    "descricao": "Trechos de tabela",
+    "script": "scripts/01_extrair.py",
+    "formato": "inteiro"
+  },
+  "corpus_trechos_texto": {
+    "valor": 390,
+    "texto": "390",
+    "descricao": "Trechos de texto corrido",
+    "script": "scripts/01_extrair.py",
+    "formato": "inteiro"
+  },
+  "quebra_alvo": {
+    "valor": 180,
+    "texto": "180",
+    "descricao": "máximo de palavras por Trecho de texto",
+    "script": "scripts/01_extrair.py",
+    "formato": "inteiro"
+  },
+  "quebra_sobreposicao": {
+    "valor": 30,
+    "texto": "30",
+    "descricao": "máximo de palavras repetidas entre Trechos vizinhos",
+    "script": "scripts/01_extrair.py",
+    "formato": "inteiro"
+  }
+}

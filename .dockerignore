@@ -1,0 +1,16 @@
+# A imagem leva só o código, os parâmetros e os Trechos (ver Dockerfile).
+.env
+.venv
+.git
+modelos
+indice
+resultados
+relatorio
+figuras
+avaliacao
+docs
+estilo
+tests
+**/__pycache__
+dados/relatorio_fonte.pdf
+dados/texto_completo.txt

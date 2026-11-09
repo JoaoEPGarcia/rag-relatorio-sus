@@ -1,0 +1,16 @@
+# Uso: copie .env.exemplo para .env, preencha ANTHROPIC_API_KEY e rode
+#   docker compose up --build
+# A API fica em http://localhost:8000 (documentação em /docs).
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file: .env
+    volumes:
+      - modelos:/app/modelos   # modelo de embeddings, baixado na primeira subida
+      - indice:/app/indice     # índice FAISS, construído na primeira subida
+
+volumes:
+  modelos:
+  indice:
