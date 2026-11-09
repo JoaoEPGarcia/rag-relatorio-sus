@@ -4,7 +4,7 @@
 
 1. Acerto da resposta por Condição, com o intervalo de Wilson. Com RAG sai em destaque, e as demais em neutro.
 2. Classes de erro por Tipo de pergunta, na Condição com RAG.
-3. Custo e latência por Pergunta contra o acerto, por Condição, para responder ao "se cabe no contexto, para que RAG?".
+3. Tokens de entrada e latência por Pergunta contra o acerto, por Condição, para responder ao "se cabe no contexto, para que RAG?".
 
 Os números dos títulos e rótulos vêm do registro, por f-string. O script registra cada número que imprime, declarando em que figura ele aparece. A figura segue o `GUIA_ESTILO.md` do kit copiado em `estilo/`:
 

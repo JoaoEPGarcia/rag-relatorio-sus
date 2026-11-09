@@ -212,10 +212,10 @@ _achar() {  # _achar nome caminho-windows-padrão
 
 run_wizard() {
 
-TOTAL_STAGES=5
+TOTAL_STAGES=6
 cd "$(dirname "$0")/.."
 
-banner "rag-relatorio-sus: chave do modelo e Docker Desktop"
+banner "rag-relatorio-sus: chave do modelo, créditos do Google AI Pro e Docker Desktop"
 
 # ── 1 ────────────────────────────────────────────────────────────────────
 stage "Escolher o provedor do modelo"
@@ -223,47 +223,94 @@ if [[ ! -f "$ENV_FILE" ]]; then
   (umask 077 && cp .env.exemplo "$ENV_FILE")
   say "Criei o .env a partir do .env.exemplo (o .env fica fora do git)."
 fi
-say "anthropic: API paga da Anthropic. É ela que gera os números publicados."
-say "ollama:    modelo local, sem custo. Serve para usar o assistente, não para publicar números."
+say "gemini: API do Google (Google AI Studio). É ela que gera os números publicados."
+say "        Roda no plano gratuito ou com os créditos mensais do seu Google AI Pro (etapa 3)."
+say "ollama: modelo local, sem custo. Serve para usar o assistente, não para publicar números."
 PROVEDOR=""
-while [[ "$PROVEDOR" != "anthropic" && "$PROVEDOR" != "ollama" ]]; do
-  ask PROVEDOR "Provedor (anthropic ou ollama):"
+while [[ "$PROVEDOR" != "gemini" && "$PROVEDOR" != "ollama" ]]; do
+  ask PROVEDOR "Provedor (gemini ou ollama):"
 done
 write_env PROVEDOR "$PROVEDOR"
 pause "Enter para continuar"
 
 # ── 2 ────────────────────────────────────────────────────────────────────
-stage "Anthropic: chave da API"
-if [[ "$PROVEDOR" != "anthropic" ]]; then
+stage "Gemini: chave da API"
+if [[ "$PROVEDOR" != "gemini" ]]; then
   note "Pulado: o provedor escolhido é ollama."
   pause "Enter para continuar"
 else
-  say "Primeiro, confira se a conta tem créditos: sem eles, as chamadas falham."
-  open_url "https://platform.claude.com/settings/keys"
-  step "Entre com a sua conta, se for pedido."
-  step "No menu da esquerda, abra Billing e confira se há créditos. Se não houver, compre um valor pequeno."
-  step "Volte em Settings → API Keys e clique em Create Key."
-  step "Dê um nome (ex.: rag-relatorio-sus) e confirme."
-  step "Copie a chave (começa com sk-ant-). Ela só aparece uma vez."
-  ANTHROPIC_API_KEY=""
-  while [[ -z "$ANTHROPIC_API_KEY" ]]; do
-    ask_secret ANTHROPIC_API_KEY "Cole a chave (não aparece na tela):"
+  say "Use a MESMA conta Google do seu Google AI Pro: é nela que os créditos da etapa 3 caem."
+  say "Criar a chave não cobra nada e não pede cartão."
+  open_url "https://aistudio.google.com/apikey"
+  step "Entre com a conta Google do AI Pro e aceite os termos do AI Studio, se for pedido."
+  step "Clique em Create API key (Criar chave de API) e escolha ou crie um projeto."
+  step "Copie a chave (começa com AIza)."
+  GEMINI_API_KEY=""
+  while [[ -z "$GEMINI_API_KEY" ]]; do
+    ask_secret GEMINI_API_KEY "Cole a chave (não aparece na tela):"
   done
-  write_env ANTHROPIC_API_KEY "$ANTHROPIC_API_KEY"
-  say "Conferindo a chave com a lista de modelos (não tem custo)..."
-  if ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY" uv run --no-sync python scripts/conferir_chave.py >/dev/null 2>&1; then
-    printf '  %s✓ chave válida, e o claude-opus-5-5 está disponível%s\n' "$GREEN" "$RESET"
+  write_env GEMINI_API_KEY "$GEMINI_API_KEY"
+  say "Conferindo a chave com a lista de modelos (não gasta cota)..."
+  if GEMINI_API_KEY="$GEMINI_API_KEY" uv run --no-sync python scripts/conferir_chave.py >/dev/null 2>&1; then
+    printf '  %s✓ chave válida, e o gemini-3.8-flash está disponível%s\n' "$GREEN" "$RESET"
   else
-    warn "A chave não passou na conferência (chave errada, sem créditos ou sem acesso ao claude-opus-5-5)."
-    SKIPPED+=("conferir a chave da Anthropic: rode o wizard de novo e cole outra chave")
+    warn "A chave não passou na conferência (chave errada ou sem acesso ao gemini-3.8-flash)."
+    SKIPPED+=("conferir a chave do Gemini: rode o wizard de novo e cole outra chave")
   fi
   pause "Enter para continuar"
 fi
 
 # ── 3 ────────────────────────────────────────────────────────────────────
+stage "Google AI Pro: créditos do Google Cloud para a API (opcional)"
+if [[ "$PROVEDOR" != "gemini" ]]; then
+  note "Pulado: o provedor escolhido é ollama."
+  pause "Enter para continuar"
+else
+  say "O que o Google AI Pro dá, e o que não dá, para este projeto:"
+  note "  • Os limites maiores do AI Pro valem só dentro do site do AI Studio (Playground e Build)."
+  note "    A chave de API, que é o que o projeto usa, não ganha limite maior por causa do AI Pro."
+  note "  • Para a API, o AI Pro dá créditos mensais do Google Cloud, pelo Google Developer Program."
+  note "    Para usá-los, o projeto do AI Studio precisa de faturamento, e o Google pede um"
+  note "    pré-pagamento mínimo de US\$ 5. Os créditos são gastos antes desse saldo."
+  note "  • Com pré-pago e recarga automática desligada, o máximo que sai do seu bolso é o que você"
+  note "    pré-pagou. Quando o saldo zera, a API para (erro 402) e a avaliação para junto."
+  note "  • Com faturamento, o projeto sai do plano gratuito e passa ao Tier 1, com cota maior (veja no"
+  note "    AI Studio), e o Google deixa de usar os seus prompts para melhorar os produtos dele."
+  say "Sem esta etapa, tudo roda no plano gratuito, de graça, só que mais devagar (a cota diária é menor)."
+  if confirm "Usar os créditos do Google AI Pro (exige pré-pagar no mínimo US\$ 5)?"; then
+    say "Parte 1: vincular o AI Pro ao Google Developer Program."
+    open_url "https://developers.google.com/program"
+    step "Entre com a MESMA conta Google do AI Pro e clique em Join the program (Participar do programa)."
+    step "No seu perfil do programa, vincule o plano Google AI Pro (Link your Google AI Pro plan)."
+    step "Siga o pedido para resgatar os créditos mensais do Google Cloud, se aparecer."
+    pause "Enter quando o AI Pro estiver vinculado"
+    say "Parte 2: ligar o faturamento pré-pago no projeto da chave."
+    open_url "https://aistudio.google.com/apikey"
+    step "Na linha do projeto da sua chave, clique em Set up billing (Configurar faturamento)."
+    step "Crie ou escolha uma conta de faturamento, na mesma conta Google."
+    step "Escolha Prepay (pré-pago), NÃO Postpay (pós-pago), e adicione o mínimo de US\$ 5."
+    step "Deixe a recarga automática (auto-reload) DESLIGADA."
+    step "Na página Spend do projeto, em Monthly spend cap → Edit spend cap, defina um teto mensal baixo."
+    step "Confira na conta de faturamento se os créditos do Developer Program aparecem."
+    if confirm "Ficou em Prepay, com a recarga automática desligada?"; then
+      write_env GEMINI_PLANO "creditos-ai-pro"
+      printf '  %s✓ projeto pago com os créditos do AI Pro; teto de gasto = o saldo pré-pago%s\n' "$GREEN" "$RESET"
+    else
+      warn "Sem Prepay e sem a recarga desligada, o gasto não tem teto. Deixei o plano como gratuito."
+      write_env GEMINI_PLANO "gratuito"
+      SKIPPED+=("faturamento do Gemini: trocar para Prepay sem recarga automática e rodar o wizard de novo")
+    fi
+  else
+    write_env GEMINI_PLANO "gratuito"
+    note "Fica no plano gratuito. Para mudar depois, rode o wizard de novo."
+  fi
+  pause "Enter para continuar"
+fi
+
+# ── 4 ────────────────────────────────────────────────────────────────────
 stage "Ollama: instalar e baixar o modelo"
 if [[ "$PROVEDOR" != "ollama" ]]; then
-  note "Pulado: o provedor escolhido é anthropic."
+  note "Pulado: o provedor escolhido é gemini."
   pause "Enter para continuar"
 else
   OLLAMA_BIN=$(_achar ollama "${LOCALAPPDATA:-}/Programs/Ollama/ollama.exe" || true)
@@ -294,7 +341,7 @@ else
   pause "Enter para continuar"
 fi
 
-# ── 4 ────────────────────────────────────────────────────────────────────
+# ── 5 ────────────────────────────────────────────────────────────────────
 stage "Docker Desktop"
 DOCKER_BIN=$(_achar docker "/c/Program Files/Docker/Docker/resources/bin/docker.exe" || true)
 if [[ -z "$DOCKER_BIN" ]]; then
@@ -324,7 +371,7 @@ else
 fi
 pause "Enter para continuar"
 
-# ── 5 ────────────────────────────────────────────────────────────────────
+# ── 6 ────────────────────────────────────────────────────────────────────
 stage "Teste final: a API no contêiner (opcional)"
 if [[ -z "$DOCKER_BIN" ]]; then
   note "Pulado: o Docker não está pronto."

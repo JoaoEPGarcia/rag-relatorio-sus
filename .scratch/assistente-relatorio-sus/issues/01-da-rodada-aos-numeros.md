@@ -7,11 +7,11 @@
 - compara com RAG × sem RAG (comparação principal) e com RAG × contexto completo: tabela 2×2, McNemar exato e Newcombe;
 - cruza as Classes de erro com o Tipo de pergunta;
 - calcula a concordância com cada repetição que existir;
-- registra custo, latência e fallbacks.
+- registra tokens, latência e fallbacks.
 
 O número de destaque é o Acerto da resposta com RAG nas 50 respondíveis, com os limites do IC, contra o mesmo acerto sem RAG. É a seam de teste nova, aprovada na spec, escrita com TDD.
 
-Inclui um gerador de Rodadas sintéticas de demonstração, que grava numa raiz temporária (variável de ambiente da raiz do projeto) e nunca no registro real. Os tickets 02, 03 e 05 o usam para verificação sem custo.
+Inclui um gerador de Rodadas sintéticas de demonstração, que grava numa raiz temporária (variável de ambiente da raiz do projeto) e nunca no registro real. Os tickets 02, 03 e 05 o usam para verificação sem chamar o modelo.
 
 **Blocked by:** None (can start immediately)
 

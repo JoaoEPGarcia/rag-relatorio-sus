@@ -1,4 +1,4 @@
-# Uso: copie .env.exemplo para .env, preencha ANTHROPIC_API_KEY e rode
+# Uso: copie .env.exemplo para .env, preencha GEMINI_API_KEY e rode
 #   docker compose up --build
 # A API fica em http://localhost:8000 (documentação em /docs).
 services:

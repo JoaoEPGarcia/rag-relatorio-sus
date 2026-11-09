@@ -3,7 +3,7 @@
 **What to build:** quem chega ao repositório lê em "Principais resultados" afirmações com número, cada uma vinda do registro por marcador. São elas:
 
 - o número de destaque, com IC, contra o acerto sem RAG;
-- a comparação com o contexto completo, com custo e latência;
+- a comparação com o contexto completo, com tokens de entrada e latência;
 - a abstenção nas Perguntas sem resposta;
 - a Classe de erro mais frequente.
 

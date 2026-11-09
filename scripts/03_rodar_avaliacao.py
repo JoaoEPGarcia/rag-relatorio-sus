@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
-"""Passo 3: roda uma Rodada de avaliação (chama a API da Anthropic, tem custo).
+"""Passo 3: roda uma Rodada de avaliação (chama o Gemini, gasta cota ou créditos).
 
 POR QUE ISTO EXISTE. Passa as Perguntas por cada Condição e grava uma linha
 por Pergunta em resultados/rodadas/<rodada>/<condicao>.jsonl. A Rodada é
-retomável: rodar de novo continua de onde parou.
+retomável: rodar de novo continua de onde parou. Se a cota diária acabar, ou
+o saldo pré-pago (créditos do Google AI Pro) zerar no meio, o script para e
+avisa; o mesmo comando continua dali quando a cota renovar (ADR 0005).
 
 - desenvolvimento: Perguntas de desenvolvimento, sem travas, nunca publicada.
 - principal: o Gabarito revisado, com os parâmetros congelados (ADR 0002).
@@ -20,6 +22,7 @@ Uso:
 
 import argparse
 import json
+import os
 import sys
 
 from rag_sus import config
@@ -29,7 +32,7 @@ from rag_sus.avaliacao.juiz import Juiz
 from rag_sus.avaliacao.rodada import executar_rodada, gravar_folha_de_revisao
 from rag_sus.avaliacao.travas import RODADAS, commit_atual, status_git, verificar_congelamento
 from rag_sus.busca import E5Embutidor, IndiceDeTrechos
-from rag_sus.provedores import provedor_do_ambiente
+from rag_sus.provedores import CotaDiariaEsgotada, CotaEsgotada, provedor_do_ambiente
 
 FOLHA = config.AVALIACAO / "revisao_veredictos.csv"
 
@@ -58,6 +61,11 @@ def main() -> int:
     print(f"Rodada {args.rodada}: {len(itens)} Perguntas x {len(condicoes)} Condições "
           f"= até {len(itens) * len(condicoes)} chamadas ao respondedor ({p.modelo_respondedor}), "
           f"mais as do Juiz. Retoma o que já está em {pasta}.")
+    if os.environ.get("PROVEDOR", "gemini") == "gemini":
+        plano = os.environ.get("GEMINI_PLANO", "gratuito")
+        print(f"Plano do Gemini: {plano}"
+              + (" (gasta os créditos do Google AI Pro; o teto é o saldo pré-pago)."
+                 if plano == "creditos-ai-pro" else " (sem custo; para se a cota diária acabar)."))
     if not args.confirmar:
         print("Nada foi chamado. Rode de novo com --confirmar para executar.")
         return 0
@@ -77,13 +85,19 @@ def main() -> int:
 
     def progresso(linha: dict) -> None:
         marca = {True: "certo", False: "errado", None: "juiz"}[linha["acerto_regra"]]
-        print(f"  {linha['condicao']:18} {linha['id']:5} {marca:6} US$ {linha['custo_usd'] or 0:.4f}")
+        print(f"  {linha['condicao']:18} {linha['id']:5} {marca:6} {linha['tokens_entrada']:>7} tokens")
 
     rodadas = []
     for condicao in condicoes:
         destino = pasta / f"{condicao}.jsonl"
         print(f"Condição {condicao} -> {destino}")
-        executar_rodada(itens, condicao, assistente, juiz, destino, ao_responder=progresso)
+        try:
+            executar_rodada(itens, condicao, assistente, juiz, destino, ao_responder=progresso)
+        except CotaEsgotada as erro:
+            print(f"Parado: {erro}.")
+            quando = "amanhã" if isinstance(erro, CotaDiariaEsgotada) else "quando houver saldo"
+            print(f"O que já foi respondido está salvo. Rode o mesmo comando {quando} para continuar.")
+            return 3
         rodadas.append(destino)
 
     if args.rodada == "principal":

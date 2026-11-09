@@ -4,7 +4,7 @@
 
 - cópia do `modelo_relatorio.tex` do kit, sem editar o bloco do preâmbulo;
 - capa azul e vermelha com João Eduardo Pastori Garcia, estatístico responsável, LinkedIn `joao-eduardo-garcia` e GitHub `JoaoEPGarcia`;
-- seções: problema; pipeline; desenho da avaliação (Gabarito e Revisão, Condições, medidas, pré-registro); resultados com intervalos; comparação pareada; erros por Tipo de pergunta; custo e latência; variabilidade entre Rodadas; limitações.
+- seções: problema; pipeline; desenho da avaliação (Gabarito e Revisão, Condições, medidas, pré-registro); resultados com intervalos; comparação pareada; erros por Tipo de pergunta; tokens e latência; variabilidade entre Rodadas; limitações.
 
 Regras de composição:
 

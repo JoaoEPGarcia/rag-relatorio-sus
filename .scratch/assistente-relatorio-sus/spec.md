@@ -33,7 +33,7 @@ O número de destaque (README e frase de currículo) é o Acerto da resposta nas
 
 - a extração e a quebra em Trechos (570 Trechos);
 - o índice de busca exata;
-- as três Condições do assistente e os provedores Anthropic e Ollama;
+- as três Condições do assistente e os provedores Gemini (plano gratuito) e Ollama;
 - o Juiz;
 - a execução retomável de uma Rodada, a folha de Revisão dos Veredictos e a consolidação;
 - a estatística e a análise;
@@ -68,7 +68,7 @@ Falta:
 9. Como desenvolvedor, quero subir a API com um único `docker compose up`, para não montar ambiente Python à mão.
 10. Como desenvolvedor, quero que a imagem Docker não carregue o modelo de embeddings de 2,24 GB, e que ele seja baixado uma vez para um volume, para que a imagem seja leve e o modelo não seja baixado a cada build.
 11. Como desenvolvedor, quero que uma falha do modelo vire um erro 502 sem detalhes internos, para que a API nunca vaze credenciais ou mensagens do provedor.
-12. Como pessoa que não quer pagar a API, quero trocar o provedor para um modelo local via Ollama por uma variável do `.env`, para usar o assistente sem custo, sabendo que os números publicados não vêm desse modo.
+12. Como pessoa que não quer pagar API além do Google AI Pro que já assina, quero que o projeto rode no plano gratuito do Gemini ou com os créditos mensais do AI Pro, com o gasto limitado ao saldo pré-pago, e que eu possa trocar para um modelo local via Ollama por uma variável do `.env`, sabendo que os números publicados não vêm do Ollama (ADR 0005).
 
 ### Quem avalia o projeto (recrutador, entrevistador técnico)
 
@@ -95,7 +95,7 @@ Falta:
 30. Como autor, quero uma conferência mecânica do Gabarito contra o texto extraído (formato, páginas, valores presentes na página), para pegar erro grosseiro antes de abrir o PDF.
 31. Como autor, quero ajustar o número de Trechos, o tamanho do Trecho e os prompts só com Perguntas de desenvolvimento, para não contaminar a prova.
 32. Como autor, quero que a Rodada principal se recuse a rodar enquanto os parâmetros não estiverem congelados e commitados, para que o congelamento fique no histórico.
-33. Como autor, quero ver quantas chamadas uma Rodada fará antes de pagar, e só pagar com uma confirmação explícita, para controlar o custo.
+33. Como autor, quero ver quantas chamadas uma Rodada fará antes de gastar a cota do plano gratuito, só chamar o modelo com uma confirmação explícita e, se a cota diária acabar, continuar no dia seguinte de onde parou.
 34. Como autor, quero que uma Rodada interrompida continue de onde parou, para não pagar de novo por respostas já obtidas.
 35. Como autor, quero que respostas numéricas certas sejam pontuadas por regra, sem Juiz, para gastar menos e não depender de modelo no caso fácil.
 36. Como autor, quero que respostas numéricas reprovadas pela regra também passem pelo Juiz e pela minha Revisão, para que um falso negativo da regra (como "−0,62" contra "0,62 para baixo") não vire erro injusto.
@@ -148,11 +148,11 @@ Falta:
   - Contexto completo: o texto inteiro, página por página, vai no prompt de sistema, com cache de prompt.
   - Os prompts não mencionam nenhum fato do Relatório-fonte, porque isso vazaria a resposta na Condição sem RAG.
 - **Provedores**: interface única que recebe sistema, mensagem e esquema JSON e devolve dados e metadados.
-  - Anthropic:
-    - Claude Opus 5.5, esforço explícito e saída estruturada por `output_config.format`;
-    - fallback do servidor no modo "default", e a recusa vira exceção;
-    - `max_tokens` estourado vira erro.
-  - Metadados: modelo que respondeu, fallback, tokens (inclusive de cache), latência, id da requisição e custo estimado pela tabela de preços.
+  - Gemini (ADR 0005):
+    - Gemini 3.8 Flash no plano gratuito, pela API REST, com nível de raciocínio explícito e saída estruturada por `responseJsonSchema`;
+    - o bloqueio de segurança vira exceção, e `maxOutputTokens` estourado vira erro;
+    - o erro 429 de cota por minuto espera o tempo indicado pela API e tenta de novo; o de cota diária vira `CotaDiariaEsgotada`, e o 402 de saldo pré-pago zerado vira `SaldoEsgotado`.
+  - Metadados: modelo que respondeu, tokens (inclusive os lidos do cache implícito), latência e id da requisição. O custo em dólar é zero, e o custo de cada Condição é medido em tokens de entrada.
   - Ollama: alternativa sem números publicados.
   - A escolha do provedor é feita pelo `.env`.
 - **Juiz**: compara a resposta com o Gabarito pelo conteúdo, com os mesmos números quando houver, e ignora as páginas. Saída estruturada com Veredicto e justificativa curta. Abstenção conta como erro.
@@ -190,7 +190,7 @@ Falta:
   - imagem com o código e os Trechos;
   - modelo de embeddings e índice em volumes nomeados, criados na primeira subida;
   - o CI roda ruff, pytest sem os testes lentos e o build da imagem.
-- **Parâmetros atuais** (rascunho, não congelados): alvo de 180 palavras, sobreposição de 30, k de 6; respondedor e Juiz em Opus 5.5 com esforço `medium`; 2 repetições.
+- **Parâmetros atuais** (rascunho, não congelados): alvo de 180 palavras, sobreposição de 30, k de 6; respondedor e Juiz em Gemini 3.8 Flash com raciocínio `medium`; 2 repetições.
 
 ### A implementar
 
@@ -203,19 +203,19 @@ Falta:
   - Registra também:
     - o número de destaque: Acerto da resposta com RAG nas 50 respondíveis, com os limites do IC, e o mesmo acerto sem RAG;
     - os n de cada grupo, o número de Veredictos revisados e quantos o autor mudou em relação ao Juiz;
-    - os fallbacks e o custo total.
+    - os fallbacks e os tokens totais.
   - O script de análise é uma casca fina sobre essa função.
 - **Figuras** (kit `estilo_portfolio.py`, regras do `GUIA_ESTILO.md` e checklist da skill chartosaur-viz):
   - Acerto da resposta por Condição, com o IC de Wilson: com RAG em destaque e as demais em neutro.
   - Classes de erro por Tipo de pergunta na Condição com RAG.
-  - Custo e latência por Pergunta contra o acerto, por Condição.
+  - Tokens de entrada e latência por Pergunta contra o acerto, por Condição.
   - Cada título afirma o achado com número tirado do registro por f-string, com a fonte no rodapé.
   - O script registra os números que imprime, declarando onde aparecem.
   - O validador do kit precisa passar.
 - **Relatório de avaliação**:
   - cópia de `modelo_relatorio.tex`, sem editar o preâmbulo do kit;
   - capa com os dados do autor (João Eduardo Pastori Garcia, LinkedIn `joao-eduardo-garcia`, GitHub `JoaoEPGarcia`);
-  - seções: problema, pipeline, desenho da avaliação (Gabarito, Revisão, Condições, medidas, pré-registro), resultados com intervalos, comparação pareada, erros por tipo, custo e latência, variabilidade entre Rodadas, limitações;
+  - seções: problema, pipeline, desenho da avaliação (Gabarito, Revisão, Condições, medidas, pré-registro), resultados com intervalos, comparação pareada, erros por tipo, tokens e latência, variabilidade entre Rodadas, limitações;
   - uma caixa de destaque por seção, no máximo;
   - todos os números por macro;
   - compilação com pdfLaTeX, PDF versionado.
@@ -229,8 +229,8 @@ Falta:
   - conferência mecânica do Gabarito.
 - **README**: a seção "Principais resultados" passa a usar marcadores do registro, com cada resultado escrito como afirmação com número, inclusive o achado nulo, se houver. A seção "In English" ganha os mesmos números com ponto decimal, também por marcador. Isso exige formato em inglês no registro, ou um segundo texto por chave.
 - **Operação das Rodadas** (passos que dependem do autor, nesta ordem):
-  1. o autor grava a chave da API no `.env`;
-  2. Rodada de desenvolvimento com as Perguntas de desenvolvimento, de custo baixo, mostrando o custo medido;
+  1. o autor grava a chave gratuita do Gemini no `.env`;
+  2. Rodada de desenvolvimento com as Perguntas de desenvolvimento, mostrando os tokens e a latência medidos e quantas chamadas cabem na cota diária;
   3. ajuste dos parâmetros só com elas, e congelamento por commit;
   4. o autor revisa o Gabarito;
   5. Rodada principal nas três Condições;
@@ -241,7 +241,7 @@ Falta:
 
 ## Testing Decisions
 
-- **O que é um bom teste aqui**: ele exercita o comportamento externo pela interface pública do módulo, com entradas pequenas e legíveis, e falha por um motivo que se explica em uma frase. Ele não depende de detalhes internos (nomes de funções privadas, ordem de chamadas), nem de rede, nem da API paga, nem do modelo de 2,24 GB. Os dados de teste parecem os reais: frases que começam com maiúscula e tabelas com a forma das do Relatório-fonte.
+- **O que é um bom teste aqui**: ele exercita o comportamento externo pela interface pública do módulo, com entradas pequenas e legíveis, e falha por um motivo que se explica em uma frase. Ele não depende de detalhes internos (nomes de funções privadas, ordem de chamadas), nem de rede, nem da API do modelo, nem do modelo de 2,24 GB. Os dados de teste parecem os reais: frases que começam com maiúscula e tabelas com a forma das do Relatório-fonte.
 - **Seam nova aprovada: "da Rodada aos números"**. Testada com Rodadas sintéticas (JSONL) e folha de Revisão gravadas numa pasta temporária, nunca em `resultados/`. Os testes verificam:
   - os números registrados para cada Condição: acerto, limites do IC e n;
   - a comparação pareada;
@@ -262,7 +262,7 @@ Falta:
 - **Sem teste de unidade, com outra verificação**:
   - as figuras, pelo validador do kit, pelo checklist chartosaur-viz e pelos números registrados pelo script;
   - o LaTeX, pela compilação e pelo conferidor de números;
-  - a API da Anthropic de verdade, só na Rodada de desenvolvimento, que tem custo.
+  - a API do Gemini de verdade, pela conferência da chave (que não gasta cota) e pela Rodada de desenvolvimento.
 - **TDD**: os módulos de quebra, busca e avaliação (inclusive a seam nova) são escritos com o teste antes do código.
 
 ## Out of Scope
@@ -270,7 +270,8 @@ Falta:
 - Ler os valores que só existem dentro das imagens de gráfico (visão computacional ou OCR). As Perguntas que dependem deles ficam fora do Gabarito, e isso é declarado nas limitações.
 - Busca híbrida (vetorial + BM25), reranqueamento e ajuste fino de modelo: possíveis extensões, não nesta versão.
 - Interface web e deploy público da API.
-- Números publicados a partir do Ollama ou de outro provedor que não a Anthropic.
+- Números publicados a partir do Ollama ou de outro provedor que não o Gemini.
+- Gasto além dos créditos do Google AI Pro: o faturamento, se ligado, é Prepay sem recarga automática (ADR 0005).
 - Outros documentos além do Relatório-fonte.
 - Um "acerto geral" sobre as 60 Perguntas como número de destaque.
 - Tornar o repositório público, que é feito pelo autor no passo de publicação.
@@ -278,10 +279,10 @@ Falta:
 ## Further Notes
 
 - **Publicação**: o repositório `JoaoEPGarcia/rag-relatorio-sus` já existe no GitHub, privado, e os commits já foram enviados. No passo de publicação do plano do autor, o comando passa a ser `gh repo edit JoaoEPGarcia/rag-relatorio-sus --visibility public --accept-visibility-change-consequences`, e não `gh repo create`.
-- **Chave e Docker**: o `ANTHROPIC_API_KEY` ainda não está no `.env`, e o Docker Desktop não está instalado. As duas coisas são passos manuais do autor, no roteiro do wizard.
+- **Chave e Docker**: o `GEMINI_API_KEY` ainda não está no `.env`, e o Docker Desktop não está instalado. As duas coisas são passos manuais do autor, no roteiro do wizard.
 - **Pontos de atenção da proposta do Gabarito** (para a Revisão):
   - 16 linhas trazem "ATENÇÃO" e 5 trazem "CONFERIR" (outras páginas com os mesmos valores);
   - a G43 depende de uma inconsistência do próprio relatório (η² = 0,43 no texto, 0,44 na tabela);
   - a G40 repete o 0,44% do Médio Porte cobrado na G10.
 - **Frase de currículo** (passo de levar ao currículo): "Construí assistente com RAG (embeddings, banco vetorial, API em FastAPI e Docker) sobre relatório de 175 páginas e o avaliei com 60 perguntas: X% de acerto nas 50 respondíveis (IC 95%: a–b), contra Y% sem RAG". X, a, b e Y saem do registro de números.
-- **Custo**: sem `temperature` disponível nos modelos atuais, duas Rodadas iguais podem diferir. Por isso há as repetições, rotuladas como "Veredictos não revisados".
+- **Variabilidade**: o projeto não fixa `temperature`, então duas Rodadas iguais podem diferir. Por isso há as repetições, rotuladas como "Veredictos não revisados".

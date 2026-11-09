@@ -8,7 +8,7 @@ Um assistente que responde perguntas sobre um relatório de pesquisa em saúde p
 | **Avaliação** | Perguntas com resposta e página conferidas pelo autor no PDF, em cinco Tipos (número na prosa, em tabela e em legenda, conceito e síntese entre páginas), mais Perguntas sem resposta no relatório |
 | **Métodos** | intervalo de Wilson para cada taxa; teste exato de McNemar e intervalo de Newcombe para a diferença pareada entre Condições; Classes de erro derivadas das medidas; parâmetros congelados antes da Rodada principal |
 | **Entrega** | API em FastAPI com Docker, e um Relatório de avaliação em LaTeX para público técnico |
-| **Ferramentas** | Python (pdfplumber, fastembed, FAISS, FastAPI, SDK da Anthropic, SciPy, matplotlib), pytest e LaTeX |
+| **Ferramentas** | Python (pdfplumber, fastembed, FAISS, FastAPI, API do Gemini, SciPy, matplotlib), pytest e LaTeX |
 
 ## Principais resultados
 
@@ -20,7 +20,7 @@ A Rodada principal ainda não foi feita: o Gabarito está em Revisão. Esta seç
 1. **Extração e quebra.** O texto sai do PDF página a página, com tabelas e legendas separadas do texto corrido, e é quebrado em Trechos que nunca atravessam a página. Cada Trecho guarda a página impressa no rodapé, que é a que se cita.
 2. **Busca.** Os Trechos viram vetores com o modelo `multilingual-e5-large`, e a busca é exata (FAISS `IndexFlatIP`): a mesma Pergunta recupera sempre os mesmos Trechos ([ADR](docs/adr/0001-faiss-com-busca-exata.md)).
 3. **Gabarito.** As Perguntas foram propostas a partir do texto e conferidas uma a uma pelo autor no PDF. O script de avaliação recusa rodar se alguma linha estiver sem Revisão.
-4. **Condições.** O mesmo modelo (`claude-opus-5-5`) responde às mesmas Perguntas com os Trechos recuperados (com RAG), sem nada do relatório (sem RAG) e com o texto inteiro no prompt (contexto completo).
+4. **Condições.** O mesmo modelo (`gemini-3.8-flash`, pelo Google AI Studio) responde às mesmas Perguntas com os Trechos recuperados (com RAG), sem nada do relatório (sem RAG) e com o texto inteiro no prompt (contexto completo).
 5. **Veredicto.** As respostas numéricas são conferidas por regra; as descritivas, por um Juiz (modelo de linguagem), e todo Veredicto do Juiz passa pela Revisão do autor antes de valer.
 6. **Pré-registro.** O número de Trechos recuperados, o tamanho do Trecho, o modelo e os prompts foram ajustados só com Perguntas de desenvolvimento e congelados por commit antes da Rodada principal ([ADR](docs/adr/0002-parametros-congelados-antes-da-rodada-principal.md)).
 
@@ -40,7 +40,7 @@ A Rodada principal ainda não foi feita: o Gabarito está em Revisão. Esta seç
 ## Como reproduzir
 
 1. Instale o [uv](https://docs.astral.sh/uv/) e as dependências: `uv sync --all-groups`.
-2. Configure a máquina com o roteiro guiado `bash scripts/configurar_maquina.sh`. Ele cria a chave da API da Anthropic (ou instala o Ollama e baixa o modelo), grava no `.env`, instala o Docker Desktop e testa a API no contêiner. O `.env` não vai para o git.
+2. Configure a máquina com o roteiro guiado `bash scripts/configurar_maquina.sh`. Ele cria a chave do Gemini, liga (se você quiser) os créditos do Google AI Pro (ou instala o Ollama e baixa o modelo), grava no `.env`, instala o Docker Desktop e testa a API no contêiner. O `.env` não vai para o git.
 3. Rode o pipeline:
    ```
    uv run python scripts/01_extrair.py
@@ -51,7 +51,7 @@ A Rodada principal ainda não foi feita: o Gabarito está em Revisão. Esta seç
    uv run python scripts/06_gerar_documentos.py
    uv run python scripts/conferir_numeros.py
    ```
-   O passo `03` chama a API da Anthropic e tem custo; sem `--confirmar`, ele só mostra quantas chamadas faria. As Rodadas já feitas estão versionadas em `resultados/rodadas/`, e os passos `04` a `06` refazem a análise a partir delas, sem custo.
+   O passo `03` chama o Gemini e gasta a cota diária (ou os créditos do Google AI Pro, se o projeto for pré-pago); sem `--confirmar`, ele só mostra quantas chamadas faria. Se a cota ou o saldo acabar no meio, ele para, e o mesmo comando continua de onde parou no dia seguinte. As Rodadas já feitas estão versionadas em `resultados/rodadas/`, e os passos `04` a `06` refazem a análise a partir delas, sem chamar o modelo.
 4. Para subir a API: `docker compose up --build` e abra `http://localhost:8000/docs`. Na primeira subida, o contêiner baixa o modelo de embeddings e constrói o índice.
 5. Testes: `uv run pytest`.
 

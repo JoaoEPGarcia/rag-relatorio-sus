@@ -27,6 +27,7 @@ def resumir(linhas: list[dict]) -> dict:
     recuperacao = [l["acerto_recuperacao"] for l in respondiveis if l["acerto_recuperacao"] is not None]
     custos = [(l["custo_usd"] or 0.0) for l in linhas if l["custo_usd"] is not None]
     latencias = [l["latencia_s"] for l in linhas if l["latencia_s"] is not None]
+    tokens = [l["tokens_entrada"] for l in linhas if l.get("tokens_entrada") is not None]
     return {
         "n_respondiveis": len(respondiveis),
         "n_sem_resposta": len(sem_resposta),
@@ -37,6 +38,8 @@ def resumir(linhas: list[dict]) -> dict:
         "abstencao_correta": _wilson_de([l["acerto_resposta"] for l in sem_resposta]),
         "erros": dict(Counter(l["classe_erro"] for l in linhas if l["classe_erro"])),
         "custo_medio_usd": statistics.fmean(custos) if custos else None,
+        # Sem fatura no plano gratuito, o custo de cada Condição é medido em tokens de entrada.
+        "tokens_entrada_medio": statistics.fmean(tokens) if tokens else None,
         "latencia_mediana_s": statistics.median(latencias) if latencias else None,
         "n_fallback": sum(bool(l.get("usou_fallback")) for l in linhas),
     }

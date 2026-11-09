@@ -21,13 +21,15 @@ modelo_embeddings = "intfloat/multilingual-e5-large"
 # Número de Trechos recuperados por Pergunta na Condição com RAG.
 k = 6
 
+# Gemini no plano gratuito do Google AI Studio (ADR 0005). O esforço vira o
+# nível de raciocínio (thinkingLevel): low, medium ou high.
 [respondedor]
-modelo = "claude-opus-5-5"
+modelo = "gemini-3.8-flash"
 esforco = "medium"
 max_tokens = 16000
 
 [juiz]
-modelo = "claude-opus-5-5"
+modelo = "gemini-3.8-flash"
 esforco = "medium"
 max_tokens = 4000
 
