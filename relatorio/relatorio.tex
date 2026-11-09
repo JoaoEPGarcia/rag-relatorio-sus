@@ -1,0 +1,825 @@
+% ══════════════════════════════════════════════════════════════════════
+% RELATÓRIO DE AVALIAÇÃO DO ASSISTENTE DO RELATÓRIO GESTÃO HOSPITALAR NO SUS-SP
+% ══════════════════════════════════════════════════════════════════════
+% Cópia de estilo/modelo_relatorio.tex (o kit do portfólio). O bloco entre
+% "PREÂMBULO DO KIT" e "FIM DO PREÂMBULO DO KIT" é o do kit, sem edição.
+%
+% Todo número vem de uma macro \Num... de numeros.tex, gerado por
+% scripts/06_gerar_documentos.py a partir de resultados/numeros.json, e toda
+% tabela vem de um arquivo de linhas de tabelas/, escrito por
+% scripts/04_analisar.py e lido com \linhasde. As figuras vêm de ../figuras/,
+% escritas por scripts/05_figuras.py. Nenhum número é digitado aqui.
+%
+% Compilar, de dentro de relatorio/, depois dos scripts 04, 05 e 06:
+%   pdflatex -interaction=nonstopmode -halt-on-error relatorio.tex   (duas vezes)
+% ou latexmk -pdf relatorio.tex (só no Git Bash: no PowerShell falta o Perl).
+% Depois, scripts/conferir_numeros.py confere que nenhum número foi digitado.
+
+% ══════════════════════════════════════════════════════════════════════
+% PREÂMBULO DO KIT: daqui até "FIM DO PREÂMBULO DO KIT", não edite
+% ══════════════════════════════════════════════════════════════════════
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[brazilian]{babel}
+
+% A mancha: 15 cm de linha, cerca de 3,2 alfabetos de Libertine 11pt. As
+% figuras NÃO vivem nesta medida: ver \figwidth, mais abaixo.
+\usepackage[top=2cm, bottom=2cm, left=3cm, right=3cm]{geometry}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{float}
+\usepackage{amsmath}
+\usepackage{caption}
+% A opção `table` liga o colortbl, que é o que dá a zebra (\rowcolors).
+\usepackage[table]{xcolor}
+\usepackage{enumitem}
+% Capa: a curva em TikZ e os ícones vetoriais do Font Awesome.
+\usepackage{tikz}
+\usepackage{fontawesome5}
+
+% ── AS FONTES: serifa no corpo, Lato em tabela e figura ───────────────
+% `lato` SEM a opção `default`: o corpo não muda e o comando \lato fica
+% disponível. A `libertine` entra DEPOIS da `lato`, porque as duas mexem
+% em \sfdefault e a última vence. A matemática acompanha a Libertine.
+\usepackage{lato}
+\usepackage{libertine}
+\usepackage{libertinust1math}
+
+% ── AS CORES: ColorBrewer Set1 e a escala tirada do #0A0310 ───────────
+% Os mesmos hexadecimais do estilo_portfolio.py e do theme_portfolio.R.
+\definecolor{azul}{HTML}{377EB8}       % destaque principal
+\definecolor{vermelho}{HTML}{E41A1C}   % destaque secundário
+\definecolor{verde}{HTML}{4DAF4A}
+\definecolor{roxo}{HTML}{984EA3}
+\definecolor{laranja}{HTML}{FF7F00}
+\definecolor{marrom}{HTML}{A65628}
+\definecolor{rosa}{HTML}{F781BF}
+\definecolor{tinta}{HTML}{0A0310}      % o quase-preto do kit
+\definecolor{tinta2}{HTML}{403A45}     % GRAY_70: texto secundário
+\definecolor{tinta3}{HTML}{5D5961}     % GRAY_60: rodapé, nota
+% Versões de TEXTO das cores claras, escurecidas até 4,5:1 contra o branco
+% por cor_de_texto() do estilo_portfolio.py. Vermelho e roxo já passam.
+\definecolor{azulTexto}{HTML}{3579B1}
+\definecolor{verdeTexto}{HTML}{3C823B}
+
+% ── A ZEBRA, aplicada a TODA tabela sem editar tabela nenhuma ─────────
+% A alternância é ancorada no PRIMEIRO \midrule de cada tabular (o fim do
+% cabeçalho), e não no número da linha: assim a primeira linha de dado
+% sai sempre branca, com cabeçalho de uma ou de duas linhas.
+%
+% ⚠ A ordem {zebraclara}{white} é contraintuitiva e está certa: o
+% contador sobe ANTES de a cor ser escolhida. Invertê-la inverte a zebra.
+% ⚠ O reset vai dentro de \noalign, senão "Misplaced \noalign".
+\usepackage{etoolbox}
+\definecolor{zebraclara}{HTML}{F4F4F4}
+\newif\ifzebraprimeiromidrule
+\newcommand{\zebratabela}{%
+  \lato
+  \global\zebraprimeiromidruletrue
+  \rowcolors{1}{zebraclara}{white}%
+}
+\AtBeginEnvironment{tabular}{\zebratabela}
+\AtBeginEnvironment{longtable}{\zebratabela}
+\pretocmd{\midrule}{%
+  \noalign{%
+    \ifzebraprimeiromidrule
+      \global\zebraprimeiromidrulefalse
+      \global\rownum=0\relax
+    \fi}%
+}{}{\typeout{ATENCAO: o patch de \string\midrule\space para a zebra FALHOU}}
+
+% ── A BOLINHA DE ESTADO, para coluna sim/não de tabela ────────────────
+% É reforço, e não substituição: o texto fica ao lado. Os três tons têm o
+% mesmo contraste (2,3:1), calculado no projeto de origem. Glifo, e não
+% TikZ: \tikz dentro de \caption derruba a compilação.
+\definecolor{bolinhaSim}{HTML}{6DBD6B}
+\definecolor{bolinhaNao}{HTML}{F29192}
+\definecolor{bolinhaEmpate}{HTML}{B1AE28}
+\DeclareRobustCommand{\bolinha}[1]{\textcolor{#1}{%
+  \raisebox{-0.06ex}{\scalebox{2}{$\bullet$}}}}
+\DeclareRobustCommand{\marcasim}{\bolinha{bolinhaSim}\,sim}
+\DeclareRobustCommand{\marcanao}{\bolinha{bolinhaNao}\,não}
+\DeclareRobustCommand{\marcaempate}{\bolinha{bolinhaEmpate}\,empate}
+
+% ── A CAIXA DE DESTAQUE ───────────────────────────────────────────────
+% Para o achado principal de uma seção, uma por seção no máximo. Fio azul
+% à esquerda, fundo da zebra, título em Lato. Quebra entre páginas.
+%   \begin{destaque}[Título opcional] texto \end{destaque}
+\usepackage[most]{tcolorbox}
+\newtcolorbox{destaque}[1][Em uma frase]{%
+  enhanced, breakable,
+  colback=zebraclara, colframe=azul,
+  boxrule=0pt, leftrule=2.5pt, arc=0pt, outer arc=0pt,
+  left=10pt, right=10pt, top=8pt, bottom=8pt,
+  before skip=12pt, after skip=12pt,
+  % ⚠ A cor do título é `coltitle`: um \color antes de \tcbtitle não vale,
+  % porque o tcolorbox reaplica coltitle (branco por padrão) por dentro.
+  title={#1}, detach title, coltitle=azulTexto,
+  before upper={{\lato\bfseries\tcbtitle}\par\smallskip},
+}
+
+\usepackage{needspace}
+\usepackage[hidelinks]{hyperref}
+\setcounter{tocdepth}{2}
+\hypersetup{bookmarksdepth=3, bookmarksnumbered=true, bookmarksopen=false}
+
+\captionsetup{font=small, labelfont=bf}
+\captionsetup[sub]{font=footnotesize}
+
+\graphicspath{{figuras/}{exemplos/}}
+
+% Paginação: altura natural, sem esticar o espaço vertical; sem órfãs nem
+% viúvas; folga mínima de composição em vez de reescrever prosa.
+\raggedbottom
+\widowpenalty=10000
+\clubpenalty=10000
+\emergencystretch=1em
+
+% ── \figwidth: a figura é mais larga que a prosa ──────────────────────
+% A figura vive na medida de 1 cm de margem no papel (19 cm em A4), e não
+% na mancha de 15 cm. Definida pelo papel, e não por número copiado.
+\newlength{\figwidth}
+\setlength{\figwidth}{\dimexpr\paperwidth-2cm\relax}
+
+% \imagemplena[fração]{arquivo}: a imagem centrada sobre a mancha. A caixa
+% de largura declarada impede o transbordo só para a direita e não conta
+% como Overfull \hbox.
+\newcommand{\imagemplena}[2][1]{%
+  \makebox[\linewidth][c]{\includegraphics[width=#1\figwidth]{#2}}}
+
+% tabelaplena: a tabela que não cabe na mancha ganha a medida da figura.
+% Só para tabular (caixa não quebra entre páginas).
+\newsavebox{\tabelacaixa}
+\newenvironment{tabelaplena}
+  {\begin{lrbox}{\tabelacaixa}}
+  {\end{lrbox}\makebox[\linewidth][c]{\usebox{\tabelacaixa}}}
+
+% \subfig[largura]{arquivo}{legenda}: um painel por linha, na medida da figura.
+\newcommand{\subfig}[3][0.62\figwidth]{%
+  \makebox[\linewidth][c]{%
+  \begin{subfigure}[t]{#1}
+    \centering
+    \includegraphics[width=\linewidth]{#2}
+    \caption{#3}
+  \end{subfigure}}\par\medskip}
+% \linhasde{arquivo}: as linhas de uma tabela, escritas por script.
+% ⚠ Não use \input dentro de tabular: ele não é expansível, e o
+% \bottomrule seguinte derruba a compilação com "Misplaced \noalign". O
+% \@@input primitivo é expansível, e o espaço depois de #1 encerra o nome.
+\makeatletter
+\newcommand{\linhasde}[1]{\@@input #1 }
+\makeatother
+% ══════════════════════════════════════════════════════════════════════
+% FIM DO PREÂMBULO DO KIT
+% ══════════════════════════════════════════════════════════════════════
+
+% ── AS FIGURAS DO PROJETO ─────────────────────────────────────────────
+% O \graphicspath do kit (dentro do preâmbulo, que não se edita) aponta para
+% figuras/ e exemplos/. Este vem depois e vence: compilando em relatorio/,
+% as figuras escritas por scripts/05_figuras.py estão em ../figuras/.
+\graphicspath{{../figuras/}}
+
+% ── DADOS DA CAPA: preencha por relatório ─────────────────────────────
+\newcommand{\RotuloCapa}{RELATÓRIO DE AVALIAÇÃO \textperiodcentered\ PROJETO DE PORTFÓLIO}
+\newcommand{\TituloRelatorio}{Assistente do relatório Gestão Hospitalar no SUS-SP}
+\newcommand{\SubtituloRelatorio}{Quanto um assistente com RAG acerta, medido com intervalo de confiança e comparação pareada}
+\newcommand{\DelimitacaoRelatorio}{Relatório-fonte de \NumCorpusPaginas{} páginas, \NumGabaritoNPerguntas{} Perguntas conferidas pelo autor \\ Rodada principal com os Veredictos do Juiz revisados}
+\newcommand{\AutorNome}{João Eduardo Pastori Garcia}
+\newcommand{\AutorPapel}{Estatístico responsável}
+\newcommand{\AutorLinkedIn}{https://www.linkedin.com/in/joao-eduardo-garcia/}
+\newcommand{\AutorGitHub}{https://github.com/JoaoEPGarcia}
+\newcommand{\LocalCapa}{São Paulo -- SP}
+% O mês e o ano da compilação, e não um ano digitado (GUIA_ESTILO.md, "A regra dos números").
+\newcommand{\DataCapa}{\ifcase\month\or Janeiro\or Fevereiro\or Março\or Abril\or Maio\or Junho\or
+  Julho\or Agosto\or Setembro\or Outubro\or Novembro\or Dezembro\fi\ de \number\year}
+
+% ── O DESENHO DA CAPA ─────────────────────────────────────────────────
+% A curva e os quatro traços da capa do kit, iguais aos do modelo, guardados
+% aqui numa macro. Por quê: as coordenadas do TikZ são dígitos, e o
+% conferidor de números (scripts/conferir_numeros.py) lê o corpo do .tex, do
+% início do documento em diante, atrás de número digitado. Coordenada de
+% desenho não é número impresso; no preâmbulo, ela fica fora da leitura sem
+% que o conferidor precise de exceção, e o texto corrido continua conferido.
+\newcommand{\DesenhoDaCapa}{%
+  \begin{tikzpicture}
+    \draw[line width=1.6pt, azul, smooth]
+      plot coordinates {(0.2,0.35) (1.7,0.62) (3.2,0.48) (4.7,0.95)
+                        (6.2,1.32) (7.7,1.12) (9.2,1.58) (10.7,1.42)};
+    \foreach \x/\c in {0.2/verde, 2.9/vermelho, 5.6/azul, 8.3/roxo}
+      \fill[\c] (\x,-0.28) rectangle ++(2.4,0.07);
+  \end{tikzpicture}}
+
+% ── OS NÚMEROS DO RELATÓRIO: gerados por script, nunca digitados ──────
+% Cada \Num... vem de numeros.tex, escrito por scripts/06_gerar_documentos.py
+% a partir de resultados/numeros.json. Ver GUIA_ESTILO.md, "A regra dos números".
+\input{numeros.tex}
+
+\title{\TituloRelatorio}
+
+\begin{document}
+
+% ══════════════════════════════ CAPA ══════════════════════════════════
+% Azul como destaque principal e vermelho como secundário. As quatro cores
+% principais da paleta aparecem juntas em um só lugar: os traços ao pé da
+% curva. Nenhum outro elemento da capa usa verde ou roxo.
+\begin{titlepage}
+  \centering
+  \vspace*{0.5cm}
+
+  {\color{tinta}\rule{\linewidth}{1.5pt}} \\[0.4cm]
+  {\small\bfseries\color{tinta2} \RotuloCapa} \\[0.2cm]
+  {\color{tinta}\rule{\linewidth}{0.5pt}}
+
+  \vspace{1.6cm}
+
+  % A curva ecoa a série temporal; ela e os quatro traços cobrem o mesmo vão.
+  \DesenhoDaCapa
+
+  \vspace{1.2cm}
+
+  \begin{minipage}{0.94\textwidth}
+    \centering
+    {\Huge\bfseries\color{azul} \TituloRelatorio \par}
+    \vspace{0.5cm}
+    {\LARGE\bfseries\color{vermelho} \SubtituloRelatorio \par}
+  \end{minipage}
+
+  \vspace{1.1cm}
+
+  % Um ícone por eixo do estudo: o Relatório-fonte, a busca, o modelo e a estatística.
+  % ⚠ Use os nomes sem sufixo `Alt` (\faMapMarker, \faCalendarDay): o
+  % fontawesome5 do MiKTeX não define os `...Alt`.
+  {\Large
+   \textcolor{azul}{\faDatabase}\hspace{1.1cm}
+   \textcolor{vermelho}{\faSearch}\hspace{1.1cm}
+   \textcolor{azul}{\faRobot}\hspace{1.1cm}
+   \textcolor{vermelho}{\faCalculator}\par}
+
+  \vspace{1.0cm}
+
+  {\large\itshape\color{tinta2} \DelimitacaoRelatorio \par}
+
+  \vspace{2.2cm}
+
+  {\large\bfseries\color{azul} Autoria} \\[0.6cm]
+
+  \begin{minipage}{0.85\textwidth}
+    \centering
+    {\large\bfseries \AutorNome} \\
+    {\normalsize\color{tinta2} \AutorPapel} \\[0.15cm]
+    {\footnotesize
+     \href{\AutorLinkedIn}{\color{vermelho}\textbf{LinkedIn}} \ \textperiodcentered\ \
+     \href{\AutorGitHub}{\color{vermelho}\textbf{GitHub}}}
+  \end{minipage}
+
+  \vfill
+
+  {\color{tinta2}\rule{4cm}{0.5pt}} \\[0.3cm]
+  {\small\color{tinta2} \LocalCapa \\ \bfseries \DataCapa}
+\end{titlepage}
+
+\tableofcontents
+\clearpage
+
+% ══════════════════════════════════════════════════════════════════════
+% CONTEÚDO DO PROJETO
+% ══════════════════════════════════════════════════════════════════════
+% As frases que dependem do sinal de um resultado (quem acerta mais, qual
+% Classe de erro é a mais comum) não são escritas aqui: elas vêm de textos
+% escolhidos por scripts/04_analisar.py a partir do resultado e registrados
+% como macros (\NumComRagXSemRagConclusao, \NumComRagErroMaisFrequente...),
+% ou dos títulos das figuras, escolhidos por scripts/05_figuras.py. O resto
+% do texto continua verdadeiro com qualquer resultado.
+
+\section{O problema}
+
+Quase todo assistente com RAG (geração aumentada por recuperação) que se vê
+em portfólio é uma demonstração sem medida: ele ``parece responder bem'', mas
+ninguém sabe com que frequência acerta, nem se o acerto vem da busca no
+documento ou do que o modelo de linguagem já sabia antes de ler qualquer
+coisa. Este projeto constrói um assistente que responde, em português,
+perguntas sobre um relatório de pesquisa, e mede quanto ele acerta com as
+ferramentas de um estatístico: intervalo de confiança, comparação pareada e
+um desenho fixado antes de olhar a prova.
+
+O documento consultado, chamado aqui de \textbf{Relatório-fonte}, é o
+relatório ``Gestão Hospitalar no SUS-SP'', um PDF com publicação autorizada e
+\NumCorpusPaginas{} páginas numeradas, além da capa. Um gestor de saúde
+pergunta, por exemplo, quanto mudou um indicador numa rede de hospitais, e o
+assistente responde em uma a três frases, cita a Página impressa de onde
+tirou a resposta e mostra os Trechos em que se apoiou. Quando o
+Relatório-fonte não trata do assunto, o comportamento certo é dizer isso, e
+não inventar um número.
+
+A pergunta do projeto tem três partes, e cada uma vira uma medida deste
+relatório:
+
+\begin{enumerate}[leftmargin=*, itemsep=2pt]
+  \item \textbf{Quanto o assistente acerta?} O Acerto da resposta nas
+    Perguntas respondíveis, com intervalo de Wilson, e não um número solto.
+  \item \textbf{O acerto vem da busca?} A mesma prova é feita sem RAG, com o
+    modelo respondendo só com o que já sabe, e as duas Condições são
+    comparadas Pergunta a Pergunta.
+  \item \textbf{Se o documento cabe inteiro no contexto do modelo, para que
+    RAG?} Uma terceira Condição põe o Relatório-fonte inteiro no prompt, e o
+    custo de cada Condição é medido em tokens de entrada e em latência.
+\end{enumerate}
+
+\begin{destaque}[O que este relatório entrega]
+  O número de destaque é o Acerto da resposta com RAG nas
+  \NumDestaqueNRespondiveis{} Perguntas respondíveis, com o intervalo de
+  confiança de \NumIcNivel\%, ao lado do mesmo acerto sem RAG. Não se usa um
+  ``acerto geral'' sobre todas as \NumGabaritoNPerguntas{} Perguntas: sem
+  RAG, abster-se de tudo inflaria essa taxa, porque a Abstenção é a resposta
+  certa nas Perguntas sem resposta. Cada número impresso aqui sai de um
+  script e pode ser refeito a partir das Rodadas versionadas.
+\end{destaque}
+
+O texto usa um vocabulário fixo, definido no glossário do repositório. Os
+termos com inicial maiúscula (Pergunta, Trecho, Condição, Rodada, Gabarito,
+Revisão, Veredicto, Juiz, Classe de erro) têm sempre o mesmo sentido.
+
+\section{O assistente}
+
+O assistente é um pipeline de cinco passos. Todos rodam a partir de scripts
+versionados, e só o último chama um modelo de linguagem.
+
+\paragraph{Extração.} O \texttt{pdfplumber} lê o Relatório-fonte página a
+página, com normalização Unicode (NFKC) para desfazer as ligaduras e com a
+hifenização de fim de linha desfeita. Cada linha é classificada pelo layout
+do LaTeX em que o Relatório-fonte foi escrito: corpo, título de capítulo,
+título de seção ou legenda. As tabelas são detectadas à parte e
+serializadas linha a linha, com cada célula acompanhada do nome da sua
+coluna; uma tabela que continua na página seguinte herda a legenda. A
+capa fica fora. A extração somou \NumCorpusPalavras{} palavras,
+\NumCorpusTabelas{} blocos de tabela e \NumCorpusLegendas{} legendas de
+figura.
+
+\paragraph{Quebra em Trechos.} O texto vira Trechos, os pedaços que o
+assistente pode recuperar. Nenhum Trecho atravessa a fronteira de página,
+para que a citação aponte uma página só. Um parágrafo que cabe no alvo de
+\NumQuebraAlvo{} palavras vai inteiro; um maior é dividido por frase, com
+até \NumQuebraSobreposicao{} palavras repetidas entre Trechos vizinhos da
+mesma página e seção. O título da seção abre cada Trecho, e cada tabela e
+cada legenda formam Trechos próprios. São \NumCorpusTrechos{} Trechos:
+\NumCorpusTrechosTexto{} de texto corrido, \NumCorpusTrechosTabela{} de
+tabela e \NumCorpusTrechosLegenda{} de legenda.
+
+\paragraph{Busca.} Cada Trecho vira um vetor do modelo
+\texttt{intfloat/multilingual-e5-large}, rodado localmente pelo
+\texttt{fastembed}, sem API paga. O índice é o FAISS com busca exata
+(\texttt{IndexFlatIP} sobre vetores normalizados, ou seja, cosseno exato). Com
+poucas centenas de Trechos, a busca exata custa quase nada e é
+determinística: a mesma Pergunta recupera sempre os mesmos Trechos, o que
+torna o Acerto da recuperação reprodutível. Na Condição com RAG, os
+\NumParametrosK{} Trechos mais próximos da Pergunta vão ao modelo, cada um
+marcado com a sua Página e o seu tipo (texto, tabela ou legenda).
+
+\paragraph{Resposta.} O respondedor é o
+\texttt{\NumParametrosModeloRespondedor}, do Google, chamado pela API do
+Google AI Studio com saída estruturada por JSON Schema: a resposta, as
+páginas citadas e um campo que marca a Abstenção. O prompt manda copiar os
+números como estão no Relatório-fonte, no formato brasileiro, e não menciona
+nenhum fato do Relatório-fonte, o que vazaria a resposta na Condição sem
+RAG. Cada resposta registra o modelo que de fato respondeu, os tokens e a
+latência.
+
+\paragraph{API e Docker.} O assistente é servido por uma API FastAPI, com
+\texttt{POST /perguntar} e \texttt{GET /saude}, empacotada em Docker. O
+modelo de embeddings e o índice ficam em volumes, fora da imagem, e são
+criados na primeira subida. O CI roda o lint, os testes e o build da imagem a
+cada envio ao repositório.
+
+\section{O desenho da avaliação}
+
+\subsection{Perguntas, Gabarito e Revisão}
+
+A prova tem \NumGabaritoNPerguntas{} Perguntas:
+\NumGabaritoNRespondiveis{} respondíveis, divididas em
+\NumGabaritoNTipos{} Tipos de pergunta conforme o lugar onde a resposta
+está (número na prosa, número em tabela, número em legenda, conceito ou
+método, e síntese entre páginas), e \NumGabaritoNSemResposta{} sem resposta
+no Relatório-fonte, em que o certo é a Abstenção. As respondíveis foram
+espalhadas pelos capítulos em proporção ao volume de texto.
+
+As Perguntas e o Gabarito de cada uma (a resposta certa e as páginas que a
+sustentam) foram \textbf{propostos com ajuda de um modelo de linguagem e
+conferidos pelo autor} diretamente no PDF, linha a linha. Essa conferência é
+a Revisão: o script de avaliação recusa um Gabarito com qualquer linha sem
+ela e lista as pendentes. Antes da Revisão, uma conferência mecânica compara
+o Gabarito com o texto extraído (formato, páginas existentes, valores
+presentes na página citada) para pegar erro grosseiro. Quando a mesma
+resposta aparece em mais de uma página (o sumário executivo e a conclusão
+repetem achados dos capítulos), o Gabarito lista todas, para que uma
+citação certa não conte como errada.
+
+\subsection{As três Condições}
+
+As mesmas Perguntas passam pelo mesmo modelo em três Condições, que mudam
+só o que o modelo recebe:
+
+\begin{itemize}[leftmargin=*, itemsep=2pt]
+  \item \textbf{com RAG}: os \NumParametrosK{} Trechos recuperados pela busca;
+  \item \textbf{sem RAG}: nada do Relatório-fonte, só a Pergunta; mede o que o
+    modelo já sabe, ou acha que sabe;
+  \item \textbf{contexto completo}: o texto inteiro do Relatório-fonte, página
+    por página, no prompt de sistema, com o cache de prompt da API.
+\end{itemize}
+
+A comparação principal é com RAG contra sem RAG: ela responde quanto do
+acerto vem da busca. A comparação com o contexto completo responde se a
+busca ainda se justifica quando o documento cabe na janela do modelo.
+
+\subsection{As medidas}
+
+Cada Pergunta, em cada Condição, recebe três medidas binárias, e cada taxa
+sai com o intervalo de Wilson de \NumIcNivel\%, que se comporta bem com
+amostras pequenas e taxas perto dos extremos:
+
+\begin{itemize}[leftmargin=*, itemsep=2pt]
+  \item \textbf{Acerto da resposta}, a medida principal: o conteúdo da
+    resposta coincide com o Gabarito;
+  \item \textbf{Acerto da citação}: alguma página citada está entre as
+    páginas do Gabarito;
+  \item \textbf{Acerto da recuperação}: alguma página do Gabarito está entre
+    as dos Trechos recuperados; só existe na Condição com RAG, e separa
+    problema de busca de problema de leitura.
+\end{itemize}
+
+As Perguntas respondíveis e as sem resposta são contadas em separado. Nas
+sem resposta, a medida é a Abstenção correta. Cada resposta errada recebe
+uma Classe de erro, derivada das medidas, sem julgamento novo, e as Classes
+são mutuamente exclusivas: \textbf{resposta inventada} (respondeu a uma
+Pergunta sem resposta), \textbf{citação errada} (a resposta está certa, a
+página não), \textbf{abstenção indevida} (absteve-se numa respondível),
+\textbf{falha de recuperação} (errou e a busca não trouxe nenhuma página do
+Gabarito) e \textbf{falha de leitura} (errou com a página certa em mãos, ou
+numa Condição que não recupera).
+
+\subsection{O Veredicto: regra, Juiz e Revisão}
+
+Os Tipos número na prosa, número em tabela e número em legenda têm resposta
+numérica. Para essas Perguntas, o Veredicto sai
+de uma regra determinística: todos os valores do Gabarito precisam aparecer,
+exatamente, na resposta. A regra é estrita de propósito, porque o prompt
+manda copiar os números como estão. Quando ela reprova, a resposta vai
+também ao Juiz, para pegar o falso negativo da regra (uma diferença
+expressa com o sinal trocado e a palavra ``para baixo'', por exemplo). As
+respostas descritivas vão sempre ao Juiz, o
+\texttt{\NumParametrosModeloJuiz}, que compara o conteúdo com o Gabarito e
+ignora as páginas.
+
+O Juiz não tem a última palavra. Na Rodada principal, ele deu
+\NumRevisaoVeredictosJuiz{} Veredictos, e o autor os conferiu numa folha;
+a Revisão vence o Juiz. Foram \NumRevisaoVeredictosRevisados{} Veredictos
+revisados, e a Revisão mudou \NumRevisaoVeredictosMudados{} deles. A análise final se
+recusa a publicar enquanto houver Veredicto do Juiz sem Revisão.
+
+\subsection{Pré-registro}
+
+O número de Trechos recuperados, o tamanho do Trecho, os modelos, o nível
+de raciocínio e os prompts ficam num arquivo versionado de parâmetros. Eles
+foram ajustados só com Perguntas de desenvolvimento, que nunca entram no
+Gabarito, e congelados por commit antes da Rodada principal: ajustar o
+sistema olhando a prova inflaria a taxa de acerto. O script de avaliação
+recusa a Rodada principal enquanto os parâmetros não estiverem congelados e
+commitados. A Rodada principal registrou o commit em que rodou,
+\texttt{\NumParametrosCommit}.
+
+\begin{destaque}[As regras de confiança viram código]
+  \begin{itemize}[leftmargin=*, itemsep=1pt, topsep=2pt]
+    \item A avaliação recusa um Gabarito com qualquer linha sem Revisão.
+    \item A Rodada principal recusa parâmetros que não estejam congelados por
+      commit.
+    \item Todo Veredicto do Juiz passa pela Revisão do autor antes de virar
+      resultado.
+    \item Todo número impresso sai de um registro alimentado por script, e um
+      conferidor falha diante de número digitado no README ou neste
+      relatório.
+  \end{itemize}
+\end{destaque}
+
+\section{Resultados com intervalos}
+
+A Tabela~\ref{tab:condicoes} traz as três medidas nas três Condições, cada
+uma com o intervalo de Wilson. A Rodada principal fez
+\NumPrincipalNRespostas{} respostas (cada Pergunta em cada Condição). As
+três primeiras colunas valem para as \NumDestaqueNRespondiveis{} Perguntas
+respondíveis; a última, para as \NumGabaritoNSemResposta{} sem resposta.
+O Acerto da recuperação só existe com RAG.
+
+\begin{table}[H]
+  \centering
+  \caption{As medidas por Condição, na Rodada principal, com o intervalo de
+    Wilson de \NumIcNivel\% entre parênteses. Acertos da resposta, da
+    citação e da recuperação sobre as Perguntas respondíveis; Abstenção
+    correta sobre as Perguntas sem resposta.}
+  \label{tab:condicoes}
+  \small
+  \begin{tabelaplena}
+  \begin{tabular}{@{}lllll@{}}
+    \toprule
+    Condição & Acerto da resposta & Acerto da citação & Acerto da recuperação & Abstenção correta \\
+    \midrule
+    \linhasde{tabelas/resultados_por_condicao.tex}
+    \bottomrule
+  \end{tabular}
+  \end{tabelaplena}
+\end{table}
+
+\begin{destaque}[O número de destaque]
+  Com RAG, o Acerto da resposta foi de \NumDestaqueAcertoComRag{} nas
+  \NumDestaqueNRespondiveis{} Perguntas respondíveis (IC de \NumIcNivel\%:
+  \NumDestaqueAcertoComRagInf{} a \NumDestaqueAcertoComRagSup), contra
+  \NumDestaqueAcertoSemRag{} sem RAG. Pelo intervalo da diferença pareada
+  (Seção~\ref{sec:pareada}), a leitura é: \NumComRagXSemRagConclusao.
+\end{destaque}
+
+A Figura~\ref{fig:acerto} mostra o mesmo Acerto da resposta, com a linha
+fina marcando o intervalo. O título da figura é escolhido pelo script a
+partir do resultado, e afirma o achado que os números sustentam.
+
+\begin{figure}[H]
+  \centering
+  \imagemplena[0.86]{acerto_por_condicao}
+  \caption{Acerto da resposta nas Perguntas respondíveis, por Condição, com
+    o intervalo de Wilson de \NumIcNivel\%. A Condição com RAG sai na cor de
+    destaque, e as outras em cinza.}
+  \label{fig:acerto}
+\end{figure}
+
+Dois cuidados de leitura. Primeiro, intervalos que se sobrepõem não provam
+que duas Condições empatam, nem intervalos separados bastam para
+compará-las: as Condições responderam às mesmas Perguntas, e a comparação
+certa é a pareada, da próxima seção. Segundo, o Acerto da citação mede só
+se a página citada está entre as do Gabarito, e por isso pode ser alto
+mesmo numa Condição que não recebe o texto, se o modelo souber ou
+adivinhar a página.
+
+\section{Comparação pareada}
+\label{sec:pareada}
+
+Como as três Condições responderam às mesmas Perguntas, cada comparação usa
+os pares: para cada Pergunta respondível, as duas Condições acertam, só uma
+acerta, ou as duas erram. Só os pares discordantes informam a diferença. O
+teste é o de McNemar exato, sobre os pares discordantes, e o intervalo da
+diferença pareada entre os acertos é o de Newcombe (método do escore, para
+proporções pareadas), também de \NumIcNivel\%.
+
+\begin{table}[H]
+  \centering
+  \caption{Comparação pareada do Acerto da resposta nas Perguntas
+    respondíveis da Rodada principal. A diferença é com RAG menos a outra
+    Condição, em pontos percentuais, com o intervalo de Newcombe de
+    \NumIcNivel\%; o valor-p é o do teste exato de McNemar.}
+  \label{tab:pareada}
+  \small
+  \begin{tabelaplena}
+  \begin{tabular}{@{}lrrrrll@{}}
+    \toprule
+    & As duas & Só com RAG & Só a outra & As duas & Diferença & Valor-p \\
+    Comparação & acertam & acerta & acerta & erram & (IC de \NumIcNivel\%) & (McNemar) \\
+    \midrule
+    \linhasde{tabelas/comparacao_pareada.tex}
+    \bottomrule
+  \end{tabular}
+  \end{tabelaplena}
+\end{table}
+
+Na comparação principal, foram \NumComRagXSemRagNPares{} pares: em
+\NumComRagXSemRagSoComRag{} deles só a Condição com RAG acertou, e em
+\NumComRagXSemRagSoSemRag{} só a Condição sem RAG acertou. A diferença
+pareada foi de \NumComRagXSemRagDiferenca{} (IC de \NumIcNivel\%:
+\NumComRagXSemRagDiferencaInf{} a \NumComRagXSemRagDiferencaSup), com
+valor-p de McNemar igual a \NumComRagXSemRagPMcnemar. Contra o contexto
+completo, em \NumComRagXContextoCompletoSoComRag{} pares só com RAG acertou
+e em \NumComRagXContextoCompletoSoContextoCompleto{} só o contexto completo
+acertou; a diferença foi de \NumComRagXContextoCompletoDiferenca{} (IC:
+\NumComRagXContextoCompletoDiferencaInf{} a
+\NumComRagXContextoCompletoDiferencaSup), com valor-p de
+\NumComRagXContextoCompletoPMcnemar.
+
+\begin{destaque}[O que o intervalo pareado permite dizer]
+  \begin{itemize}[leftmargin=*, itemsep=1pt, topsep=2pt]
+    \item Com RAG contra sem RAG: \NumComRagXSemRagConclusao.
+    \item Com RAG contra contexto completo: \NumComRagXContextoCompletoConclusao.
+  \end{itemize}
+  A leitura segue o intervalo da diferença: todo acima de zero, todo abaixo
+  de zero, ou contendo o zero. Quando o intervalo contém o zero, o resultado
+  é declarado como empate não resolvido, e não como prova de igualdade.
+\end{destaque}
+
+\section{Erros por Tipo de pergunta}
+
+A Tabela~\ref{tab:erros} cruza as Classes de erro com o Tipo de pergunta,
+na Condição com RAG. Em cada linha estão o número de Perguntas do Tipo, os
+acertos e as respostas em cada Classe de erro. A resposta inventada só pode
+acontecer nas Perguntas sem resposta, e as outras Classes, só nas
+respondíveis; daí os traços. A citação errada conta respostas certas com a
+página errada, e por isso uma linha pode somar mais erros que Perguntas
+erradas.
+
+\begin{table}[H]
+  \centering
+  \caption{Classes de erro por Tipo de pergunta, na Condição com RAG, Rodada
+    principal. Na linha das Perguntas sem resposta, os acertos são as
+    Abstenções corretas.}
+  \label{tab:erros}
+  \small
+  \begin{tabelaplena}
+  \begin{tabular}{@{}lrrrrrrr@{}}
+    \toprule
+    & & & Falha de & Falha de & Abstenção & Citação & Resposta \\
+    Tipo de pergunta & $n$ & Acertos & recuperação & leitura & indevida & errada & inventada \\
+    \midrule
+    \linhasde{tabelas/erros_por_tipo.tex}
+    \bottomrule
+  \end{tabular}
+  \end{tabelaplena}
+\end{table}
+
+As Classes separam as causas que pedem correções diferentes. A falha de
+recuperação aponta para a busca: o Trecho certo não chegou ao modelo, e o
+remédio seria mudar o número de Trechos, o tamanho do Trecho ou o modelo de
+embeddings. A falha de leitura aponta para o modelo: o Trecho certo estava
+lá, e a resposta saiu errada. A abstenção indevida e a resposta inventada
+são as duas faces da calibração: abster-se demais ou de menos.
+
+\begin{destaque}[A Classe de erro mais frequente com RAG]
+  \begin{itemize}[leftmargin=*, itemsep=1pt, topsep=2pt]
+    \item Classe mais frequente: \NumComRagErroMaisFrequente.
+    \item Respostas nessa Classe (em cada uma, se houver empate):
+      \NumComRagErroMaisFrequenteN.
+    \item Respostas com alguma Classe de erro, nas respondíveis e nas sem
+      resposta: \NumComRagNComErro.
+  \end{itemize}
+\end{destaque}
+
+A Figura~\ref{fig:erros} mostra o mesmo cruzamento, um painel por Classe de
+erro, com a Classe mais frequente em destaque.
+
+\begin{figure}[H]
+  \centering
+  \imagemplena[0.92]{erros_por_tipo}
+  \caption{Classes de erro por Tipo de pergunta, na Condição com RAG. Cada
+    painel é uma Classe; as barras contam Perguntas. Entre parênteses, o
+    número de Perguntas do Tipo e o total de erros da Classe.}
+  \label{fig:erros}
+\end{figure}
+
+Com poucas Perguntas por Tipo, a diferença entre dois Tipos raramente sai do
+ruído: a tabela serve para apontar onde olhar primeiro, e não para ordenar os
+Tipos com confiança.
+
+\section{Tokens e latência}
+
+Sem fatura em dólar por Pergunta, o custo de cada Condição é medido em
+tokens de entrada, que é o que cresce com o texto enviado ao modelo, e a
+espera, em latência por Pergunta. Por construção, a Condição contexto
+completo envia o texto inteiro do Relatório-fonte a cada Pergunta; o cache
+de prompt da API reaproveita esse prefixo, e os tokens lidos do cache
+somaram \NumContextoCompletoTokensCacheLeituraTotal{} na Rodada principal.
+
+\begin{table}[H]
+  \centering
+  \caption{Custo por Condição na Rodada principal: tokens de entrada em
+    média por Pergunta (inclusive os lidos do cache), latência mediana por
+    Pergunta e respostas dadas por outro modelo que não o pedido (fallback
+    do servidor).}
+  \label{tab:custo}
+  \small
+  \begin{tabular}{@{}lrrr@{}}
+    \toprule
+    Condição & Tokens de entrada (média) & Latência mediana (s) & Fallbacks \\
+    \midrule
+    \linhasde{tabelas/custo_por_condicao.tex}
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{destaque}[Se cabe no contexto, para que RAG?]
+  Com RAG, cada Pergunta levou em média \NumComRagTokensEntradaMedio{}
+  tokens de entrada, com latência mediana de \NumComRagLatenciaMedianaS{} s;
+  com o contexto completo, \NumContextoCompletoTokensEntradaMedio{} tokens e
+  \NumContextoCompletoLatenciaMedianaS{} s. Entre as duas, o intervalo
+  pareado do Acerto da resposta diz: \NumComRagXContextoCompletoConclusao.
+\end{destaque}
+
+A Figura~\ref{fig:custo} mostra a distribuição por Pergunta, e não só a
+média: cada caixa resume as Perguntas de uma Condição, com o acerto ao lado
+do nome. O eixo dos tokens é logarítmico, porque as Condições diferem em
+ordens de grandeza.
+
+\begin{figure}[H]
+  \centering
+  \imagemplena[0.92]{custo_por_condicao}
+  \caption{Tokens de entrada e latência por Pergunta, por Condição, na
+    Rodada principal, com o Acerto da resposta ao lado de cada Condição. O
+    traço na caixa é a mediana, e o losango, a média.}
+  \label{fig:custo}
+\end{figure}
+
+Na Rodada principal inteira, as três Condições somaram
+\NumPrincipalTokensEntradaTotal{} tokens de entrada e
+\NumPrincipalTokensSaidaTotal{} de saída. Respostas dadas por um modelo
+diferente do pedido (fallback do servidor): \NumPrincipalNFallback.
+
+\section{Variabilidade entre Rodadas}
+
+O projeto não fixa a temperatura do modelo, então duas Rodadas iguais podem
+dar Veredictos diferentes. Para medir isso, a Rodada principal foi repetida
+com os mesmos parâmetros; o número de repetições comparadas com ela é
+\NumRepeticoesComparadas. As repetições
+não passam pela Revisão do autor: a concordância compara os Veredictos
+automáticos (da regra ou do Juiz) e, para a comparação ser justa, a Rodada
+principal entra do mesmo jeito, sem a Revisão. A Tabela~\ref{tab:concordancia}
+dá, para cada repetição e Condição, a fração das Perguntas em que o
+Veredicto foi o mesmo.
+
+\begin{table}[H]
+  \centering
+  \caption{Concordância dos Veredictos automáticos entre cada repetição e a
+    Rodada principal, por Condição, sobre todas as Perguntas comparadas.
+    Veredictos não revisados.}
+  \label{tab:concordancia}
+  \small
+  \begin{tabular}{@{}llrr@{}}
+    \toprule
+    Repetição & Condição & Concordância & Perguntas \\
+    \midrule
+    \linhasde{tabelas/concordancia.tex}
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+A concordância mede a estabilidade do sistema inteiro, respondedor e Juiz
+juntos. Qualquer discordância entre Rodadas diz que parte do acerto
+publicado depende do sorteio do modelo, e é por isso que o
+número de destaque vem da Rodada revisada, e não da média das Rodadas.
+
+\section{Limitações}
+
+O que os dados deste relatório não autorizam afirmar:
+
+\begin{itemize}[leftmargin=*, itemsep=3pt]
+  \item \textbf{Só texto.} O assistente lê o texto, as tabelas e as legendas
+    do Relatório-fonte, mas não os gráficos: um valor que só existe dentro
+    da imagem de um gráfico não é extraído. As Perguntas que dependeriam
+    deles ficaram fora do Gabarito, e por isso o acerto medido não vale
+    para elas.
+  \item \textbf{Amostra pequena.} São \NumGabaritoNRespondiveis{} Perguntas
+    respondíveis e \NumGabaritoNSemResposta{} sem resposta. O intervalo do
+    número de destaque vai de \NumDestaqueAcertoComRagInf{} a
+    \NumDestaqueAcertoComRagSup, e o cruzamento por Tipo de pergunta tem
+    poucas Perguntas por célula: diferenças entre Tipos são indícios, e não
+    resultados.
+  \item \textbf{Um documento.} Tudo foi medido sobre um único Relatório-fonte,
+    em português, com o layout de um relatório em LaTeX. O acerto não se
+    transfere para outro documento, outro layout ou outro idioma sem medir
+    de novo.
+  \item \textbf{Gabarito proposto com ajuda de um modelo.} As Perguntas e as
+    respostas do Gabarito foram propostas com ajuda de um modelo de
+    linguagem e conferidas pelo autor no PDF. A Revisão corrige erros, mas
+    não apaga o viés de escolha: Perguntas que um modelo acha naturais de
+    propor podem ser mais fáceis para um modelo responder.
+  \item \textbf{Veredictos revisados por uma pessoa.} Dos
+    \NumRevisaoVeredictosJuiz{} Veredictos do Juiz na Rodada principal,
+    \NumRevisaoVeredictosRevisados{} foram revisados pelo autor, que mudou
+    \NumRevisaoVeredictosMudados. A Revisão é de um revisor só, sem medida
+    de concordância entre revisores, e o Juiz é da mesma família de modelos
+    que o respondedor.
+  \item \textbf{Repetições não revisadas.} A concordância entre Rodadas usa
+    Veredictos automáticos e mede a estabilidade, e não o acerto.
+  \item \textbf{Um modelo.} Os números publicados são de um só modelo, o
+    \texttt{\NumParametrosModeloRespondedor}. O provedor local (Ollama)
+    existe no código, mas não gera número publicado.
+  \item \textbf{Custo em tokens.} O custo é medido em tokens de entrada e em
+    latência, e não em dinheiro; a latência depende da carga do servidor
+    no momento da Rodada.
+\end{itemize}
+
+\section{Como refazer os números}
+
+As Rodadas ficam versionadas no repositório, com o commit e os parâmetros de
+cada execução ao lado. Refazer a análise não chama o modelo nem gasta cota.
+Os scripts, na ordem:
+
+\begin{itemize}[leftmargin=*, itemsep=2pt]
+  \item \texttt{scripts/04\_analisar.py}: consolida a Rodada principal com a
+    folha de Revisão e grava o registro de números e as linhas das tabelas;
+  \item \texttt{scripts/05\_figuras.py}: desenha as figuras;
+  \item \texttt{scripts/06\_gerar\_documentos.py}: gera as macros deste
+    relatório, o README e a lista de números canônicos;
+  \item \texttt{scripts/conferir\_numeros.py}: falha se algum número tiver
+    sido digitado ou estiver desatualizado.
+\end{itemize}
+
+Cada número impresso aqui tem uma linha em \texttt{NUMEROS\_CANONICOS.md},
+com o script que o calcula e os lugares onde aparece.
+
+\end{document}
