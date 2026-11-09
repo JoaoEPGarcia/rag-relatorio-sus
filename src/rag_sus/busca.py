@@ -56,7 +56,10 @@ class E5Embutidor:
         self._modelo = modelo
 
     def embutir_trechos(self, textos: list[str]) -> np.ndarray:
-        return np.stack(list(self._modelo.embed([f"passage: {t}" for t in textos])))
+        # Lote pequeno: o padrão do fastembed (256) estoura 8 GB de RAM com o e5-large.
+        return np.stack(
+            list(self._modelo.embed([f"passage: {t}" for t in textos], batch_size=8))
+        )
 
     def embutir_pergunta(self, texto: str) -> np.ndarray:
         return next(iter(self._modelo.embed([f"query: {texto}"])))
