@@ -5,15 +5,19 @@ Um assistente que responde perguntas sobre um relatório de pesquisa em saúde p
 | | |
 |---|---|
 | **Dados** | o relatório "Gestão Hospitalar no SUS-SP" ({{corpus_paginas}} páginas e {{corpus_palavras}} palavras extraídas), quebrado em {{corpus_trechos}} Trechos: {{corpus_trechos_texto}} de texto, {{corpus_trechos_tabela}} de tabela e {{corpus_trechos_legenda}} de legenda de figura |
-| **Avaliação** | Perguntas com resposta e página conferidas pelo autor no PDF, em cinco Tipos (número na prosa, em tabela e em legenda, conceito e síntese entre páginas), mais Perguntas sem resposta no relatório |
+| **Avaliação** | **{{gabarito_n_perguntas}} Perguntas** com resposta e página conferidas pelo autor no PDF: {{gabarito_n_respondiveis}} respondíveis, em {{gabarito_n_tipos}} Tipos (número na prosa, em tabela e em legenda, conceito e síntese entre páginas), e {{gabarito_n_sem_resposta}} sem resposta no relatório |
 | **Métodos** | intervalo de Wilson para cada taxa; teste exato de McNemar e intervalo de Newcombe para a diferença pareada entre Condições; Classes de erro derivadas das medidas; parâmetros congelados antes da Rodada principal |
 | **Entrega** | API em FastAPI com Docker, e um Relatório de avaliação em LaTeX para público técnico |
 | **Ferramentas** | Python (pdfplumber, fastembed, FAISS, FastAPI, API do Gemini, SciPy, matplotlib), pytest e LaTeX |
 
 ## Principais resultados
 
-<!-- Os resultados entram aqui, por marcador, depois da Rodada principal (scripts/04_analisar.py). -->
-A Rodada principal ainda não foi feita: o Gabarito está em Revisão. Esta seção será preenchida pelos scripts, com cada número tirado do registro `resultados/numeros.json` e listado em `NUMEROS_CANONICOS.md`.
+Os números abaixo são os da Rodada principal, analisada por `scripts/04_analisar.py` e detalhada no Relatório de avaliação (`relatorio/relatorio.pdf`). A fonte de cada número impresso está em `NUMEROS_CANONICOS.md`.
+
+- **Acerto da resposta.** Com RAG, o assistente acerta **{{destaque_acerto_com_rag}}** das {{destaque_n_respondiveis}} Perguntas respondíveis (IC de {{ic_nivel}}%: {{destaque_acerto_com_rag_inf}} a {{destaque_acerto_com_rag_sup}}). Sem RAG, o mesmo modelo acerta {{destaque_acerto_sem_rag}} das mesmas Perguntas. A diferença pareada, com RAG menos sem RAG, é de **{{com_rag_x_sem_rag_diferenca}}** (IC de {{ic_nivel}}%: {{com_rag_x_sem_rag_diferenca_inf}} a {{com_rag_x_sem_rag_diferenca_sup}}): {{com_rag_x_sem_rag_conclusao}}.
+- **Busca ou relatório inteiro.** Com o relatório inteiro no prompt, o acerto é de {{contexto_completo_acerto_resposta}} (IC de {{ic_nivel}}%: {{contexto_completo_acerto_resposta_inf}} a {{contexto_completo_acerto_resposta_sup}}). A diferença pareada, com RAG menos contexto completo, é de **{{com_rag_x_contexto_completo_diferenca}}** (IC de {{ic_nivel}}%: {{com_rag_x_contexto_completo_diferenca_inf}} a {{com_rag_x_contexto_completo_diferenca_sup}}): {{com_rag_x_contexto_completo_conclusao}}. Por Pergunta, o contexto completo lê em média {{contexto_completo_tokens_entrada_medio}} tokens de entrada e responde em {{contexto_completo_latencia_mediana_s}} s (mediana); com RAG, são {{com_rag_tokens_entrada_medio}} tokens e {{com_rag_latencia_mediana_s}} s.
+- **Perguntas sem resposta.** Nas {{com_rag_n_sem_resposta}} Perguntas que o relatório não responde, o assistente com RAG se abstém, como deve, em **{{com_rag_abstencao_correta}}** (IC de {{ic_nivel}}%: {{com_rag_abstencao_correta_inf}} a {{com_rag_abstencao_correta_sup}}); sem RAG, em {{sem_rag_abstencao_correta}}, e com o contexto completo, em {{contexto_completo_abstencao_correta}}.
+- **Onde erra.** Com RAG, a Classe de erro mais frequente é {{com_rag_erro_mais_frequente}}, com **{{com_rag_erro_mais_frequente_n}}** das {{com_rag_n_com_erro}} respostas que erram o conteúdo, a página citada ou a Abstenção. O cruzamento com o Tipo de pergunta está no Relatório de avaliação.
 
 ## Como a avaliação foi feita
 
@@ -52,13 +56,14 @@ A Rodada principal ainda não foi feita: o Gabarito está em Revisão. Esta seç
    uv run python scripts/conferir_numeros.py
    ```
    O passo `03` chama o Gemini e gasta a cota diária (ou os créditos do Google AI Pro, se o projeto for pré-pago); sem `--confirmar`, ele só mostra quantas chamadas faria. Se a cota ou o saldo acabar no meio, ele para, e o mesmo comando continua de onde parou no dia seguinte. As Rodadas já feitas estão versionadas em `resultados/rodadas/`, e os passos `04` a `06` refazem a análise a partir delas, sem chamar o modelo.
-4. Para subir a API: `docker compose up --build` e abra `http://localhost:8000/docs`. Na primeira subida, o contêiner baixa o modelo de embeddings e constrói o índice.
-5. Testes: `uv run pytest`.
+4. Para compilar o Relatório de avaliação: `pdflatex relatorio.tex` dentro de `relatorio/`, duas passadas.
+5. Para subir a API: `docker compose up --build` e abra `http://localhost:8000/docs`. Na primeira subida, o contêiner baixa o modelo de embeddings e constrói o índice.
+6. Testes: `uv run pytest`.
 
 ## Limitações
 
 - **Só o texto do PDF.** Os valores que existem apenas dentro da imagem de um gráfico não são extraídos; Perguntas que dependem deles ficaram fora do Gabarito.
-- **Amostra pequena.** Com dezenas de Perguntas, os intervalos são largos: a avaliação distingue diferenças grandes entre Condições, mas não diferenças pequenas.
+- **Amostra pequena.** Com {{gabarito_n_perguntas}} Perguntas, os intervalos são largos: a avaliação distingue diferenças grandes entre Condições, mas não diferenças pequenas.
 - **Um documento só.** O resultado vale para este relatório, com esta diagramação; outro documento pede outra avaliação.
 - **Quem propôs o Gabarito.** As Perguntas foram propostas com ajuda de um modelo de linguagem e conferidas pelo autor; elas podem favorecer o que um modelo acha fácil de perguntar.
 
@@ -70,6 +75,11 @@ A Rodada principal ainda não foi feita: o Gabarito está em Revisão. Esta seç
 
 An assistant that answers questions about a public-health research report, citing the page, and a statistical evaluation of how often it is right with retrieval (RAG), without it, and with the whole report in the model's context.
 
-- **Data:** the report "Gestão Hospitalar no SUS-SP", split into {{corpus_trechos}} passages that never cross a page.
+- **Data:** the report "Gestão Hospitalar no SUS-SP" ({{corpus_paginas:en}} pages, {{corpus_palavras:en}} words), split into {{corpus_trechos:en}} passages that never cross a page; {{gabarito_n_perguntas:en}} questions checked by the author against the PDF: {{gabarito_n_respondiveis:en}} answerable, in {{gabarito_n_tipos:en}} types, and {{gabarito_n_sem_resposta:en}} that the report does not answer.
 - **Methods:** Wilson intervals, exact McNemar test and Newcombe's paired-difference interval; error classes derived from the metrics; parameters frozen before the main run.
+- **Main findings** (the same numbers as above, with decimal points):
+  - With RAG, the assistant answers **{{destaque_acerto_com_rag:en}}** of the {{destaque_n_respondiveis:en}} answerable questions correctly ({{ic_nivel:en}}% CI: {{destaque_acerto_com_rag_inf:en}} to {{destaque_acerto_com_rag_sup:en}}), against {{destaque_acerto_sem_rag:en}} for the same model without RAG. The paired difference, RAG minus no RAG, is **{{com_rag_x_sem_rag_diferenca:en}}** ({{ic_nivel:en}}% CI: {{com_rag_x_sem_rag_diferenca_inf:en}} to {{com_rag_x_sem_rag_diferenca_sup:en}}): {{com_rag_x_sem_rag_conclusao:en}}.
+  - With the whole report in the prompt, accuracy is {{contexto_completo_acerto_resposta:en}} ({{ic_nivel:en}}% CI: {{contexto_completo_acerto_resposta_inf:en}} to {{contexto_completo_acerto_resposta_sup:en}}). The paired difference, RAG minus full context, is **{{com_rag_x_contexto_completo_diferenca:en}}** ({{ic_nivel:en}}% CI: {{com_rag_x_contexto_completo_diferenca_inf:en}} to {{com_rag_x_contexto_completo_diferenca_sup:en}}): {{com_rag_x_contexto_completo_conclusao:en}}. Per question, full context reads {{contexto_completo_tokens_entrada_medio:en}} input tokens on average and answers in {{contexto_completo_latencia_mediana_s:en}} s (median); with RAG, {{com_rag_tokens_entrada_medio:en}} tokens and {{com_rag_latencia_mediana_s:en}} s.
+  - On the {{com_rag_n_sem_resposta:en}} questions the report does not answer, the assistant with RAG abstains, as it should, in **{{com_rag_abstencao_correta:en}}** of them ({{ic_nivel:en}}% CI: {{com_rag_abstencao_correta_inf:en}} to {{com_rag_abstencao_correta_sup:en}}); without RAG, in {{sem_rag_abstencao_correta:en}}, and with full context, in {{contexto_completo_abstencao_correta:en}}.
+  - With RAG, the most frequent error class is {{com_rag_erro_mais_frequente:en}}, in **{{com_rag_erro_mais_frequente_n:en}}** of the {{com_rag_n_com_erro:en}} answers that get the content, the cited page or the abstention wrong.
 - **Deliverable:** a FastAPI service in Docker and a technical evaluation report in LaTeX.
