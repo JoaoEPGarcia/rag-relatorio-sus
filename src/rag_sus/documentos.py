@@ -12,6 +12,7 @@ procuram dígitos digitados à mão no Markdown e no LaTeX.
 from __future__ import annotations
 
 import re
+from pathlib import Path
 
 _DIGITOS_POR_EXTENSO = {
     "0": "Zero", "1": "Um", "2": "Dois", "3": "Tres", "4": "Quatro",
@@ -62,6 +63,26 @@ def preencher_readme(base: str, registro: dict[str, dict]) -> str:
         return registro[chave]["texto"]
 
     return _MARCADOR.sub(trocar, base)
+
+
+# Arquivos de relatorio/ escritos por script, com dígitos de propósito: as macros
+# (numeros.tex, por scripts/06_gerar_documentos.py) e as linhas de tabela lidas
+# com \linhasde (tabelas/, por scripts/04_analisar.py). O conferidor não os lê.
+GERADOS_NO_RELATORIO = ("numeros.tex",)
+PASTAS_GERADAS_NO_RELATORIO = ("tabelas",)
+
+
+def textos_do_relatorio(pasta_relatorio: Path, raiz: Path) -> dict[str, str]:
+    """Os .tex escritos à mão no Relatório de avaliação, pelo caminho relativo à raiz."""
+    textos = {}
+    for p in sorted(pasta_relatorio.rglob("*.tex")):
+        relativo = p.relative_to(pasta_relatorio)
+        if relativo.name in GERADOS_NO_RELATORIO and len(relativo.parts) == 1:
+            continue
+        if relativo.parts[0] in PASTAS_GERADAS_NO_RELATORIO:
+            continue
+        textos[p.relative_to(raiz).as_posix()] = p.read_text(encoding="utf-8")
+    return textos
 
 
 def usos(registro: dict[str, dict], readme_base: str, textos_tex: dict[str, str]) -> dict[str, list[str]]:

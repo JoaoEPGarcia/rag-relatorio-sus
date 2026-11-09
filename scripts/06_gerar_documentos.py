@@ -12,7 +12,13 @@ Uso: uv run python scripts/06_gerar_documentos.py
 import sys
 
 from rag_sus import config, numeros
-from rag_sus.documentos import gerar_numeros_canonicos, gerar_numeros_tex, preencher_readme, usos
+from rag_sus.documentos import (
+    gerar_numeros_canonicos,
+    gerar_numeros_tex,
+    preencher_readme,
+    textos_do_relatorio,
+    usos,
+)
 
 BASE = config.RAIZ / "README.base.md"
 README = config.RAIZ / "README.md"
@@ -21,11 +27,10 @@ NUMEROS_TEX = config.RELATORIO / "numeros.tex"
 
 
 def textos_tex() -> dict[str, str]:
-    return {
-        str(p.relative_to(config.RAIZ)).replace("\\", "/"): p.read_text(encoding="utf-8")
-        for p in sorted(config.RELATORIO.rglob("*.tex"))
-        if p.name != "numeros.tex"
-    }
+    """Os .tex escritos à mão (sem numeros.tex nem as linhas de tabela de relatorio/tabelas/)."""
+    if not config.RELATORIO.exists():
+        return {}
+    return textos_do_relatorio(config.RELATORIO, config.RAIZ)
 
 
 def main() -> int:

@@ -12,6 +12,7 @@ from rag_sus.documentos import (
     nome_macro,
     preencher_readme,
     texto_tex,
+    textos_do_relatorio,
     usos,
 )
 
@@ -105,3 +106,18 @@ def test_digitos_soltos_no_tex_ignora_comandos_opcoes_e_comentarios():
         "\\vspace{2mm} contra 37 digitados.\n\\end{document}\n"
     )
     assert digitos_soltos_no_tex(tex) == ["37"]
+
+
+def test_textos_conferidos_deixam_de_fora_o_que_o_script_gera(tmp_path):
+    relatorio = tmp_path / "relatorio"
+    (relatorio / "tabelas").mkdir(parents=True)
+    (relatorio / "secoes").mkdir()
+    (relatorio / "relatorio.tex").write_text("\\NumAcertoComRag", encoding="utf-8")
+    (relatorio / "secoes" / "resultados.tex").write_text("texto", encoding="utf-8")
+    (relatorio / "numeros.tex").write_text("\\newcommand{\\NumX}{80,0\\%}", encoding="utf-8")
+    (relatorio / "tabelas" / "resultados_por_condicao.tex").write_text("Com RAG & 80,0\\% \\\\", encoding="utf-8")
+
+    textos = textos_do_relatorio(relatorio, tmp_path)
+
+    # macros e linhas de tabela são escritas por script, com dígitos de propósito
+    assert sorted(textos) == ["relatorio/relatorio.tex", "relatorio/secoes/resultados.tex"]
