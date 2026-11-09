@@ -28,6 +28,7 @@ from rag_sus.assistente import CONDICOES
 from rag_sus.avaliacao.analise import comparar, concordancia, erros_por_tipo, resumir
 from rag_sus.avaliacao.gabarito import TIPOS_RESPONDIVEIS
 from rag_sus.avaliacao.rodada import RevisaoIncompleta, carregar_linhas, consolidar
+from rag_sus.avaliacao.sinteticas import RaizProibida, dentro_de_uma_copia_do_projeto, rodada_sintetica
 from rag_sus.avaliacao.travas import RODADAS_PUBLICADAS
 from rag_sus.documentos import texto_tex
 from rag_sus.numeros import Numero
@@ -352,6 +353,15 @@ def analisar(
 ) -> dict[str, str]:
     """Registra os números da Rodada principal e devolve chave -> texto formatado."""
     pasta_rodadas = Path(pasta_rodadas)
+    numeros_json = Path(numeros_json or config.NUMEROS)
+    pasta_tabelas = Path(pasta_tabelas or config.TABELAS)
+    if rodada_sintetica(pasta_rodadas / "principal") and any(
+        dentro_de_uma_copia_do_projeto(p) for p in (numeros_json, pasta_tabelas)
+    ):
+        raise RaizProibida(
+            "as Rodadas sintéticas de demonstração não entram no registro nem nas tabelas de uma cópia do "
+            "projeto: rode a análise com RAG_SUS_RAIZ apontando para a raiz temporária"
+        )
     consolidadas = _consolidar_principal(pasta_rodadas / "principal", folha)
     resumos = {c: resumir(consolidadas[c]) for c in CONDICOES}
     lista: list[Numero] = (
@@ -375,8 +385,7 @@ def analisar(
             onde.setdefault(chave, []).append(f"{TABELAS_NO_PROJETO}/{nome}")
     lista = [replace(n, aparece_em=tuple(onde.get(n.chave, ()))) for n in lista]
 
-    registrados = numeros.registrar_do_script(SCRIPT, lista, caminho=numeros_json or config.NUMEROS)
-    pasta_tabelas = Path(pasta_tabelas or config.TABELAS)
+    registrados = numeros.registrar_do_script(SCRIPT, lista, caminho=numeros_json)
     pasta_tabelas.mkdir(parents=True, exist_ok=True)
     for nome, (conteudo, _) in tabelas.items():
         (pasta_tabelas / nome).write_text(conteudo, encoding="utf-8", newline="\n")
