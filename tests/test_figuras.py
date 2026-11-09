@@ -10,7 +10,7 @@ figura em "Onde aparece". Os títulos esperados são escritos à mão.
 import re
 
 from rag_sus import numeros
-from rag_sus.avaliacao.figuras import textos_acerto, textos_erros
+from rag_sus.avaliacao.figuras import textos_acerto, textos_custo, textos_erros
 
 SCRIPT_04 = "scripts/04_analisar.py"
 
@@ -156,3 +156,49 @@ def test_figura_dos_erros_ordena_os_tipos_pelos_erros_rotula_so_o_que_existe_e_r
     assert "numero_prosa/falha_leitura" not in t.rotulos  # zero: sem barra e sem rótulo
     assert t.rotulos["coluna/falha_leitura"] == "Falha de leitura (5)"
     conferir_registrados(t, "figura_erros_")
+
+
+def custos(acerto_com, acerto_cc, dif_cc, tokens=(2712.4, 221.0, 94010.0), latencia=(2.61, 1.62, 10.4)):
+    """Acerto, diferença com RAG menos contexto completo (dif, inf, sup), tokens médios e latência mediana."""
+    valores = acertos(com=(acerto_com, 0, 1), sem=(0.22, 0.12, 0.35), cc=(acerto_cc, 0, 1),
+                      dif_sem=(0.58, 0.42, 0.7), dif_cc=dif_cc)
+    valores["gabarito_n_perguntas"] = (60, "inteiro")
+    for c, tok, lat in zip(("com_rag", "sem_rag", "contexto_completo"), tokens, latencia, strict=True):
+        valores[f"{c}_tokens_entrada_medio"] = (tok, "inteiro")
+        valores[f"{c}_latencia_mediana_s"] = (lat, "dec1")
+    return valores
+
+
+def test_titulo_do_custo_quando_o_contexto_completo_acerta_parecido_mas_le_muito_mais_tokens():
+    r = registro(**custos(0.8, 0.82, dif_cc=(-0.02, -0.12, 0.08)))
+
+    assert textos_custo(r).titulo == (
+        "O contexto completo acerta 82,0%, perto dos 80,0% com RAG, mas lê 35 vezes mais tokens por Pergunta")
+
+
+def test_titulo_do_custo_quando_o_contexto_completo_acerta_mais():
+    r = registro(**custos(0.7, 0.86, dif_cc=(-0.16, -0.28, -0.04), tokens=(9000.0, 221.0, 60000.0)))
+
+    assert textos_custo(r).titulo == (
+        "O contexto completo acerta mais, 86,0% contra 70,0% com RAG, mas lê 6,7 vezes mais tokens por Pergunta")
+
+
+def test_titulo_do_custo_quando_com_rag_acerta_mais():
+    r = registro(**custos(0.86, 0.7, dif_cc=(0.16, 0.04, 0.28)))
+
+    assert textos_custo(r).titulo == (
+        "Com RAG, o assistente acerta mais que com o contexto completo, 86,0% contra 70,0%, "
+        "e lê 35 vezes menos tokens por Pergunta")
+
+
+def test_figura_do_custo_rotula_acerto_tokens_e_latencia_de_cada_condicao_e_registra_o_que_imprime():
+    t = textos_custo(registro(**custos(0.8, 0.82, dif_cc=(-0.02, -0.12, 0.08))))
+
+    assert t.arquivo == "figuras/custo_por_condicao.png"
+    assert t.linhas == ("com_rag", "sem_rag", "contexto_completo")
+    assert t.destaque == ("com_rag",)
+    assert t.rotulos["contexto_completo"] == "Contexto completo\nacerta 82,0%"
+    assert t.rotulos["com_rag/tokens"] == "média 2.712"
+    assert t.rotulos["contexto_completo/latencia"] == "mediana 10,4 s"
+    assert "60 Perguntas" in t.subtitulo
+    conferir_registrados(t, "figura_custo_")

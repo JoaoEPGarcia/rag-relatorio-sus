@@ -20,7 +20,7 @@ from dataclasses import dataclass, field
 from rag_sus.assistente import CONDICOES
 from rag_sus.avaliacao.estatistica import NIVEL
 from rag_sus.avaliacao.gabarito import TIPOS_RESPONDIVEIS
-from rag_sus.avaliacao.resultados import CLASSES_DE_ERRO, NOMES_TIPO
+from rag_sus.avaliacao.resultados import CLASSES_DE_ERRO, NOMES_CONDICAO, NOMES_TIPO
 from rag_sus.numeros import Numero, formatar
 
 
@@ -94,6 +94,48 @@ def textos_acerto(registro: dict[str, dict]) -> TextosDaFigura:
                  f"A linha fina é o intervalo de confiança de Wilson de {nivel}%.")
     return TextosDaFigura(arquivo, titulo, subtitulo, rotulos, tuple(t.numeros.values()),
                           linhas=CONDICOES, destaque=("com_rag",))
+
+
+def _nome_de_abertura(condicao: str) -> str:
+    """"contexto completo" -> "Contexto completo"."""
+    nome = NOMES_CONDICAO[condicao]
+    return nome[:1].upper() + nome[1:]
+
+
+def textos_custo(registro: dict[str, dict]) -> TextosDaFigura:
+    """Tokens de entrada e latência por Pergunta, por Condição, ao lado do acerto: se cabe no contexto, para que RAG?"""
+    arquivo = "figuras/custo_por_condicao.png"
+    t = _Impressos(registro, "custo", arquivo)
+    rag, cc = t("com_rag_acerto_resposta"), t("contexto_completo_acerto_resposta")
+    tokens_rag, tokens_cc = t.valor("com_rag_tokens_entrada_medio"), t.valor("contexto_completo_tokens_entrada_medio")
+    razao = max(tokens_rag, tokens_cc) / min(tokens_rag, tokens_cc)
+    vezes = t.novo("razao_tokens", razao,
+                   "quantas vezes os tokens de entrada médios de uma Condição cabem nos da outra, "
+                   "contexto completo × com RAG", "dec0" if razao >= 10 else "dec1")
+    cc_le_mais = tokens_cc >= tokens_rag
+    lado = _lado_da_diferenca(t, "com_rag_x_contexto_completo")
+    if lado > 0:
+        titulo = (f"Com RAG, o assistente acerta mais que com o contexto completo, {rag} contra {cc}, "
+                  f"e lê {vezes} vezes {'menos' if cc_le_mais else 'mais'} tokens por Pergunta")
+    else:
+        conectivo = "mas lê" if cc_le_mais else "e ainda lê"
+        quanto = f"{vezes} vezes {'mais' if cc_le_mais else 'menos'} tokens por Pergunta"
+        if lado < 0:
+            titulo = f"O contexto completo acerta mais, {cc} contra {rag} com RAG, {conectivo} {quanto}"
+        else:
+            titulo = f"O contexto completo acerta {cc}, perto dos {rag} com RAG, {conectivo} {quanto}"
+
+    rotulos = {"coluna/tokens": "Tokens de entrada por Pergunta (escala logarítmica)",
+               "coluna/latencia": "Latência por Pergunta, em segundos"}
+    for c in CONDICOES:
+        rotulos[c] = f"{_nome_de_abertura(c)}\nacerta {t(f'{c}_acerto_resposta')}"
+        rotulos[f"{c}/tokens"] = f"média {t(f'{c}_tokens_entrada_medio')}"
+        rotulos[f"{c}/latencia"] = f"mediana {t(f'{c}_latencia_mediana_s')} s"
+    n = t("gabarito_n_perguntas")
+    subtitulo = (f"Cada caixa resume as {n} Perguntas da Rodada principal numa Condição (traço: mediana; "
+                 "losango: média). O acerto é o da resposta, nas Perguntas respondíveis.")
+    return TextosDaFigura(arquivo, titulo, subtitulo, rotulos, tuple(t.numeros.values()),
+                          linhas=CONDICOES, colunas=("tokens", "latencia"), destaque=("com_rag",))
 
 
 def _em_lista(nomes: list[str]) -> str:
