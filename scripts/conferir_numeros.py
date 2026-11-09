@@ -9,6 +9,10 @@ script falha (código 1) se:
   4. relatorio/numeros.tex ou NUMEROS_CANONICOS.md estão desatualizados;
   5. o .tex usa uma macro \\Num... que o registro não define.
 
+Falha também se algum marcador do README.base.md não tiver valor no registro.
+O 06_gerar_documentos.py e o README.base.md vêm do projeto; o registro e as
+saídas conferidas, da raiz (RAG_SUS_RAIZ, se definida).
+
 Uso: uv run python scripts/conferir_numeros.py
 """
 
@@ -18,6 +22,7 @@ import sys
 
 from rag_sus import config, numeros
 from rag_sus.documentos import (
+    MarcadorDesconhecido,
     digitos_soltos_no_markdown,
     digitos_soltos_no_tex,
     gerar_numeros_canonicos,
@@ -27,19 +32,23 @@ from rag_sus.documentos import (
     usos,
 )
 
-_espec = importlib.util.spec_from_file_location("gerar", config.RAIZ / "scripts" / "06_gerar_documentos.py")
+_espec = importlib.util.spec_from_file_location("gerar", config.PROJETO / "scripts" / "06_gerar_documentos.py")
 gerar = importlib.util.module_from_spec(_espec)
 _espec.loader.exec_module(gerar)
 
 
 def main() -> int:
+    sys.stdout.reconfigure(encoding="utf-8")
     falhas: list[str] = []
     registro = numeros.carregar()
     base = gerar.BASE.read_text(encoding="utf-8")
 
     readme = gerar.README.read_text(encoding="utf-8") if gerar.README.exists() else ""
-    if preencher_readme(base, registro) not in readme:
-        falhas.append("README.md difere do gerado: edite README.base.md e rode scripts/06_gerar_documentos.py")
+    try:
+        if preencher_readme(base, registro) not in readme:
+            falhas.append("README.md difere do gerado: edite README.base.md e rode scripts/06_gerar_documentos.py")
+    except MarcadorDesconhecido as erro:
+        falhas.append(f"README.base.md: {erro.args[0]}")
 
     soltos = digitos_soltos_no_markdown(base)
     if soltos:
