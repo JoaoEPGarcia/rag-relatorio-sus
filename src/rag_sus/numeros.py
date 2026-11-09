@@ -84,9 +84,29 @@ class Numero:
     aparece_em: tuple[str, ...] = ()
 
 
-def _entrada(n: Numero, script: str) -> dict:
+@dataclass(frozen=True)
+class Texto:
+    """Um texto que o script escolhe a partir do resultado, em português e em inglês.
+
+    Serve para a frase que depende do sinal ou do tamanho de um número (o
+    IC da diferença inclui o zero ou não; qual Classe de erro é a mais
+    frequente), para que o README nunca afirme um achado que o resultado não
+    sustenta. Entra no registro com formato "texto" e vira marcador e macro
+    como qualquer número.
+    """
+
+    chave: str
+    texto: str
+    texto_en: str
+    descricao: str
+
+
+def _entrada(n: Numero | Texto, script: str) -> dict:
     if not _CHAVE.match(n.chave):
         raise ValueError(f"chave '{n.chave}' inválida: use minúsculas, dígitos e _")
+    if isinstance(n, Texto):
+        return {"valor": n.texto, "texto": n.texto, "texto_en": n.texto_en, "descricao": n.descricao,
+                "script": script, "formato": "texto"}
     formato = n.formato
     if formato is None:
         if isinstance(n.valor, bool) or not isinstance(n.valor, int):
@@ -137,7 +157,9 @@ def registrar(
     return entrada["texto"]
 
 
-def registrar_do_script(script: str, lista: Iterable[Numero], caminho: Path | None = None) -> dict[str, str]:
+def registrar_do_script(
+    script: str, lista: Iterable[Numero | Texto], caminho: Path | None = None
+) -> dict[str, str]:
     """Substitui de uma vez todos os números de um script e devolve chave -> texto.
 
     Os números que o script gravou antes e não estão em `lista` saem do

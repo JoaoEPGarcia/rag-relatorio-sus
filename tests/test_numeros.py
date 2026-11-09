@@ -5,7 +5,7 @@ import json
 
 import pytest
 
-from rag_sus.numeros import Numero, carregar, formatar, registrar, registrar_do_script
+from rag_sus.numeros import Numero, Texto, carregar, formatar, registrar, registrar_do_script
 
 
 @pytest.mark.parametrize(
@@ -126,6 +126,21 @@ def test_registrar_do_script_troca_de_uma_vez_os_numeros_do_script(tmp_path):
     assert dados["acerto"]["texto"] == "82,0%"
     assert dados["acerto"]["aparece_em"] == ["relatorio/tabelas/x.tex"]
     assert "aparece_em" not in dados["corpus_trechos"]
+
+
+def test_registrar_do_script_aceita_texto_escolhido_a_partir_do_resultado(tmp_path):
+    caminho = tmp_path / "numeros.json"
+    registrar_do_script("scripts/04_analisar.py", [
+        Numero("dif", 0.02, "diferença", "pp1"),
+        Texto("dif_conclusao", "os dados não distinguem as duas Condições",
+              "the data cannot tell the two conditions apart", "leitura do IC da diferença"),
+    ], caminho=caminho)
+
+    e = carregar(caminho)["dif_conclusao"]
+    assert e["formato"] == "texto"
+    assert e["texto"] == "os dados não distinguem as duas Condições"
+    assert e["texto_en"] == "the data cannot tell the two conditions apart"
+    assert e["script"] == "scripts/04_analisar.py"
 
 
 def test_registrar_do_script_recusa_chave_repetida(tmp_path):
