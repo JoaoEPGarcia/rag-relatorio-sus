@@ -338,3 +338,58 @@ def test_destaque_usa_so_as_respondiveis_e_as_sem_resposta_saem_a_parte(projeto)
     assert r["com_rag_abstencao_correta"]["valor"] == pytest.approx(0.9)
     assert r["com_rag_abstencao_correta_inf"]["valor"] == pytest.approx(inf, abs=1e-6)
     assert r["com_rag_abstencao_correta_sup"]["valor"] == pytest.approx(sup, abs=1e-6)
+
+
+def test_registra_o_nivel_de_confianca_dos_intervalos(projeto):
+    r = rodar(projeto)
+    assert r["ic_nivel"]["valor"] == 95  # o README escreve "IC de {{ic_nivel}}%", sem digitar o nível
+    assert r["ic_nivel"]["texto"] == "95"
+
+
+def test_conclusao_da_comparacao_segue_o_intervalo_da_diferenca(projeto):
+    r = rodar(projeto)
+
+    # com RAG 40/50 contra sem RAG 15/50: o IC fica todo acima de zero
+    assert r["com_rag_x_sem_rag_conclusao"]["texto"] == "com RAG acerta mais"
+    assert r["com_rag_x_sem_rag_conclusao"]["texto_en"] == "RAG gets more answers right"
+    # com RAG 40/50 contra contexto completo 42/50: o IC inclui o zero, e o achado nulo é dito com clareza
+    assert r["com_rag_x_contexto_completo_conclusao"]["texto"] == "os dados não distinguem as duas Condições"
+    assert r["com_rag_x_contexto_completo_conclusao"]["texto_en"] == "the data cannot tell the two conditions apart"
+
+    # com RAG 10/50 contra contexto completo 42/50: o IC fica todo abaixo de zero
+    gravar_rodada(projeto["rodadas"], "principal", "com_rag", condicao_simples("com_rag", 10, abstencoes_corretas=9))
+    r = rodar(projeto)
+    assert r["com_rag_x_contexto_completo_conclusao"]["texto"] == "com RAG acerta menos"
+    assert r["com_rag_x_contexto_completo_conclusao"]["texto_en"] == "RAG gets fewer answers right"
+
+
+def test_classe_de_erro_mais_frequente_com_rag(projeto):
+    # na fixture, com RAG: G41..G50 em falha de leitura e S10 em resposta inventada
+    r = rodar(projeto)
+    assert r["com_rag_n_com_erro"]["valor"] == 11
+    assert r["com_rag_erro_mais_frequente"]["texto"] == "falha de leitura"
+    assert r["com_rag_erro_mais_frequente"]["texto_en"] == "reading failure"
+    assert r["com_rag_erro_mais_frequente_n"]["valor"] == 10
+
+
+def test_classe_de_erro_mais_frequente_com_empate(projeto):
+    linhas = condicao_simples("com_rag", 40, abstencoes_corretas=9)
+    for l in linhas:
+        if l["id"] in {"G41", "G42", "G43", "G44", "G45"}:
+            l.update(abstencao=True)  # 5 abstenções indevidas, 5 falhas de leitura
+    gravar_rodada(projeto["rodadas"], "principal", "com_rag", linhas)
+
+    r = rodar(projeto)
+
+    assert r["com_rag_erro_mais_frequente"]["texto"] == "falha de leitura e abstenção indevida, empatadas"
+    assert r["com_rag_erro_mais_frequente"]["texto_en"] == "reading failure and unwarranted abstention, tied"
+    assert r["com_rag_erro_mais_frequente_n"]["valor"] == 5
+
+
+def test_sem_nenhum_erro_a_classe_mais_frequente_diz_isso(projeto):
+    gravar_rodada(projeto["rodadas"], "principal", "com_rag", condicao_simples("com_rag", 50, abstencoes_corretas=10))
+    r = rodar(projeto)
+    assert r["com_rag_n_com_erro"]["valor"] == 0
+    assert r["com_rag_erro_mais_frequente_n"]["valor"] == 0
+    assert r["com_rag_erro_mais_frequente"]["texto"] == "nenhuma, porque não houve erro"
+    assert r["com_rag_erro_mais_frequente"]["texto_en"] == "none, since there was no error"

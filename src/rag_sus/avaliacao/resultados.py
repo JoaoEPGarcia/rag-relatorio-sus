@@ -14,6 +14,10 @@ a pasta das Rodadas e a folha de Revisão dos Veredictos e:
 - cruza as Classes de erro com o Tipo de pergunta na Condição com RAG;
 - mede a concordância com cada repetição que existir (Veredictos não
   revisados);
+- escolhe, a partir do resultado, os textos que o README imprime ao lado dos
+  números (a conclusão de cada comparação pelo IC da diferença e a Classe de
+  erro mais frequente com RAG), em português e em inglês, para que nenhuma
+  frase do README fixe um achado que o resultado não sustente;
 - grava cada número no registro, numa vez só, e escreve as linhas das tabelas
   do Relatório de avaliação, que o kit lê com \\linhasde.
 """
@@ -26,12 +30,13 @@ from pathlib import Path
 from rag_sus import config, numeros
 from rag_sus.assistente import CONDICOES
 from rag_sus.avaliacao.analise import comparar, concordancia, erros_por_tipo, resumir
+from rag_sus.avaliacao.estatistica import NIVEL
 from rag_sus.avaliacao.gabarito import TIPOS_RESPONDIVEIS
 from rag_sus.avaliacao.rodada import RevisaoIncompleta, carregar_linhas, consolidar
 from rag_sus.avaliacao.sinteticas import RaizProibida, dentro_de_uma_copia_do_projeto, rodada_sintetica
 from rag_sus.avaliacao.travas import RODADAS_PUBLICADAS
 from rag_sus.documentos import texto_tex
-from rag_sus.numeros import Numero
+from rag_sus.numeros import Numero, Texto
 
 REPETICOES = tuple(r for r in RODADAS_PUBLICADAS if r != "principal")
 
@@ -53,6 +58,14 @@ CLASSES_DE_ERRO = {
     "abstenção indevida": "abstencao_indevida",
     "citação errada": "citacao_errada",
     "resposta inventada": "resposta_inventada",
+}
+# O nome de cada Classe de erro na seção "In English" do README.
+CLASSES_DE_ERRO_EN = {
+    "falha de recuperação": "retrieval failure",
+    "falha de leitura": "reading failure",
+    "abstenção indevida": "unwarranted abstention",
+    "citação errada": "wrong citation",
+    "resposta inventada": "made-up answer",
 }
 # Com RAG contra cada uma das outras; a primeira é a comparação principal.
 COMPARADAS_COM_RAG = ("sem_rag", "contexto_completo")
@@ -173,12 +186,55 @@ def _numeros_por_tipo(linhas: list[dict]) -> list[Numero]:
     return lista
 
 
-def _numeros_da_comparacao(outra: str, com_rag: list[dict], linhas_outra: list[dict]) -> list[Numero]:
+def _juntar(nomes: list[str], e: str) -> str:
+    """["a", "b", "c"] -> "a, b e c"."""
+    return nomes[0] if len(nomes) == 1 else ", ".join(nomes[:-1]) + f" {e} " + nomes[-1]
+
+
+def _numeros_do_erro_mais_frequente(c: str, r: dict) -> list[Numero | Texto]:
+    """A Classe de erro mais frequente na Condição, escolhida aqui para o README não fixá-la à mão.
+
+    Empate: todas as empatadas, na ordem de CLASSES_DE_ERRO. Sem erro nenhum,
+    o texto diz isso, para a frase do README continuar verdadeira.
+    """
+    nome = NOMES_CONDICAO[c]
+    contagem = {classe: r["erros"].get(classe, 0) for classe in CLASSES_DE_ERRO}
+    maior = max(contagem.values())
+    if maior == 0:
+        pt, en = "nenhuma, porque não houve erro", "none, since there was no error"
+    else:
+        mais = [classe for classe, n in contagem.items() if n == maior]
+        pt, en = _juntar(mais, "e"), _juntar([CLASSES_DE_ERRO_EN[classe] for classe in mais], "and")
+        if len(mais) > 1:
+            pt, en = f"{pt}, empatadas", f"{en}, tied"
+    return [
+        Numero(f"{c}_n_com_erro", sum(contagem.values()),
+               f"respostas {nome} com alguma Classe de erro (respondíveis e sem resposta)"),
+        Numero(f"{c}_erro_mais_frequente_n", maior, f"respostas {nome} na Classe de erro mais frequente"),
+        Texto(f"{c}_erro_mais_frequente", pt, en, f"Classe de erro mais frequente {nome} (empates juntos)"),
+    ]
+
+
+def _conclusao(outra: str, d) -> Texto:
+    """O que o IC da diferença pareada permite dizer: com RAG acerta mais, menos, ou os dados não distinguem."""
+    if d.inferior > 0:
+        pt, en = "com RAG acerta mais", "RAG gets more answers right"
+    elif d.superior < 0:
+        pt, en = "com RAG acerta menos", "RAG gets fewer answers right"
+    else:
+        pt, en = "os dados não distinguem as duas Condições", "the data cannot tell the two conditions apart"
+    return Texto(f"com_rag_x_{outra}_conclusao", pt, en,
+                 f"com RAG × {NOMES_CONDICAO[outra]}: leitura do IC de Newcombe (todo acima, todo abaixo "
+                 "de zero ou incluindo o zero)")
+
+
+def _numeros_da_comparacao(outra: str, com_rag: list[dict], linhas_outra: list[dict]) -> list[Numero | Texto]:
     k = f"com_rag_x_{outra}"
     nome = f"com RAG × {NOMES_CONDICAO[outra]}"
     c = comparar(com_rag, linhas_outra)
     t, d = c["tabela"], c["diferenca"]
     return [
+        _conclusao(outra, d),
         Numero(f"{k}_n_pares", t.n, f"{nome}: Perguntas respondíveis pareadas"),
         Numero(f"{k}_ambos", t.ambos, f"{nome}: as duas Condições acertam"),
         Numero(f"{k}_so_com_rag", t.so_a, f"{nome}: só com RAG acerta"),
@@ -364,26 +420,28 @@ def analisar(
         )
     consolidadas = _consolidar_principal(pasta_rodadas / "principal", folha)
     resumos = {c: resumir(consolidadas[c]) for c in CONDICOES}
-    lista: list[Numero] = (
-        _numeros_de_destaque(resumos)
+    lista: list[Numero | Texto] = (
+        [Numero("ic_nivel", round(100 * NIVEL), "nível de confiança dos intervalos de Wilson e de Newcombe, em %")]
+        + _numeros_de_destaque(resumos)
         + _numeros_do_gabarito(consolidadas["com_rag"])
         + _numeros_da_rodada(resumos)
         + _numeros_da_revisao(consolidadas)
     )
     for c in CONDICOES:
         lista += _numeros_da_condicao(c, resumos[c]) + _numeros_dos_erros(c, resumos[c])
+    lista += _numeros_do_erro_mais_frequente("com_rag", resumos["com_rag"])
     lista += _numeros_por_tipo(consolidadas["com_rag"])
     for outra in COMPARADAS_COM_RAG:
         lista += _numeros_da_comparacao(outra, consolidadas["com_rag"], consolidadas[outra])
     lista += _numeros_da_concordancia(pasta_rodadas)
 
-    textos = {n.chave: numeros.formatar(n.valor, n.formato or "inteiro") for n in lista}
+    textos = {n.chave: numeros.formatar(n.valor, n.formato or "inteiro") for n in lista if isinstance(n, Numero)}
     tabelas = _montar_tabelas(textos)
     onde: dict[str, list[str]] = {}
     for nome, (_, usadas) in tabelas.items():
         for chave in usadas:
             onde.setdefault(chave, []).append(f"{TABELAS_NO_PROJETO}/{nome}")
-    lista = [replace(n, aparece_em=tuple(onde.get(n.chave, ()))) for n in lista]
+    lista = [replace(n, aparece_em=tuple(onde.get(n.chave, ()))) if isinstance(n, Numero) else n for n in lista]
 
     registrados = numeros.registrar_do_script(SCRIPT, lista, caminho=numeros_json)
     pasta_tabelas.mkdir(parents=True, exist_ok=True)
