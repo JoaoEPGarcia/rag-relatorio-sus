@@ -24,12 +24,14 @@ from pathlib import Path
 
 from rag_sus import config, numeros
 from rag_sus.assistente import CONDICOES
-from rag_sus.avaliacao.analise import resumir
+from rag_sus.avaliacao.analise import comparar, resumir
 from rag_sus.avaliacao.rodada import RevisaoIncompleta, consolidar
 from rag_sus.numeros import Numero
 
 SCRIPT = "scripts/04_analisar.py"
 NOMES_CONDICAO = {"com_rag": "com RAG", "sem_rag": "sem RAG", "contexto_completo": "contexto completo"}
+# Com RAG contra cada uma das outras; a primeira é a comparação principal.
+COMPARADAS_COM_RAG = ("sem_rag", "contexto_completo")
 
 
 def _intervalo(chave: str, intervalo, o_que: str) -> list[Numero]:
@@ -86,6 +88,24 @@ def _consolidar_principal(principal: Path, folha: Path) -> dict[str, list[dict]]
     return consolidadas
 
 
+def _numeros_da_comparacao(outra: str, com_rag: list[dict], linhas_outra: list[dict]) -> list[Numero]:
+    k = f"com_rag_x_{outra}"
+    nome = f"com RAG × {NOMES_CONDICAO[outra]}"
+    c = comparar(com_rag, linhas_outra)
+    t, d = c["tabela"], c["diferenca"]
+    return [
+        Numero(f"{k}_n_pares", t.n, f"{nome}: Perguntas respondíveis pareadas"),
+        Numero(f"{k}_ambos", t.ambos, f"{nome}: as duas Condições acertam"),
+        Numero(f"{k}_so_com_rag", t.so_a, f"{nome}: só com RAG acerta"),
+        Numero(f"{k}_so_{outra}", t.so_b, f"{nome}: só {NOMES_CONDICAO[outra]} acerta"),
+        Numero(f"{k}_nenhum", t.nenhum, f"{nome}: as duas Condições erram"),
+        Numero(f"{k}_diferenca", d.diferenca, f"{nome}: diferença pareada do Acerto da resposta", "pp1"),
+        Numero(f"{k}_diferenca_inf", d.inferior, f"{nome}: limite inferior do IC de Newcombe de 95%", "pp1"),
+        Numero(f"{k}_diferenca_sup", d.superior, f"{nome}: limite superior do IC de Newcombe de 95%", "pp1"),
+        Numero(f"{k}_p_mcnemar", c["p_mcnemar"], f"{nome}: valor-p do teste exato de McNemar", "p3"),
+    ]
+
+
 def _numeros_da_revisao(consolidadas: dict[str, list[dict]]) -> list[Numero]:
     do_juiz = [l for linhas in consolidadas.values() for l in linhas if l["veredicto_juiz"] is not None]
     revisados = [l for l in do_juiz if l["revisado_pelo_autor"]]
@@ -109,4 +129,6 @@ def analisar(
     lista: list[Numero] = _numeros_de_destaque(resumos) + _numeros_da_revisao(consolidadas)
     for c in CONDICOES:
         lista += _numeros_da_condicao(c, resumos[c])
+    for outra in COMPARADAS_COM_RAG:
+        lista += _numeros_da_comparacao(outra, consolidadas["com_rag"], consolidadas[outra])
     return numeros.registrar_do_script(SCRIPT, lista, caminho=numeros_json or config.NUMEROS)

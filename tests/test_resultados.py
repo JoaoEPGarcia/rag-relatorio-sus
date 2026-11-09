@@ -119,6 +119,34 @@ def com_juiz(p, condicao, juizes):
     gravar_rodada(p["rodadas"], "principal", condicao, linhas)
 
 
+@pytest.mark.parametrize("comparacao,outra,tabela", [
+    # com RAG acerta G01..G40; sem RAG, G01..G15; contexto completo, G01..G42
+    ("com_rag_x_sem_rag", "sem_rag", (15, 25, 0, 10)),
+    ("com_rag_x_contexto_completo", "contexto_completo", (40, 0, 2, 8)),
+])
+def test_comparacao_pareada_nas_respondiveis(projeto, comparacao, outra, tabela):
+    r = rodar(projeto)
+
+    ambos, so_com, so_outra, nenhum = tabela
+    assert r[f"{comparacao}_n_pares"]["valor"] == 50
+    assert r[f"{comparacao}_ambos"]["valor"] == ambos
+    assert r[f"{comparacao}_so_com_rag"]["valor"] == so_com
+    assert r[f"{comparacao}_so_{outra}"]["valor"] == so_outra
+    assert r[f"{comparacao}_nenhum"]["valor"] == nenhum
+    p = mcnemar([[ambos, so_com], [so_outra, nenhum]], exact=True).pvalue
+    assert r[f"{comparacao}_p_mcnemar"]["valor"] == pytest.approx(p)
+    d = (so_com - so_outra) / 50
+    assert r[f"{comparacao}_diferenca"]["valor"] == pytest.approx(d)
+    assert r[f"{comparacao}_diferenca_inf"]["valor"] < d < r[f"{comparacao}_diferenca_sup"]["valor"]
+
+
+def test_comparacao_escreve_a_diferenca_em_pontos_percentuais_com_o_sinal_de_menos(projeto):
+    r = rodar(projeto)
+    assert r["com_rag_x_sem_rag_diferenca"]["texto"] == "50,0 p.p."
+    assert r["com_rag_x_contexto_completo_diferenca"]["texto"] == "−4,0 p.p."
+    assert r["com_rag_x_sem_rag_p_mcnemar"]["texto"] == "< 0,001"
+
+
 def test_falta_de_revisao_trava_a_analise_e_lista_as_perguntas_pendentes(projeto):
     com_juiz(projeto, "com_rag", {"G41": True, "G42": False})
     com_juiz(projeto, "sem_rag", {"G43": False})
