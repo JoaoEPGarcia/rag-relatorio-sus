@@ -8,8 +8,10 @@ em <raiz>:
   resultados/rodadas/repeticaoN/... (uma pasta por repetição pedida)
   resultados/rodadas/*/execucao.json   (com "sintetica": true)
   avaliacao/revisao_veredictos.csv     (já revisada, com Veredictos mudados)
+  resultados/numeros.json              (só os números reais do corpus, lidos do
+                                        registro do projeto, que não é escrito)
 
-Os números são inventados. Por isso o script recusa uma raiz que seja (ou
+Os números das Rodadas são inventados. Por isso o script recusa uma raiz que seja (ou
 esteja dentro de) uma cópia do projeto, e a análise recusa publicar Rodadas
 sintéticas no registro de uma cópia do projeto. A mesma semente gera sempre
 os mesmos arquivos; rodar de novo na mesma raiz substitui as Rodadas.
@@ -18,7 +20,9 @@ Uso (Git Bash; a raiz vem de --raiz ou de RAG_SUS_RAIZ):
   export RAG_SUS_RAIZ="$(mktemp -d)"
   uv run python scripts/gerar_rodadas_sinteticas.py [--semente 2026] [--repeticoes 2]
   uv run python scripts/04_analisar.py           # registro e tabelas em $RAG_SUS_RAIZ
-  uv run python scripts/06_gerar_documentos.py   # precisa de README.base.md em $RAG_SUS_RAIZ
+  uv run python scripts/06_gerar_documentos.py   # README.md, macros e NUMEROS_CANONICOS.md em $RAG_SUS_RAIZ
+  uv run python scripts/conferir_numeros.py      # confere a raiz temporária
+Os scripts e o README.base.md vêm sempre do projeto; só os dados vêm da raiz.
 """
 
 import argparse
