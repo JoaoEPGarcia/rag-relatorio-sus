@@ -1,0 +1,85 @@
+# -*- coding: utf-8 -*-
+"""Da Rodada aos números: consolida a Rodada principal e registra os resultados.
+
+POR QUE ISTO EXISTE. Os números publicados (README, Relatório de avaliação,
+figuras) saem todos daqui, e nenhum é digitado (ADR 0003). `analisar` recebe
+a pasta das Rodadas e a folha de Revisão dos Veredictos e:
+
+- consolida a Rodada principal de cada Condição, exigindo a Revisão de todo
+  Veredicto do Juiz; a Revisão do autor vence o Juiz;
+- resume cada Condição (as três medidas com Wilson, respondíveis e sem
+  resposta em separado, tokens, latência e fallbacks);
+- compara com RAG × sem RAG (comparação principal) e com RAG × contexto
+  completo, pareando pelo id;
+- cruza as Classes de erro com o Tipo de pergunta na Condição com RAG;
+- mede a concordância com cada repetição que existir (Veredictos não
+  revisados);
+- grava cada número no registro, numa vez só, e escreve as linhas das tabelas
+  do Relatório de avaliação, que o kit lê com \\linhasde.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from rag_sus import config, numeros
+from rag_sus.assistente import CONDICOES
+from rag_sus.avaliacao.analise import resumir
+from rag_sus.avaliacao.rodada import consolidar
+from rag_sus.numeros import Numero
+
+SCRIPT = "scripts/04_analisar.py"
+NOMES_CONDICAO = {"com_rag": "com RAG", "sem_rag": "sem RAG", "contexto_completo": "contexto completo"}
+
+
+def _intervalo(chave: str, intervalo, o_que: str) -> list[Numero]:
+    return [
+        Numero(chave, intervalo.proporcao, o_que, "pct1"),
+        Numero(f"{chave}_inf", intervalo.inferior, f"{o_que}: limite inferior do IC de Wilson de 95%", "pct1"),
+        Numero(f"{chave}_sup", intervalo.superior, f"{o_que}: limite superior do IC de Wilson de 95%", "pct1"),
+    ]
+
+
+def _numeros_da_condicao(c: str, r: dict) -> list[Numero]:
+    nome = NOMES_CONDICAO[c]
+    lista = [
+        Numero(f"{c}_n_respondiveis", r["n_respondiveis"], f"Perguntas respondíveis na Condição {nome}"),
+        Numero(f"{c}_acertos_resposta", r["acertos_resposta"], f"acertos da resposta {nome} (respondíveis)"),
+    ]
+    lista += _intervalo(f"{c}_acerto_resposta", r["acerto_resposta"], f"Acerto da resposta {nome} (respondíveis)")
+    if r["abstencao_correta"]:
+        lista += [
+            Numero(f"{c}_n_sem_resposta", r["n_sem_resposta"], f"Perguntas sem resposta na Condição {nome}"),
+            Numero(f"{c}_abstencoes_corretas", r["abstencoes_corretas"], f"Abstenções corretas {nome} (sem resposta)"),
+        ]
+        lista += _intervalo(f"{c}_abstencao_correta", r["abstencao_correta"],
+                            f"Abstenção correta {nome} (sem resposta)")
+    return lista
+
+
+def _numeros_de_destaque(resumos: dict[str, dict]) -> list[Numero]:
+    """Acerto da resposta com RAG nas respondíveis, com IC, contra o mesmo acerto sem RAG."""
+    com, sem = resumos["com_rag"], resumos["sem_rag"]
+    lista = [Numero("destaque_n_respondiveis", com["n_respondiveis"],
+                    "destaque: Perguntas respondíveis em que o acerto é medido")]
+    lista += _intervalo("destaque_acerto_com_rag", com["acerto_resposta"],
+                        "destaque: Acerto da resposta com RAG (respondíveis)")
+    lista.append(Numero("destaque_acerto_sem_rag", sem["acerto_resposta"].proporcao,
+                        "destaque: Acerto da resposta sem RAG (respondíveis)", "pct1"))
+    return lista
+
+
+def analisar(
+    pasta_rodadas: Path,
+    folha: Path,
+    numeros_json: Path | None = None,
+    pasta_tabelas: Path | None = None,
+) -> dict[str, str]:
+    """Registra os números da Rodada principal e devolve chave -> texto formatado."""
+    principal = Path(pasta_rodadas) / "principal"
+    consolidadas = {c: consolidar(principal / f"{c}.jsonl", folha, exigir_revisao=False) for c in CONDICOES}
+    resumos = {c: resumir(consolidadas[c]) for c in CONDICOES}
+    lista: list[Numero] = _numeros_de_destaque(resumos)
+    for c in CONDICOES:
+        lista += _numeros_da_condicao(c, resumos[c])
+    return numeros.registrar_do_script(SCRIPT, lista, caminho=numeros_json or config.NUMEROS)
