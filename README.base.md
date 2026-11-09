@@ -40,7 +40,7 @@ A Rodada principal ainda não foi feita: o Gabarito está em Revisão. Esta seç
 ## Como reproduzir
 
 1. Instale o [uv](https://docs.astral.sh/uv/) e as dependências: `uv sync --all-groups`.
-2. Copie `.env.exemplo` para `.env` e preencha `ANTHROPIC_API_KEY`. O `.env` não vai para o git.
+2. Configure a máquina com o roteiro guiado `bash scripts/configurar_maquina.sh`. Ele cria a chave da API da Anthropic (ou instala o Ollama e baixa o modelo), grava no `.env`, instala o Docker Desktop e testa a API no contêiner. O `.env` não vai para o git.
 3. Rode o pipeline:
    ```
    uv run python scripts/01_extrair.py
