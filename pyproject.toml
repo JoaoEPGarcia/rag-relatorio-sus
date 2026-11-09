@@ -44,6 +44,8 @@ markers = [
 [tool.ruff]
 line-length = 120
 target-version = "py312"
+# estilo/ é cópia do kit do portfólio, não editada aqui; o CI também só confere src, tests e scripts.
+extend-exclude = ["estilo"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
