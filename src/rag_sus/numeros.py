@@ -16,6 +16,8 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Iterable
+from dataclasses import dataclass
 from pathlib import Path
 
 from rag_sus import config
@@ -64,6 +66,46 @@ def carregar(caminho: Path | None = None) -> dict[str, dict]:
     return json.loads(caminho.read_text(encoding="utf-8"))
 
 
+@dataclass(frozen=True)
+class Numero:
+    """Um número a registrar. `aparece_em` declara onde ele é impresso fora do .tex e do README."""
+
+    chave: str
+    valor: float | int
+    descricao: str
+    formato: str | None = None
+    aparece_em: tuple[str, ...] = ()
+
+
+def _entrada(n: Numero, script: str) -> dict:
+    if not _CHAVE.match(n.chave):
+        raise ValueError(f"chave '{n.chave}' inválida: use minúsculas, dígitos e _")
+    formato = n.formato
+    if formato is None:
+        if isinstance(n.valor, bool) or not isinstance(n.valor, int):
+            raise ValueError(f"{n.chave}: número não inteiro precisa de formato explícito")
+        formato = "inteiro"
+    entrada = {
+        "valor": n.valor,
+        "texto": formatar(n.valor, formato),
+        "descricao": n.descricao,
+        "script": script,
+        "formato": formato,
+    }
+    if n.aparece_em:
+        entrada["aparece_em"] = list(n.aparece_em)
+    return entrada
+
+
+def _gravar(dados: dict[str, dict], caminho: Path) -> None:
+    caminho.parent.mkdir(parents=True, exist_ok=True)
+    caminho.write_text(
+        json.dumps(dict(sorted(dados.items())), ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+
+
 def registrar(
     chave: str,
     valor: float | int,
@@ -73,26 +115,29 @@ def registrar(
     caminho: Path | None = None,
 ) -> str:
     """Grava (ou substitui) um número no registro e devolve o texto formatado."""
-    if not _CHAVE.match(chave):
-        raise ValueError(f"chave '{chave}' inválida: use minúsculas, dígitos e _")
-    if formato is None:
-        if isinstance(valor, bool) or not isinstance(valor, int):
-            raise ValueError(f"{chave}: número não inteiro precisa de formato explícito")
-        formato = "inteiro"
+    entrada = _entrada(Numero(chave, valor, descricao, formato), script)
     caminho = caminho or config.NUMEROS
     dados = carregar(caminho)
-    texto = formatar(valor, formato)
-    dados[chave] = {
-        "valor": valor,
-        "texto": texto,
-        "descricao": descricao,
-        "script": script,
-        "formato": formato,
-    }
-    caminho.parent.mkdir(parents=True, exist_ok=True)
-    caminho.write_text(
-        json.dumps(dict(sorted(dados.items())), ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-        newline="\n",
-    )
-    return texto
+    dados[chave] = entrada
+    _gravar(dados, caminho)
+    return entrada["texto"]
+
+
+def registrar_do_script(script: str, lista: Iterable[Numero], caminho: Path | None = None) -> dict[str, str]:
+    """Substitui de uma vez todos os números de um script e devolve chave -> texto.
+
+    Os números que o script gravou antes e não estão em `lista` saem do
+    registro: um resultado que deixou de existir (uma repetição apagada, por
+    exemplo) não fica para trás com o valor velho. Os números dos outros
+    scripts ficam como estão.
+    """
+    novos: dict[str, dict] = {}
+    for n in lista:
+        if n.chave in novos:
+            raise ValueError(f"chave repetida no lote de {script}: {n.chave}")
+        novos[n.chave] = _entrada(n, script)
+    caminho = caminho or config.NUMEROS
+    dados = {c: e for c, e in carregar(caminho).items() if e.get("script") != script}
+    dados.update(novos)
+    _gravar(dados, caminho)
+    return {c: e["texto"] for c, e in novos.items()}

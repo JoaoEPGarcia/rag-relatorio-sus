@@ -5,7 +5,7 @@ import json
 
 import pytest
 
-from rag_sus.numeros import carregar, formatar, registrar
+from rag_sus.numeros import Numero, carregar, formatar, registrar, registrar_do_script
 
 
 @pytest.mark.parametrize(
@@ -58,3 +58,28 @@ def test_chave_precisa_ser_identificador_simples(tmp_path):
     # a chave vira macro LaTeX e marcador {{chave}} no README
     with pytest.raises(ValueError):
         registrar("acerto-rag", 1, "x", "s.py", caminho=tmp_path / "n.json")
+
+
+def test_registrar_do_script_troca_de_uma_vez_os_numeros_do_script(tmp_path):
+    caminho = tmp_path / "numeros.json"
+    registrar("corpus_trechos", 570, "Trechos", "scripts/01_extrair.py", caminho=caminho)
+    registrar_do_script("scripts/04_analisar.py", [
+        Numero("acerto", 0.8, "acerto", "pct1"),
+        Numero("concordancia", 0.9, "concordância", "pct1"),
+    ], caminho=caminho)
+
+    # a segunda análise não tem mais repetição: a chave antiga do script some
+    registrar_do_script("scripts/04_analisar.py", [
+        Numero("acerto", 0.82, "acerto", "pct1", aparece_em=("relatorio/tabelas/x.tex",)),
+    ], caminho=caminho)
+
+    dados = carregar(caminho)
+    assert sorted(dados) == ["acerto", "corpus_trechos"]
+    assert dados["acerto"]["texto"] == "82,0%"
+    assert dados["acerto"]["aparece_em"] == ["relatorio/tabelas/x.tex"]
+    assert "aparece_em" not in dados["corpus_trechos"]
+
+
+def test_registrar_do_script_recusa_chave_repetida(tmp_path):
+    with pytest.raises(ValueError, match="repetida"):
+        registrar_do_script("s.py", [Numero("a", 1, "um"), Numero("a", 2, "dois")], caminho=tmp_path / "n.json")
