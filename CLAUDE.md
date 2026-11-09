@@ -2,11 +2,11 @@
 
 ### Issue tracker
 
-Issues live in GitHub Issues for JoaoEPGarcia/rag-relatorio-sus, managed with the `gh` CLI. See `docs/agents/issue-tracker.md`.
+Issues live as local markdown files under `.scratch/<feature>/`. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
-Default vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+Default five-role vocabulary (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`), recorded as a `Status:` line in each issue file. See `docs/agents/triage-labels.md`.
 
 ### Domain docs
 
