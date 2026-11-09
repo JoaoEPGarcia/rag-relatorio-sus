@@ -114,6 +114,12 @@ def _numeros_de_destaque(resumos: dict[str, dict]) -> list[Numero]:
 
 def _consolidar_principal(principal: Path, folha: Path) -> dict[str, list[dict]]:
     """Consolida as três Condições e, se faltar Revisão, lista as pendentes de todas de uma vez."""
+    ausentes = [c for c in CONDICOES if not (principal / f"{c}.jsonl").exists()]
+    if ausentes:
+        raise FileNotFoundError(
+            f"falta a Rodada principal de {', '.join(ausentes)} em {principal}: "
+            "rode scripts/03_rodar_avaliacao.py --rodada principal"
+        )
     consolidadas, pendentes = {}, []
     for c in CONDICOES:
         linhas = consolidar(principal / f"{c}.jsonl", folha, exigir_revisao=False)

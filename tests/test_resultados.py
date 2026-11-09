@@ -263,6 +263,27 @@ def test_numeros_das_tabelas_declaram_onde_aparecem(projeto):
     assert "relatorio/tabelas/comparacao_pareada.tex" in r["com_rag_x_sem_rag_p_mcnemar"]["aparece_em"]
 
 
+def test_rodar_duas_vezes_nao_muda_o_registro_nem_as_tabelas(projeto):
+    numeros.registrar("corpus_trechos", 570, "Trechos indexados", "scripts/01_extrair.py", caminho=projeto["numeros"])
+    gravar_rodada(projeto["rodadas"], "repeticao2", "sem_rag", condicao_simples("sem_rag", 14))
+
+    rodar(projeto)
+    antes = {p.name: p.read_bytes() for p in [projeto["numeros"], *projeto["tabelas"].iterdir()]}
+    rodar(projeto)
+    depois = {p.name: p.read_bytes() for p in [projeto["numeros"], *projeto["tabelas"].iterdir()]}
+
+    assert depois == antes
+    registro = numeros.carregar(projeto["numeros"])
+    assert registro["corpus_trechos"]["valor"] == 570  # o número de outro script fica
+    assert list(registro) == sorted(registro)
+
+
+def test_condicao_sem_rodada_principal_e_recusada(projeto):
+    (projeto["rodadas"] / "principal" / "contexto_completo.jsonl").unlink()
+    with pytest.raises(FileNotFoundError, match="contexto_completo"):
+        rodar(projeto)
+
+
 def test_falta_de_revisao_trava_a_analise_e_lista_as_perguntas_pendentes(projeto):
     com_juiz(projeto, "com_rag", {"G41": True, "G42": False})
     com_juiz(projeto, "sem_rag", {"G43": False})
