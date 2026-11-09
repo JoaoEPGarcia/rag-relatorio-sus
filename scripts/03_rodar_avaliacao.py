@@ -34,7 +34,7 @@ from rag_sus.avaliacao.travas import RODADAS, commit_atual, status_git, verifica
 from rag_sus.busca import E5Embutidor, IndiceDeTrechos
 from rag_sus.provedores import CotaDiariaEsgotada, CotaEsgotada, provedor_do_ambiente
 
-FOLHA = config.AVALIACAO / "revisao_veredictos.csv"
+FOLHA = config.REVISAO_VEREDICTOS
 
 
 def main() -> int:
@@ -57,7 +57,7 @@ def main() -> int:
     if args.limite:
         itens = itens[: args.limite]
 
-    pasta = config.RESULTADOS / "rodadas" / args.rodada
+    pasta = config.RODADAS / args.rodada
     print(f"Rodada {args.rodada}: {len(itens)} Perguntas x {len(condicoes)} Condições "
           f"= até {len(itens) * len(condicoes)} chamadas ao respondedor ({p.modelo_respondedor}), "
           f"mais as do Juiz. Retoma o que já está em {pasta}.")
