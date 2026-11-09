@@ -26,11 +26,15 @@ PARAMETROS = RAIZ / "parametros.toml"
 AVALIACAO = RAIZ / "avaliacao"
 GABARITO = AVALIACAO / "gabarito.csv"
 PERGUNTAS_DESENVOLVIMENTO = AVALIACAO / "perguntas_desenvolvimento.csv"
+REVISAO_VEREDICTOS = AVALIACAO / "revisao_veredictos.csv"
 
 RESULTADOS = RAIZ / "resultados"
+RODADAS = RESULTADOS / "rodadas"
 NUMEROS = RESULTADOS / "numeros.json"
 FIGURAS = RAIZ / "figuras"
 RELATORIO = RAIZ / "relatorio"
+# Linhas das tabelas do Relatório de avaliação, escritas por script e lidas com \linhasde.
+TABELAS = RELATORIO / "tabelas"
 
 
 @dataclass(frozen=True)

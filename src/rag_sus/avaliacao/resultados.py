@@ -20,6 +20,7 @@ a pasta das Rodadas e a folha de Revisão dos Veredictos e:
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
 from rag_sus import config, numeros
@@ -28,11 +29,13 @@ from rag_sus.avaliacao.analise import comparar, concordancia, erros_por_tipo, re
 from rag_sus.avaliacao.gabarito import TIPOS_RESPONDIVEIS
 from rag_sus.avaliacao.rodada import RevisaoIncompleta, carregar_linhas, consolidar
 from rag_sus.avaliacao.travas import RODADAS_PUBLICADAS
+from rag_sus.documentos import texto_tex
 from rag_sus.numeros import Numero
 
 REPETICOES = tuple(r for r in RODADAS_PUBLICADAS if r != "principal")
 
 SCRIPT = "scripts/04_analisar.py"
+TABELAS_NO_PROJETO = "relatorio/tabelas"  # como a coluna "Onde aparece" cita os arquivos de linhas
 NOMES_CONDICAO = {"com_rag": "com RAG", "sem_rag": "sem RAG", "contexto_completo": "contexto completo"}
 NOMES_TIPO = {
     "numero_prosa": "Número na prosa",
@@ -233,6 +236,97 @@ def _numeros_da_revisao(consolidadas: dict[str, list[dict]]) -> list[Numero]:
     ]
 
 
+# --------------------------------------------------------------------------
+# Linhas das tabelas do Relatório de avaliação
+# --------------------------------------------------------------------------
+
+class _Celulas:
+    """Devolve o texto de uma chave escapado para o LaTeX e anota quais chaves a tabela usou."""
+
+    def __init__(self, textos: dict[str, str]):
+        self.textos = textos
+        self.usadas: list[str] = []
+
+    def __call__(self, chave: str) -> str:
+        if chave not in self.usadas:
+            self.usadas.append(chave)
+        return texto_tex(self.textos[chave])
+
+    def com_ic(self, chave: str) -> str:
+        """"80,0\\% (67,0\\% a 88,8\\%)": o valor e o IC de 95%."""
+        return f"{self(chave)} ({self(chave + '_inf')} a {self(chave + '_sup')})"
+
+
+def _rotulo(condicao: str) -> str:
+    """"com RAG" -> "Com RAG", para abrir a linha da tabela."""
+    nome = NOMES_CONDICAO[condicao]
+    return nome[:1].upper() + nome[1:]
+
+
+def _arquivo(colunas: str, linhas: list[list[str]]) -> str:
+    cabecalho = [
+        f"% GERADO por {SCRIPT}. Não edite à mão: rode o script de novo.",
+        f"% Colunas: {colunas}.",
+    ]
+    return "\n".join(cabecalho + [" & ".join(celulas) + r" \\" for celulas in linhas]) + "\n"
+
+
+def _montar_tabelas(textos: dict[str, str]) -> dict[str, tuple[str, list[str]]]:
+    """nome do arquivo -> (conteúdo, chaves do registro usadas nele)."""
+    tabelas: dict[str, tuple[str, list[str]]] = {}
+
+    t = _Celulas(textos)
+    linhas = []
+    for c in CONDICOES:
+        linhas.append([
+            _rotulo(c),
+            t.com_ic(f"{c}_acerto_resposta"),
+            t.com_ic(f"{c}_acerto_citacao"),
+            t.com_ic(f"{c}_acerto_recuperacao") if f"{c}_acerto_recuperacao" in textos else "---",
+            t.com_ic(f"{c}_abstencao_correta") if f"{c}_abstencao_correta" in textos else "---",
+        ])
+    tabelas["resultados_por_condicao.tex"] = (_arquivo(
+        "Condição; Acerto da resposta; Acerto da citação; Acerto da recuperação (respondíveis); "
+        "Abstenção correta (sem resposta); cada medida com o IC de Wilson de 95%", linhas), t.usadas)
+
+    t = _Celulas(textos)
+    linhas = []
+    for outra in COMPARADAS_COM_RAG:
+        k = f"com_rag_x_{outra}"
+        linhas.append([
+            f"Com RAG $\\times$ {NOMES_CONDICAO[outra]}",
+            t(f"{k}_ambos"), t(f"{k}_so_com_rag"), t(f"{k}_so_{outra}"), t(f"{k}_nenhum"),
+            f"{t(f'{k}_diferenca')} ({t(f'{k}_diferenca_inf')} a {t(f'{k}_diferenca_sup')})",
+            t(f"{k}_p_mcnemar"),
+        ])
+    tabelas["comparacao_pareada.tex"] = (_arquivo(
+        "Comparação; as duas acertam; só com RAG acerta; só a outra acerta; as duas erram; "
+        "diferença com RAG menos a outra (IC de Newcombe de 95%); valor-p do McNemar exato", linhas), t.usadas)
+
+    t = _Celulas(textos)
+    linhas = []
+    classes_respondiveis = [s for s in CLASSES_DE_ERRO.values() if s != "resposta_inventada"]
+    for tipo in TIPOS_RESPONDIVEIS:
+        k = f"com_rag_tipo_{tipo}"
+        linhas.append([NOMES_TIPO[tipo], t(f"{k}_n"), t(f"{k}_acertos"),
+                       *[t(f"{k}_{s}") for s in classes_respondiveis], "---"])
+    k = "com_rag_tipo_sem_resposta"
+    linhas.append([NOMES_TIPO["sem_resposta"], t(f"{k}_n"), t(f"{k}_acertos"),
+                   *["---"] * len(classes_respondiveis), t(f"{k}_resposta_inventada")])
+    tabelas["erros_por_tipo.tex"] = (_arquivo(
+        "Tipo de pergunta; n; acertos (nas sem resposta, abstenções corretas); falha de recuperação; "
+        "falha de leitura; abstenção indevida; citação errada; resposta inventada; Condição com RAG", linhas),
+        t.usadas)
+
+    t = _Celulas(textos)
+    linhas = [[_rotulo(c), t(f"{c}_tokens_entrada_medio"), t(f"{c}_latencia_mediana_s"),
+               t(f"{c}_n_fallback")] for c in CONDICOES]
+    tabelas["custo_por_condicao.tex"] = (_arquivo(
+        "Condição; tokens de entrada (média por Pergunta); latência mediana (s); respostas com fallback",
+        linhas), t.usadas)
+    return tabelas
+
+
 def analisar(
     pasta_rodadas: Path,
     folha: Path,
@@ -252,4 +346,18 @@ def analisar(
     for outra in COMPARADAS_COM_RAG:
         lista += _numeros_da_comparacao(outra, consolidadas["com_rag"], consolidadas[outra])
     lista += _numeros_da_concordancia(pasta_rodadas)
-    return numeros.registrar_do_script(SCRIPT, lista, caminho=numeros_json or config.NUMEROS)
+
+    textos = {n.chave: numeros.formatar(n.valor, n.formato or "inteiro") for n in lista}
+    tabelas = _montar_tabelas(textos)
+    onde: dict[str, list[str]] = {}
+    for nome, (_, usadas) in tabelas.items():
+        for chave in usadas:
+            onde.setdefault(chave, []).append(f"{TABELAS_NO_PROJETO}/{nome}")
+    lista = [replace(n, aparece_em=tuple(onde.get(n.chave, ()))) for n in lista]
+
+    registrados = numeros.registrar_do_script(SCRIPT, lista, caminho=numeros_json or config.NUMEROS)
+    pasta_tabelas = Path(pasta_tabelas or config.TABELAS)
+    pasta_tabelas.mkdir(parents=True, exist_ok=True)
+    for nome, (conteudo, _) in tabelas.items():
+        (pasta_tabelas / nome).write_text(conteudo, encoding="utf-8", newline="\n")
+    return registrados

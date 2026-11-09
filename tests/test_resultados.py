@@ -220,6 +220,49 @@ def test_concordancia_so_com_repeticao_e_rotulada_como_nao_revisada(projeto):
     assert not [c for c in r if c.startswith("concordancia_")]
 
 
+def ler_tabela(p, nome):
+    texto = (p["tabelas"] / nome).read_text(encoding="utf-8")
+    return [l for l in texto.splitlines() if l and not l.startswith("%")]
+
+
+def test_linhas_das_tabelas_latex_em_portugues_e_escapadas(projeto):
+    rodar(projeto)
+
+    inf, sup = proportion_confint(40, 50, alpha=0.05, method="wilson")
+    ic = f"{100 * inf:.1f}\\% a {100 * sup:.1f}\\%".replace(".", ",")
+    condicoes = ler_tabela(projeto, "resultados_por_condicao.tex")
+    assert [l.split(" & ")[0] for l in condicoes] == ["Com RAG", "Sem RAG", "Contexto completo"]
+    assert condicoes[0].split(" & ")[1] == f"80,0\\% ({ic})"
+    assert condicoes[1].split(" & ")[3] == "---"  # sem RAG não recupera
+    assert all(l.endswith(r" \\") and l.count(" & ") == 4 for l in condicoes)
+
+    comparacoes = ler_tabela(projeto, "comparacao_pareada.tex")
+    assert comparacoes[0].startswith(r"Com RAG $\times$ sem RAG & 15 & 25 & 0 & 10 & 50,0 p.p. (")
+    assert comparacoes[0].endswith(r"& $<$ 0,001 \\")
+    assert comparacoes[1].startswith(r"Com RAG $\times$ contexto completo & 40 & 0 & 2 & 8 & $-$4,0 p.p. (")
+
+    erros = ler_tabela(projeto, "erros_por_tipo.tex")
+    assert erros[0] == r"Número na prosa & 10 & 10 & 0 & 0 & 0 & 0 & --- \\"
+    assert erros[4] == r"Síntese entre páginas & 10 & 0 & 0 & 10 & 0 & 0 & --- \\"
+    assert erros[5] == r"Sem resposta & 10 & 9 & --- & --- & --- & --- & 1 \\"
+
+    custo = ler_tabela(projeto, "custo_por_condicao.tex")
+    assert custo[0] == r"Com RAG & 1.000 & 2,0 & 0 \\"
+
+    for nome in ("resultados_por_condicao.tex", "comparacao_pareada.tex", "erros_por_tipo.tex",
+                 "custo_por_condicao.tex"):
+        texto = (projeto["tabelas"] / nome).read_text(encoding="utf-8")
+        assert "−" not in texto  # o sinal de menos tipográfico vira $-$
+        corpo = "\n".join(ler_tabela(projeto, nome))
+        assert "%" not in corpo.replace(r"\%", "")  # todo % do corpo escapado
+
+
+def test_numeros_das_tabelas_declaram_onde_aparecem(projeto):
+    r = rodar(projeto)
+    assert "relatorio/tabelas/resultados_por_condicao.tex" in r["com_rag_acerto_resposta"]["aparece_em"]
+    assert "relatorio/tabelas/comparacao_pareada.tex" in r["com_rag_x_sem_rag_p_mcnemar"]["aparece_em"]
+
+
 def test_falta_de_revisao_trava_a_analise_e_lista_as_perguntas_pendentes(projeto):
     com_juiz(projeto, "com_rag", {"G41": True, "G42": False})
     com_juiz(projeto, "sem_rag", {"G43": False})
