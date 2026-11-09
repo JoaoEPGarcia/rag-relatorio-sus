@@ -10,8 +10,10 @@ script falha (código 1) se:
   5. o .tex usa uma macro \\Num... que o registro não define.
 
 Falha também se algum marcador do README.base.md não tiver valor no registro.
-O 06_gerar_documentos.py e o README.base.md vêm do projeto; o registro e as
-saídas conferidas, da raiz (RAG_SUS_RAIZ, se definida).
+O 06_gerar_documentos.py, o README.base.md e os .tex escritos à mão vêm do
+projeto; o registro e as saídas conferidas, da raiz (RAG_SUS_RAIZ, se
+definida). Assim, sobre uma raiz temporária, o .tex do projeto é conferido
+contra o registro dela.
 
 Uso: uv run python scripts/conferir_numeros.py
 """

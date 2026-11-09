@@ -6,9 +6,10 @@ lê o registro resultados/numeros.json, que cada script alimenta, e escreve as
 três saídas. Para mudar o texto do README, edite README.base.md, e não o
 README.md.
 
-O README.base.md vem sempre do projeto (é código, como os scripts); o
-registro e as saídas, da raiz (RAG_SUS_RAIZ, se definida). Assim o README
-pode ser gerado sobre as Rodadas sintéticas numa raiz temporária. Se algum
+O README.base.md e os .tex escritos à mão vêm sempre do projeto (são código,
+como os scripts); o registro e as saídas, da raiz (RAG_SUS_RAIZ, se
+definida). Assim o README pode ser gerado sobre as Rodadas sintéticas numa
+raiz temporária. Se algum
 marcador do README.base.md não tiver valor no registro, nada é escrito.
 
 Uso: uv run python scripts/06_gerar_documentos.py
@@ -27,6 +28,7 @@ from rag_sus.documentos import (
 )
 
 BASE = config.PROJETO / "README.base.md"
+RELATORIO_DO_PROJETO = config.PROJETO / "relatorio"
 README = config.RAIZ / "README.md"
 CANONICOS = config.RAIZ / "NUMEROS_CANONICOS.md"
 NUMEROS_TEX = config.RELATORIO / "numeros.tex"
@@ -34,10 +36,12 @@ AVISO = "<!-- GERADO por scripts/06_gerar_documentos.py a partir de README.base.
 
 
 def textos_tex() -> dict[str, str]:
-    """Os .tex escritos à mão (sem numeros.tex nem as linhas de tabela de relatorio/tabelas/)."""
-    if not config.RELATORIO.exists():
-        return {}
-    return textos_do_relatorio(config.RELATORIO, config.RAIZ)
+    """Os .tex escritos à mão, do projeto (sem numeros.tex nem as linhas de tabela de relatorio/tabelas/).
+
+    Como o README.base.md, eles são código: uma raiz temporária não tem cópia
+    deles, e o pdflatex compila o do projeto com as entradas da raiz.
+    """
+    return textos_do_relatorio(RELATORIO_DO_PROJETO, config.PROJETO)
 
 
 def main() -> int:

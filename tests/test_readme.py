@@ -52,6 +52,13 @@ def test_conferidor_passa_sobre_a_raiz_sintetica(raiz_sintetica):
     assert "Conferência dos números: ok" in conferido.stdout
 
 
+def test_usos_no_relatorio_vem_do_tex_do_projeto(raiz_sintetica):
+    # A raiz temporária não tem cópia do relatorio.tex: ele é código, como o README.base.md.
+    assert not (raiz_sintetica["raiz"] / "relatorio" / "relatorio.tex").exists()
+    canonicos = (raiz_sintetica["raiz"] / "NUMEROS_CANONICOS.md").read_text(encoding="utf-8")
+    assert "relatorio/relatorio.tex" in canonicos
+
+
 def test_readme_sintetico_nao_escreve_no_projeto(raiz_sintetica):
     assert raiz_sintetica["projeto_intacto"]
 
