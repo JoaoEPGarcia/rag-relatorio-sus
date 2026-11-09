@@ -70,7 +70,7 @@ def preencher_readme(base: str, registro: dict[str, dict]) -> str:
         chave, idioma = m.group(1), m.group(2)
         entrada = registro.get(chave)
         if entrada is None:
-            faltam.append(m.group(0))
+            faltam.append(chave)
             return m.group(0)
         if idioma == "en":
             if "texto_en" not in entrada:
@@ -82,9 +82,11 @@ def preencher_readme(base: str, registro: dict[str, dict]) -> str:
     preenchido = _MARCADOR.sub(trocar, base)
     problemas = []
     if faltam:
-        problemas.append(f"marcadores sem valor em resultados/numeros.json: {', '.join(faltam)}")
+        lista = ", ".join(dict.fromkeys(faltam))
+        problemas.append(f"marcadores sem valor em resultados/numeros.json: {lista}")
     if sem_ingles:
-        problemas.append(f"números sem texto em inglês no registro (rode de novo o script): {', '.join(sem_ingles)}")
+        lista = ", ".join(dict.fromkeys(sem_ingles))
+        problemas.append(f"números sem texto em inglês no registro (rode de novo o script): {lista}")
     if problemas:
         raise MarcadorDesconhecido("; ".join(problemas))
     return preenchido
