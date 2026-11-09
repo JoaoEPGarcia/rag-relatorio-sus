@@ -6,7 +6,9 @@ completo precisam ser conferidos antes da Rodada principal, que depende da
 chave da API e da Revisão do autor. Este módulo grava, numa raiz temporária,
 Rodadas com a mesma forma das reais: 50 Perguntas respondíveis (10 de cada
 Tipo de pergunta) e 10 sem resposta, nas três Condições, com a folha de
-Revisão já preenchida e as repetições.
+Revisão já preenchida e as repetições. O registro da raiz recebe também os
+números do corpus (páginas, palavras, Trechos), copiados do registro do
+projeto: eles saem do PDF real e o README os pede.
 
 Os números são inventados, e por isso nunca podem chegar ao registro real:
 
@@ -28,15 +30,20 @@ import random
 from dataclasses import dataclass
 from pathlib import Path
 
+from rag_sus import config, numeros
 from rag_sus.assistente import CONDICOES, RespostaAssistente
 from rag_sus.avaliacao.gabarito import TIPOS_RESPONDIVEIS, ItemGabarito
 from rag_sus.avaliacao.juiz import Veredicto
 from rag_sus.avaliacao.rodada import COLUNAS_FOLHA, executar_rodada, gravar_folha_de_revisao
 from rag_sus.avaliacao.travas import RODADAS_PUBLICADAS
-from rag_sus.numeros import formatar
+from rag_sus.numeros import Numero, formatar
 from rag_sus.provedores import Metadados
 
 MODELO = "gemini-3.8-flash"
+# Os números do corpus (páginas, palavras, Trechos) saem do PDF real por este script.
+SCRIPT_DO_CORPUS = "scripts/01_extrair.py"
+# O registro do projeto, e não o de RAG_SUS_RAIZ: dele só se leem os números do corpus.
+NUMEROS_DO_PROJETO = config.PROJETO / "resultados" / "numeros.json"
 
 # Probabilidade de acertar a resposta, por Condição e Tipo de pergunta; nas sem
 # resposta, de se abster. Escolhidas para o resultado parecer plausível.
@@ -184,11 +191,32 @@ def _revisar_folha(folha: Path, planos: dict[str, dict[str, _Plano]]) -> None:
         escritor.writerows(linhas)
 
 
-def gerar_rodadas_sinteticas(raiz: Path, semente: int = 2026, repeticoes: int = 2) -> Path:
+def _copiar_numeros_do_corpus(numeros_do_projeto: Path, destino: Path) -> None:
+    """Registra na raiz temporária os números do corpus que o registro do projeto já tem.
+
+    Eles saem do PDF real (scripts/01_extrair.py), e não das Rodadas: são
+    reais, e o README os pede na tabela do topo. Cada um é registrado de novo
+    a partir do valor e do formato, para sair com o texto nos dois idiomas
+    mesmo que o registro do projeto seja de uma versão anterior.
+    """
+    do_corpus = [
+        Numero(chave, e["valor"], e["descricao"], e["formato"], tuple(e.get("aparece_em", ())))
+        for chave, e in numeros.carregar(numeros_do_projeto).items()
+        if e.get("script") == SCRIPT_DO_CORPUS
+    ]
+    if do_corpus:
+        numeros.registrar_do_script(SCRIPT_DO_CORPUS, do_corpus, caminho=destino)
+
+
+def gerar_rodadas_sinteticas(
+    raiz: Path, semente: int = 2026, repeticoes: int = 2, numeros_do_projeto: Path | None = None
+) -> Path:
     """Grava a Rodada principal, a folha revisada e `repeticoes` repetições em `raiz`.
 
     Devolve a pasta das Rodadas (`raiz/resultados/rodadas`). A folha fica em
-    `raiz/avaliacao/revisao_veredictos.csv`, como no projeto.
+    `raiz/avaliacao/revisao_veredictos.csv`, como no projeto. O registro
+    `raiz/resultados/numeros.json` recebe os números reais do corpus, lidos de
+    `numeros_do_projeto` (padrão: o registro do projeto, que nunca é escrito).
     """
     raiz = Path(raiz)
     if dentro_de_uma_copia_do_projeto(raiz):
@@ -219,4 +247,5 @@ def gerar_rodadas_sinteticas(raiz: Path, semente: int = 2026, repeticoes: int = 
 
     gravar_folha_de_revisao([pasta_rodadas / "principal" / f"{c}.jsonl" for c in CONDICOES], folha)
     _revisar_folha(folha, planos)
+    _copiar_numeros_do_corpus(Path(numeros_do_projeto or NUMEROS_DO_PROJETO), raiz / "resultados" / "numeros.json")
     return pasta_rodadas

@@ -39,6 +39,30 @@ def test_rodadas_sinteticas_viram_numeros_e_tabelas(tmp_path):
         "comparacao_pareada.tex", "custo_por_condicao.tex", "erros_por_tipo.tex", "resultados_por_condicao.tex"]
 
 
+def test_raiz_sintetica_recebe_os_numeros_reais_do_corpus(tmp_path):
+    # o README pede os números do corpus, que saem do PDF real (01_extrair.py) e não das Rodadas
+    do_projeto = tmp_path / "projeto_numeros.json"
+    numeros.registrar("corpus_palavras", 60370, "palavras extraídas", "scripts/01_extrair.py", caminho=do_projeto)
+    numeros.registrar("quebra_alvo", 180, "máximo de palavras por Trecho", "scripts/01_extrair.py",
+                      caminho=do_projeto)
+    numeros.registrar("destaque_acerto_com_rag", 0.9, "acerto real", "scripts/04_analisar.py", formato="pct1",
+                      caminho=do_projeto)
+    raiz = tmp_path / "raiz"
+
+    gerar_rodadas_sinteticas(raiz, repeticoes=0, numeros_do_projeto=do_projeto)
+
+    r = numeros.carregar(raiz / "resultados" / "numeros.json")
+    assert sorted(r) == ["corpus_palavras", "quebra_alvo"]  # só os do corpus; nenhum resultado real
+    assert (r["corpus_palavras"]["texto"], r["corpus_palavras"]["texto_en"]) == ("60.370", "60,370")
+    assert r["corpus_palavras"]["script"] == "scripts/01_extrair.py"
+
+
+def test_raiz_sintetica_sem_registro_do_projeto_segue_sem_os_numeros_do_corpus(tmp_path):
+    raiz = tmp_path / "raiz"
+    gerar_rodadas_sinteticas(raiz, repeticoes=0, numeros_do_projeto=tmp_path / "nao_existe.json")
+    assert numeros.carregar(raiz / "resultados" / "numeros.json") == {}
+
+
 def test_mesma_semente_gera_as_mesmas_rodadas(tmp_path):
     def arquivos(raiz):
         return {p.relative_to(raiz).as_posix(): p.read_bytes() for p in sorted(raiz.rglob("*")) if p.is_file()}

@@ -14,7 +14,11 @@ import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 
-RAIZ = Path(os.environ.get("RAG_SUS_RAIZ", Path(__file__).resolve().parents[2]))
+# PROJETO é a cópia do código (scripts/, README.base.md); RAIZ é onde ficam os
+# dados e as saídas. São a mesma pasta, salvo quando RAG_SUS_RAIZ aponta para
+# uma raiz temporária (as Rodadas sintéticas de demonstração, por exemplo).
+PROJETO = Path(__file__).resolve().parents[2]
+RAIZ = Path(os.environ.get("RAG_SUS_RAIZ", PROJETO))
 
 PDF = RAIZ / "dados" / "relatorio_fonte.pdf"
 TRECHOS = RAIZ / "dados" / "trechos.jsonl"
