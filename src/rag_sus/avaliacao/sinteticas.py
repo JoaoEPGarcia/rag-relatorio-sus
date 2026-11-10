@@ -39,7 +39,6 @@ from rag_sus.avaliacao.travas import RODADAS_PUBLICADAS
 from rag_sus.numeros import Numero, formatar
 from rag_sus.provedores import Metadados
 
-MODELO = "gemini-3.8-flash"
 # Os números do corpus (páginas, palavras, Trechos) saem do PDF real por este script.
 SCRIPT_DO_CORPUS = "scripts/01_extrair.py"
 # O registro do projeto, e não o de RAG_SUS_RAIZ: dele só se leem os números do corpus.
@@ -136,9 +135,10 @@ def _variar(planos: dict[str, _Plano], rng: random.Random) -> dict[str, _Plano]:
 
 
 class _AssistenteSintetico:
-    def __init__(self, itens: list[ItemGabarito], planos: dict[str, _Plano], condicao: str, rng: random.Random):
+    def __init__(self, itens: list[ItemGabarito], planos: dict[str, _Plano], condicao: str, rng: random.Random,
+                 modelo: str):
         self.por_pergunta = {i.pergunta: i for i in itens}
-        self.planos, self.condicao, self.rng = planos, condicao, rng
+        self.planos, self.condicao, self.rng, self.modelo = planos, condicao, rng, modelo
 
     def responder(self, pergunta: str, condicao: str) -> RespostaAssistente:
         item = self.por_pergunta[pergunta]
@@ -154,8 +154,8 @@ class _AssistenteSintetico:
         recuperadas = (pagina, pagina + 2) if p.recuperacao else (pagina + 60, pagina + 61)
         (tmin, tmax), (cmin, cmax), (lmin, lmax) = _CUSTO[self.condicao]
         meta = Metadados(
-            modelo_pedido=MODELO,
-            modelo_que_respondeu=MODELO,
+            modelo_pedido=self.modelo,
+            modelo_que_respondeu=self.modelo,
             usou_fallback=False,
             tokens_entrada=self.rng.randint(tmin, tmax),
             tokens_saida=self.rng.randint(40, 220),
@@ -168,13 +168,14 @@ class _AssistenteSintetico:
 
 
 class _JuizSintetico:
-    def __init__(self, itens: list[ItemGabarito], planos: dict[str, _Plano]):
+    def __init__(self, itens: list[ItemGabarito], planos: dict[str, _Plano], modelo: str):
         self.por_pergunta = {i.pergunta: i for i in itens}
-        self.planos = planos
+        self.planos, self.modelo = planos, modelo
 
     def julgar(self, pergunta: str, gabarito: str, resposta: str) -> Veredicto:
         p = self.planos[self.por_pergunta[pergunta].id]
-        return Veredicto(p.acerto != p.juiz_erra, "Justificativa sintética.", Metadados(MODELO, MODELO, False))
+        meta = Metadados(self.modelo, self.modelo, False)
+        return Veredicto(p.acerto != p.juiz_erra, "Justificativa sintética.", meta)
 
 
 def _revisar_folha(folha: Path, planos: dict[str, dict[str, _Plano]]) -> None:
@@ -209,7 +210,8 @@ def _copiar_numeros_do_corpus(numeros_do_projeto: Path, destino: Path) -> None:
 
 
 def gerar_rodadas_sinteticas(
-    raiz: Path, semente: int = 2026, repeticoes: int = 2, numeros_do_projeto: Path | None = None
+    raiz: Path, semente: int = 2026, repeticoes: int = 2, numeros_do_projeto: Path | None = None,
+    parametros: Path | None = None,
 ) -> Path:
     """Grava a Rodada principal, a folha revisada e `repeticoes` repetições em `raiz`.
 
@@ -217,6 +219,8 @@ def gerar_rodadas_sinteticas(
     `raiz/avaliacao/revisao_veredictos.csv`, como no projeto. O registro
     `raiz/resultados/numeros.json` recebe os números reais do corpus, lidos de
     `numeros_do_projeto` (padrão: o registro do projeto, que nunca é escrito).
+    Os modelos do respondedor e do Juiz, e os parâmetros gravados no
+    execucao.json, vêm de `parametros` (padrão: o parametros.toml do projeto).
     """
     raiz = Path(raiz)
     if dentro_de_uma_copia_do_projeto(raiz):
@@ -235,17 +239,19 @@ def gerar_rodadas_sinteticas(
     itens = gabarito_sintetico()
     planos = {c: _planos(itens, c, random.Random(f"{semente}-{c}")) for c in CONDICOES}
     # os parâmetros do projeto, gravados como scripts/03_rodar_avaliacao.py grava os da Rodada real
-    parametros = config.carregar_parametros(config.PROJETO / "parametros.toml").__dict__
+    p = config.carregar_parametros(Path(parametros or config.PROJETO / "parametros.toml"))
     for numero, rodada in enumerate(RODADAS_PUBLICADAS[: repeticoes + 1]):
         pasta = pasta_rodadas / rodada
         pasta.mkdir(parents=True, exist_ok=True)
-        execucao = {"sintetica": True, "semente": semente, "commit": "sintetico", "parametros": parametros}
+        execucao = {"sintetica": True, "semente": semente, "commit": "sintetico", "parametros": p.__dict__}
         (pasta / "execucao.json").write_text(
             json.dumps(execucao, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
         for c in CONDICOES:
             plano = planos[c] if numero == 0 else _variar(planos[c], random.Random(f"{semente}-{rodada}-{c}"))
-            assistente = _AssistenteSintetico(itens, plano, c, random.Random(f"{semente}-{rodada}-{c}-custo"))
-            executar_rodada(itens, c, assistente, _JuizSintetico(itens, plano), pasta / f"{c}.jsonl")
+            assistente = _AssistenteSintetico(itens, plano, c, random.Random(f"{semente}-{rodada}-{c}-custo"),
+                                              p.modelo_respondedor)
+            juiz = _JuizSintetico(itens, plano, p.modelo_juiz)
+            executar_rodada(itens, c, assistente, juiz, pasta / f"{c}.jsonl")
 
     gravar_folha_de_revisao([pasta_rodadas / "principal" / f"{c}.jsonl" for c in CONDICOES], folha)
     _revisar_folha(folha, planos)

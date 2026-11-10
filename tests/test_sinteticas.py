@@ -11,6 +11,7 @@ import pytest
 
 from rag_sus import config, numeros
 from rag_sus.avaliacao.resultados import analisar
+from rag_sus.avaliacao.rodada import carregar_linhas
 from rag_sus.avaliacao.sinteticas import RaizProibida, gerar_rodadas_sinteticas
 
 
@@ -53,6 +54,20 @@ def test_rodadas_sinteticas_gravam_os_parametros_do_projeto_como_a_rodada_real(t
     assert r["parametros_modelo_respondedor"]["texto"] == p.modelo_respondedor
     assert r["parametros_modelo_juiz"]["texto"] == p.modelo_juiz
     assert r["parametros_commit"]["texto"] == "sintetico"  # só o hash de verdade é encurtado
+
+
+def test_respostas_e_juiz_sinteticos_usam_os_modelos_do_parametros_toml(tmp_path):
+    original = (config.PROJETO / "parametros.toml").read_text(encoding="utf-8")
+    parametros = tmp_path / "parametros.toml"
+    parametros.write_text(original.replace('modelo = "', 'modelo = "outro-', 2), encoding="utf-8")
+    p = config.carregar_parametros(parametros)
+    raiz = tmp_path / "raiz"
+
+    gerar_rodadas_sinteticas(raiz, repeticoes=0, parametros=parametros)
+
+    linhas = carregar_linhas(raiz / "resultados" / "rodadas" / "principal" / "com_rag.jsonl")
+    assert p.modelo_respondedor.startswith("outro-")
+    assert {l["modelo_que_respondeu"] for l in linhas} == {p.modelo_respondedor}
 
 
 def test_raiz_sintetica_recebe_os_numeros_reais_do_corpus(tmp_path):
