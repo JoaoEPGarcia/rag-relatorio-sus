@@ -28,7 +28,7 @@ from rag_sus.documentos import (
 )
 
 BASE = config.PROJETO / "README.base.md"
-RELATORIO_DO_PROJETO = config.PROJETO / "relatorio"
+RELATORIO_DO_PROJETO = config.na_raiz(config.RELATORIO, config.PROJETO)
 README = config.RAIZ / "README.md"
 CANONICOS = config.RAIZ / "NUMEROS_CANONICOS.md"
 NUMEROS_TEX = config.RELATORIO / "numeros.tex"

@@ -15,16 +15,17 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
+from rag_sus import config
 from rag_sus.avaliacao.sinteticas import rodada_sintetica
 
-# O que a extração e o índice gravam, relativo à raiz (os mesmos caminhos de config).
+# O que a extração e o índice gravam (os caminhos de config, tomados sobre a raiz do pipeline).
 # Se tudo existe, o passo é pulado: o índice exige o modelo de embeddings de 2,24 GB.
-EXTRAIDOS = ("dados/trechos.jsonl", "dados/texto_completo.txt")
-INDEXADOS = ("indice/indice.faiss", "indice/meta.json")
+EXTRAIDOS = (config.TRECHOS, config.TEXTO_COMPLETO)
+INDEXADOS = (config.INDICE / "indice.faiss", config.INDICE / "meta.json")
 
 
-def _todos_existem(raiz: Path, relativos: tuple[str, ...]) -> bool:
-    return all((raiz / r).exists() for r in relativos)
+def _todos_existem(raiz: Path, caminhos: tuple[Path, ...]) -> bool:
+    return all(config.na_raiz(c, raiz).exists() for c in caminhos)
 
 
 @dataclass(frozen=True)
@@ -46,7 +47,7 @@ def passos_do_pipeline(
     extrair = not _todos_existem(raiz, EXTRAIDOS)
     indexar = extrair or not _todos_existem(raiz, INDEXADOS)
     so_pdf_real = None
-    if rodada_sintetica(raiz / "resultados" / "rodadas" / "principal"):
+    if rodada_sintetica(config.na_raiz(config.RODADAS, raiz) / "principal"):
         # Rodadas sintéticas: Gabarito sintético, e os números do corpus copiados do
         # registro do projeto. Nada aqui lê o PDF real, os Trechos ou o índice.
         extrair = indexar = False

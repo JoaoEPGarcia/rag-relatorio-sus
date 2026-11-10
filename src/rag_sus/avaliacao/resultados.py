@@ -38,8 +38,21 @@ from rag_sus.avaliacao import estatistica
 from rag_sus.avaliacao.analise import comparar, concordancia, erros_por_tipo, resumir
 from rag_sus.avaliacao.gabarito import TIPOS_RESPONDIVEIS
 from rag_sus.avaliacao.rodada import RevisaoIncompleta, carregar_linhas, consolidar
-from rag_sus.avaliacao.sinteticas import RaizProibida, dentro_de_uma_copia_do_projeto, rodada_sintetica
+from rag_sus.avaliacao.sinteticas import recusar_no_projeto
 from rag_sus.avaliacao.travas import RODADAS_PUBLICADAS
+from rag_sus.avaliacao.vocabulario import (
+    CLASSES_DAS_RESPONDIVEIS,
+    CLASSES_DE_ERRO,
+    CONCLUSOES,
+    NOMES_CONDICAO,
+    NOMES_TIPO,
+    SO_NAS_SEM_RESPOSTA,
+    chave_por_tipo,
+    juntar,
+    lado_do_ic,
+    mais_frequentes,
+    rotulo_condicao,
+)
 from rag_sus.documentos import texto_tex
 from rag_sus.numeros import Numero, Texto
 
@@ -49,31 +62,6 @@ NOMES_REPETICAO = {"repeticao1": "Primeira repetição", "repeticao2": "Segunda 
 
 SCRIPT = "scripts/04_analisar.py"
 TABELAS_NO_PROJETO = "relatorio/tabelas"  # como a coluna "Onde aparece" cita os arquivos de linhas
-NOMES_CONDICAO = {"com_rag": "com RAG", "sem_rag": "sem RAG", "contexto_completo": "contexto completo"}
-NOMES_TIPO = {
-    "numero_prosa": "Número na prosa",
-    "numero_tabela": "Número em tabela",
-    "numero_legenda": "Número em legenda",
-    "conceito": "Conceito ou método",
-    "sintese": "Síntese entre páginas",
-    "sem_resposta": "Sem resposta",
-}
-# Classe de erro (como sai de pontuacao.classificar_erro) -> pedaço da chave no registro.
-CLASSES_DE_ERRO = {
-    "falha de recuperação": "falha_recuperacao",
-    "falha de leitura": "falha_leitura",
-    "abstenção indevida": "abstencao_indevida",
-    "citação errada": "citacao_errada",
-    "resposta inventada": "resposta_inventada",
-}
-# O nome de cada Classe de erro na seção "In English" do README.
-CLASSES_DE_ERRO_EN = {
-    "falha de recuperação": "retrieval failure",
-    "falha de leitura": "reading failure",
-    "abstenção indevida": "unwarranted abstention",
-    "citação errada": "wrong citation",
-    "resposta inventada": "made-up answer",
-}
 # Com RAG contra cada uma das outras; a primeira é a comparação principal.
 COMPARADAS_COM_RAG = ("sem_rag", "contexto_completo")
 
@@ -165,8 +153,9 @@ def _consolidar_principal(principal: Path, folha: Path) -> dict[str, list[dict]]
 def _numeros_dos_erros(c: str, r: dict) -> list[Numero]:
     nome = NOMES_CONDICAO[c]
     return [
-        Numero(f"{c}_erros_{slug}", r["erros"].get(classe, 0), f"Classe de erro '{classe}' {nome} (Perguntas)")
-        for classe, slug in CLASSES_DE_ERRO.items()
+        Numero(f"{c}_erros_{slug}", r["erros"].get(classe.nome, 0),
+               f"Classe de erro '{classe.nome}' {nome} (Perguntas)")
+        for slug, classe in CLASSES_DE_ERRO.items()
     ]
 
 
@@ -179,29 +168,24 @@ def _numeros_por_tipo(linhas: list[dict]) -> list[Numero]:
         nome = NOMES_TIPO[tipo]
         acertos = sum(l["acerto_resposta"] for l in linhas if l["tipo"] == tipo)
         lista += [
-            Numero(f"com_rag_tipo_{tipo}_n", celula.get("n", 0), f"Perguntas do Tipo '{nome}'"),
-            Numero(f"com_rag_tipo_{tipo}_acertos", acertos, f"acertos da resposta com RAG, Tipo '{nome}'"),
+            Numero(chave_por_tipo(tipo, "n"), celula.get("n", 0), f"Perguntas do Tipo '{nome}'"),
+            Numero(chave_por_tipo(tipo, "acertos"), acertos, f"acertos da resposta com RAG, Tipo '{nome}'"),
         ]
         lista += [
-            Numero(f"com_rag_tipo_{tipo}_{slug}", celula.get(classe, 0), f"'{classe}' com RAG, Tipo '{nome}'")
-            for classe, slug in CLASSES_DE_ERRO.items()
-            if classe != "resposta inventada"
+            Numero(chave_por_tipo(tipo, slug), celula.get(CLASSES_DE_ERRO[slug].nome, 0),
+                   f"'{CLASSES_DE_ERRO[slug].nome}' com RAG, Tipo '{nome}'")
+            for slug in CLASSES_DAS_RESPONDIVEIS
         ]
     sem = [l for l in linhas if not l["respondivel"]]
+    inventada = CLASSES_DE_ERRO[SO_NAS_SEM_RESPOSTA].nome
     lista += [
-        Numero("com_rag_tipo_sem_resposta_n", len(sem), "Perguntas sem resposta"),
-        Numero("com_rag_tipo_sem_resposta_acertos", sum(l["acerto_resposta"] for l in sem),
+        Numero(chave_por_tipo("sem_resposta", "n"), len(sem), "Perguntas sem resposta"),
+        Numero(chave_por_tipo("sem_resposta", "acertos"), sum(l["acerto_resposta"] for l in sem),
                "abstenções corretas com RAG nas Perguntas sem resposta"),
-        Numero("com_rag_tipo_sem_resposta_resposta_inventada",
-               sum(l["classe_erro"] == "resposta inventada" for l in sem),
-               "'resposta inventada' com RAG nas Perguntas sem resposta"),
+        Numero(chave_por_tipo("sem_resposta", SO_NAS_SEM_RESPOSTA), sum(l["classe_erro"] == inventada for l in sem),
+               f"'{inventada}' com RAG nas Perguntas sem resposta"),
     ]
     return lista
-
-
-def _juntar(nomes: list[str], e: str) -> str:
-    """["a", "b", "c"] -> "a, b e c"."""
-    return nomes[0] if len(nomes) == 1 else ", ".join(nomes[:-1]) + f" {e} " + nomes[-1]
 
 
 def _numeros_do_erro_mais_frequente(c: str, r: dict) -> list[Numero | Texto]:
@@ -211,13 +195,14 @@ def _numeros_do_erro_mais_frequente(c: str, r: dict) -> list[Numero | Texto]:
     o texto diz isso, para a frase do README continuar verdadeira.
     """
     nome = NOMES_CONDICAO[c]
-    contagem = {classe: r["erros"].get(classe, 0) for classe in CLASSES_DE_ERRO}
-    maior = max(contagem.values())
-    if maior == 0:
+    contagem = {slug: r["erros"].get(classe.nome, 0) for slug, classe in CLASSES_DE_ERRO.items()}
+    mais = mais_frequentes(contagem)
+    maior = contagem[mais[0]] if mais else 0
+    if not mais:
         pt, en = "nenhuma, porque não houve erro", "none, since there was no error"
     else:
-        mais = [classe for classe, n in contagem.items() if n == maior]
-        pt, en = _juntar(mais, "e"), _juntar([CLASSES_DE_ERRO_EN[classe] for classe in mais], "and")
+        pt = juntar([CLASSES_DE_ERRO[s].nome for s in mais], "e")
+        en = juntar([CLASSES_DE_ERRO[s].nome_en for s in mais], "and")
         if len(mais) > 1:
             pt, en = f"{pt}, empatadas", f"{en}, tied"
     return [
@@ -230,12 +215,7 @@ def _numeros_do_erro_mais_frequente(c: str, r: dict) -> list[Numero | Texto]:
 
 def _conclusao(outra: str, d) -> Texto:
     """O que o IC da diferença pareada permite dizer: com RAG acerta mais, menos, ou os dados não distinguem."""
-    if d.inferior > 0:
-        pt, en = "com RAG acerta mais", "RAG gets more answers right"
-    elif d.superior < 0:
-        pt, en = "com RAG acerta menos", "RAG gets fewer answers right"
-    else:
-        pt, en = "os dados não distinguem as duas Condições", "the data cannot tell the two conditions apart"
+    pt, en = CONCLUSOES[lado_do_ic(d.inferior, d.superior)]
     return Texto(f"com_rag_x_{outra}_conclusao", pt, en,
                  f"com RAG × {NOMES_CONDICAO[outra]}: leitura do IC de Newcombe (todo acima, todo abaixo "
                  "de zero ou incluindo o zero)")
@@ -382,12 +362,6 @@ class _Celulas:
         return f"{self(chave)} ({self(chave + '_inf')} a {self(chave + '_sup')})"
 
 
-def _rotulo(condicao: str) -> str:
-    """"com RAG" -> "Com RAG", para abrir a linha da tabela."""
-    nome = NOMES_CONDICAO[condicao]
-    return nome[:1].upper() + nome[1:]
-
-
 def _arquivo(colunas: str, linhas: list[list[str]]) -> str:
     cabecalho = [
         f"% GERADO por {SCRIPT}. Não edite à mão: rode o script de novo.",
@@ -404,7 +378,7 @@ def _montar_tabelas(textos: dict[str, str]) -> dict[str, tuple[str, list[str]]]:
     linhas = []
     for c in CONDICOES:
         linhas.append([
-            _rotulo(c),
+            rotulo_condicao(c),
             t.com_ic(f"{c}_acerto_resposta"),
             t.com_ic(f"{c}_acerto_citacao"),
             t.com_ic(f"{c}_acerto_recuperacao") if f"{c}_acerto_recuperacao" in textos else "---",
@@ -430,21 +404,19 @@ def _montar_tabelas(textos: dict[str, str]) -> dict[str, tuple[str, list[str]]]:
 
     t = _Celulas(textos)
     linhas = []
-    classes_respondiveis = [s for s in CLASSES_DE_ERRO.values() if s != "resposta_inventada"]
     for tipo in TIPOS_RESPONDIVEIS:
-        k = f"com_rag_tipo_{tipo}"
-        linhas.append([NOMES_TIPO[tipo], t(f"{k}_n"), t(f"{k}_acertos"),
-                       *[t(f"{k}_{s}") for s in classes_respondiveis], "---"])
-    k = "com_rag_tipo_sem_resposta"
-    linhas.append([NOMES_TIPO["sem_resposta"], t(f"{k}_n"), t(f"{k}_acertos"),
-                   *["---"] * len(classes_respondiveis), t(f"{k}_resposta_inventada")])
+        linhas.append([NOMES_TIPO[tipo], t(chave_por_tipo(tipo, "n")), t(chave_por_tipo(tipo, "acertos")),
+                       *[t(chave_por_tipo(tipo, s)) for s in CLASSES_DAS_RESPONDIVEIS], "---"])
+    linhas.append([NOMES_TIPO["sem_resposta"], t(chave_por_tipo("sem_resposta", "n")),
+                   t(chave_por_tipo("sem_resposta", "acertos")), *["---"] * len(CLASSES_DAS_RESPONDIVEIS),
+                   t(chave_por_tipo("sem_resposta", SO_NAS_SEM_RESPOSTA))])
     tabelas["erros_por_tipo.tex"] = (_arquivo(
         "Tipo de pergunta; n; acertos (nas sem resposta, abstenções corretas); falha de recuperação; "
         "falha de leitura; abstenção indevida; citação errada; resposta inventada; Condição com RAG", linhas),
         t.usadas)
 
     t = _Celulas(textos)
-    linhas = [[_rotulo(c), t(f"{c}_tokens_entrada_medio"), t(f"{c}_latencia_mediana_s"),
+    linhas = [[rotulo_condicao(c), t(f"{c}_tokens_entrada_medio"), t(f"{c}_latencia_mediana_s"),
                t(f"{c}_n_fallback")] for c in CONDICOES]
     tabelas["custo_por_condicao.tex"] = (_arquivo(
         "Condição; tokens de entrada (média por Pergunta); latência mediana (s); respostas com fallback",
@@ -452,7 +424,8 @@ def _montar_tabelas(textos: dict[str, str]) -> dict[str, tuple[str, list[str]]]:
 
     # Uma linha por repetição e Condição que existir: o .tex não fixa quantas repetições houve.
     t = _Celulas(textos)
-    linhas = [[NOMES_REPETICAO[rodada], _rotulo(c), t(f"concordancia_{rodada}_{c}"), t(f"concordancia_{rodada}_{c}_n")]
+    linhas = [[NOMES_REPETICAO[rodada], rotulo_condicao(c), t(f"concordancia_{rodada}_{c}"),
+               t(f"concordancia_{rodada}_{c}_n")]
               for rodada in REPETICOES for c in CONDICOES if f"concordancia_{rodada}_{c}" in textos]
     tabelas["concordancia.tex"] = (_arquivo(
         "Repetição; Condição; concordância dos Veredictos automáticos com a Rodada principal (não revisados); "
@@ -470,13 +443,7 @@ def analisar(
     pasta_rodadas = Path(pasta_rodadas)
     numeros_json = Path(numeros_json or config.NUMEROS)
     pasta_tabelas = Path(pasta_tabelas or config.TABELAS)
-    if rodada_sintetica(pasta_rodadas / "principal") and any(
-        dentro_de_uma_copia_do_projeto(p) for p in (numeros_json, pasta_tabelas)
-    ):
-        raise RaizProibida(
-            "as Rodadas sintéticas de demonstração não entram no registro nem nas tabelas de uma cópia do "
-            "projeto: rode a análise com RAG_SUS_RAIZ apontando para a raiz temporária"
-        )
+    recusar_no_projeto(pasta_rodadas, numeros_json, pasta_tabelas, passo="a análise")
     consolidadas = _consolidar_principal(pasta_rodadas / "principal", folha)
     resumos = {c: resumir(consolidadas[c]) for c in CONDICOES}
     lista: list[Numero | Texto] = (

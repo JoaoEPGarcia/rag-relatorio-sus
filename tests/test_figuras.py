@@ -14,14 +14,13 @@ import pytest
 from rag_sus import numeros
 from rag_sus.avaliacao.figuras import (
     fonte_dos_dados,
-    recusar_sinteticas_no_projeto,
     textos_acerto,
     textos_custo,
     textos_das_figuras,
     textos_erros,
 )
 from rag_sus.avaliacao.resultados import analisar
-from rag_sus.avaliacao.sinteticas import RaizProibida, gerar_rodadas_sinteticas
+from rag_sus.avaliacao.sinteticas import RaizProibida, gerar_rodadas_sinteticas, recusar_no_projeto
 
 SCRIPT_04 = "scripts/04_analisar.py"
 
@@ -240,10 +239,10 @@ def test_figuras_de_rodadas_sinteticas_nunca_vao_para_uma_copia_do_projeto(tmp_p
     (projeto / "pyproject.toml").write_text("", encoding="utf-8")
 
     with pytest.raises(RaizProibida):
-        recusar_sinteticas_no_projeto(pasta_rodadas, projeto / "figuras")
+        recusar_no_projeto(pasta_rodadas, projeto / "figuras", passo="as figuras")
     with pytest.raises(RaizProibida):
-        recusar_sinteticas_no_projeto(pasta_rodadas, raiz / "figuras", projeto / "resultados" / "numeros.json")
-    recusar_sinteticas_no_projeto(pasta_rodadas, raiz / "figuras", raiz / "resultados" / "numeros.json")
+        recusar_no_projeto(pasta_rodadas, raiz / "figuras", projeto / "resultados" / "numeros.json", passo="as figuras")
+    recusar_no_projeto(pasta_rodadas, raiz / "figuras", raiz / "resultados" / "numeros.json", passo="as figuras")
 
 
 def test_a_fonte_no_rodape_avisa_quando_as_rodadas_sao_sinteticas():

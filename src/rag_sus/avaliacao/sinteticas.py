@@ -42,7 +42,7 @@ from rag_sus.provedores import Metadados
 # Os números do corpus (páginas, palavras, Trechos) saem do PDF real por este script.
 SCRIPT_DO_CORPUS = "scripts/01_extrair.py"
 # O registro do projeto, e não o de RAG_SUS_RAIZ: dele só se leem os números do corpus.
-NUMEROS_DO_PROJETO = config.PROJETO / "resultados" / "numeros.json"
+NUMEROS_DO_PROJETO = config.na_raiz(config.NUMEROS, config.PROJETO)
 
 # Probabilidade de acertar a resposta, por Condição e Tipo de pergunta; nas sem
 # resposta, de se abster. Escolhidas para o resultado parecer plausível.
@@ -75,6 +75,21 @@ def dentro_de_uma_copia_do_projeto(caminho: Path) -> bool:
 def rodada_sintetica(pasta_rodada: Path) -> bool:
     execucao = Path(pasta_rodada) / "execucao.json"
     return execucao.exists() and json.loads(execucao.read_text(encoding="utf-8")).get("sintetica", False)
+
+
+def recusar_no_projeto(pasta_rodadas: Path, *destinos: Path, passo: str) -> None:
+    """A trava: Rodadas sintéticas não viram número, tabela nem figura dentro de uma cópia do projeto.
+
+    `passo` diz, na mensagem, o que rodar de novo sobre a raiz temporária.
+    """
+    if not rodada_sintetica(Path(pasta_rodadas) / "principal"):
+        return
+    proibidos = [str(d) for d in destinos if dentro_de_uma_copia_do_projeto(d)]
+    if proibidos:
+        raise RaizProibida(
+            f"as Rodadas sintéticas de demonstração, com números inventados, não vão para uma cópia do projeto "
+            f"({', '.join(proibidos)}): rode {passo} com RAG_SUS_RAIZ apontando para a raiz temporária"
+        )
 
 
 @dataclass(frozen=True)
@@ -231,15 +246,15 @@ def gerar_rodadas_sinteticas(
     if not 0 <= repeticoes <= len(RODADAS_PUBLICADAS) - 1:
         raise ValueError(f"repeticoes vai de 0 a {len(RODADAS_PUBLICADAS) - 1}")
 
-    pasta_rodadas = raiz / "resultados" / "rodadas"
-    folha = raiz / "avaliacao" / "revisao_veredictos.csv"
+    pasta_rodadas = config.na_raiz(config.RODADAS, raiz)
+    folha = config.na_raiz(config.REVISAO_VEREDICTOS, raiz)
     for antigo in [*pasta_rodadas.glob("*/*.jsonl"), *pasta_rodadas.glob("*/execucao.json"), folha]:
         antigo.unlink(missing_ok=True)
 
     itens = gabarito_sintetico()
     planos = {c: _planos(itens, c, random.Random(f"{semente}-{c}")) for c in CONDICOES}
     # os parâmetros do projeto, gravados como scripts/03_rodar_avaliacao.py grava os da Rodada real
-    p = config.carregar_parametros(Path(parametros or config.PROJETO / "parametros.toml"))
+    p = config.carregar_parametros(Path(parametros or config.na_raiz(config.PARAMETROS, config.PROJETO)))
     for numero, rodada in enumerate(RODADAS_PUBLICADAS[: repeticoes + 1]):
         pasta = pasta_rodadas / rodada
         pasta.mkdir(parents=True, exist_ok=True)
@@ -255,5 +270,5 @@ def gerar_rodadas_sinteticas(
 
     gravar_folha_de_revisao([pasta_rodadas / "principal" / f"{c}.jsonl" for c in CONDICOES], folha)
     _revisar_folha(folha, planos)
-    _copiar_numeros_do_corpus(Path(numeros_do_projeto or NUMEROS_DO_PROJETO), raiz / "resultados" / "numeros.json")
+    _copiar_numeros_do_corpus(Path(numeros_do_projeto or NUMEROS_DO_PROJETO), config.na_raiz(config.NUMEROS, raiz))
     return pasta_rodadas

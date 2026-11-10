@@ -39,6 +39,17 @@ FIGURAS = RAIZ / "figuras"
 RELATORIO = RAIZ / "relatorio"
 # Linhas das tabelas do Relatório de avaliação, escritas por script e lidas com \linhasde.
 TABELAS = RELATORIO / "tabelas"
+TEX_DO_RELATORIO = RELATORIO / "relatorio.tex"
+
+
+def na_raiz(caminho: Path, raiz: Path) -> Path:
+    """O mesmo caminho de cima, mas sob outra raiz: `na_raiz(RODADAS, PROJETO)`, por exemplo.
+
+    Para quem precisa de um caminho de uma raiz que não é a RAIZ desta
+    execução (o gerador das Rodadas sintéticas grava numa raiz passada como
+    argumento; o .tex e o registro do projeto são lidos mesmo sob RAG_SUS_RAIZ).
+    """
+    return Path(raiz) / Path(caminho).relative_to(RAIZ)
 
 
 @dataclass(frozen=True)

@@ -16,13 +16,21 @@ e a da figura declara onde aparece. O valor é o mesmo, copiado do registro.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from pathlib import Path
 
 from rag_sus.assistente import CONDICOES
 from rag_sus.avaliacao.estatistica import NIVEL
 from rag_sus.avaliacao.gabarito import TIPOS_RESPONDIVEIS
-from rag_sus.avaliacao.resultados import CLASSES_DE_ERRO, NOMES_CONDICAO, NOMES_TIPO
-from rag_sus.avaliacao.sinteticas import RaizProibida, dentro_de_uma_copia_do_projeto, rodada_sintetica
+from rag_sus.avaliacao.vocabulario import (
+    CLASSES_DAS_RESPONDIVEIS,
+    CLASSES_DE_ERRO,
+    NOMES_TIPO,
+    SO_NAS_SEM_RESPOSTA,
+    chave_por_tipo,
+    juntar,
+    lado_do_ic,
+    mais_frequentes,
+    rotulo_condicao,
+)
 from rag_sus.numeros import Numero, formatar
 
 
@@ -67,11 +75,7 @@ class _Impressos:
 
 def _lado_da_diferenca(t: _Impressos, comparacao: str) -> int:
     """+1 se o IC da diferença pareada (com RAG menos a outra) fica acima de zero, −1 se abaixo, 0 se cruza."""
-    if t.valor(f"{comparacao}_diferenca_inf") > 0:
-        return 1
-    if t.valor(f"{comparacao}_diferenca_sup") < 0:
-        return -1
-    return 0
+    return lado_do_ic(t.valor(f"{comparacao}_diferenca_inf"), t.valor(f"{comparacao}_diferenca_sup"))
 
 
 def textos_acerto(registro: dict[str, dict]) -> TextosDaFigura:
@@ -96,12 +100,6 @@ def textos_acerto(registro: dict[str, dict]) -> TextosDaFigura:
                  f"A linha fina é o intervalo de confiança de Wilson de {nivel}%.")
     return TextosDaFigura(arquivo, titulo, subtitulo, rotulos, tuple(t.numeros.values()),
                           linhas=CONDICOES, destaque=("com_rag",))
-
-
-def _nome_de_abertura(condicao: str) -> str:
-    """"contexto completo" -> "Contexto completo"."""
-    nome = NOMES_CONDICAO[condicao]
-    return nome[:1].upper() + nome[1:]
 
 
 def textos_custo(registro: dict[str, dict]) -> TextosDaFigura:
@@ -130,7 +128,7 @@ def textos_custo(registro: dict[str, dict]) -> TextosDaFigura:
     rotulos = {"coluna/tokens": "Tokens de entrada por Pergunta (escala logarítmica)",
                "coluna/latencia": "Latência por Pergunta, em segundos"}
     for c in CONDICOES:
-        rotulos[c] = f"{_nome_de_abertura(c)}\nacerta {t(f'{c}_acerto_resposta')}"
+        rotulos[c] = f"{rotulo_condicao(c)}\nacerta {t(f'{c}_acerto_resposta')}"
         rotulos[f"{c}/tokens"] = f"média {t(f'{c}_tokens_entrada_medio')}"
         rotulos[f"{c}/latencia"] = f"mediana {t(f'{c}_latencia_mediana_s')} s"
     n = t("gabarito_n_perguntas")
@@ -154,60 +152,41 @@ def fonte_dos_dados(sintetica: bool) -> str:
             "com os Veredictos revisados pelo autor.")
 
 
-def recusar_sinteticas_no_projeto(pasta_rodadas: Path, *destinos: Path) -> None:
-    """Rodadas sintéticas não viram figura nem número dentro de uma cópia do projeto."""
-    if rodada_sintetica(Path(pasta_rodadas) / "principal") and any(
-        dentro_de_uma_copia_do_projeto(d) for d in destinos
-    ):
-        raise RaizProibida(
-            "as Rodadas sintéticas de demonstração não viram figura nem número numa cópia do projeto: "
-            "rode as figuras com RAG_SUS_RAIZ apontando para a raiz temporária"
-        )
-
-
-def _em_lista(nomes: list[str]) -> str:
-    """["a x", "a y", "a z"] -> "a x, a y e a z"."""
-    return nomes[0] if len(nomes) == 1 else f"{', '.join(nomes[:-1])} e {nomes[-1]}"
-
-
 def textos_erros(registro: dict[str, dict]) -> TextosDaFigura:
     """Classes de erro por Tipo de pergunta, na Condição com RAG; a classe mais comum em destaque."""
     arquivo = "figuras/erros_por_tipo.png"
     t = _Impressos(registro, "erros", arquivo)
-    nome_da_classe = {slug: classe for classe, slug in CLASSES_DE_ERRO.items()}
-    totais = {slug: t.valor(f"com_rag_erros_{slug}") for slug in CLASSES_DE_ERRO.values()}
-    maior = max(totais.values())
-    destaque = tuple(slug for slug, k in totais.items() if k == maior) if maior > 0 else ()
+    totais = {slug: t.valor(f"com_rag_erros_{slug}") for slug in CLASSES_DE_ERRO}
+    destaque = mais_frequentes(totais)
 
     if not destaque:
         titulo = "Com RAG, o assistente não errou nenhuma resposta nem citação"
     elif len(destaque) == 1:
         total = t.novo("total", sum(totais.values()), "erros com RAG, somadas todas as Classes de erro", "inteiro")
-        titulo = (f"Com RAG, a {nome_da_classe[destaque[0]]} é a Classe de erro mais comum: "
+        titulo = (f"Com RAG, a {CLASSES_DE_ERRO[destaque[0]].nome} é a Classe de erro mais comum: "
                   f"{t(f'com_rag_erros_{destaque[0]}')} dos {total} erros")
     else:
-        classes = _em_lista([f"a {nome_da_classe[s]}" for s in destaque])
+        classes = juntar([f"a {CLASSES_DE_ERRO[s].nome}" for s in destaque])
         titulo = (f"Com RAG, {classes} empatam como Classe de erro mais comum, "
                   f"com {t(f'com_rag_erros_{destaque[0]}')} erros cada")
 
     def erros_do_tipo(tipo: str) -> int:
-        return sum(t.valor(f"com_rag_tipo_{tipo}_{s}") for s in CLASSES_DE_ERRO.values() if s != "resposta_inventada")
+        return sum(t.valor(chave_por_tipo(tipo, s)) for s in CLASSES_DAS_RESPONDIVEIS)
 
     linhas = (*sorted(TIPOS_RESPONDIVEIS, key=erros_do_tipo, reverse=True), "sem_resposta")
     colunas = tuple(sorted(totais, key=totais.get, reverse=True))
     rotulos: dict[str, str] = {}
     for slug in colunas:
-        nome = nome_da_classe[slug]
+        nome = CLASSES_DE_ERRO[slug].nome
         rotulos[f"coluna/{slug}"] = f"{nome[:1].upper()}{nome[1:]} ({t(f'com_rag_erros_{slug}')})"
     for tipo in linhas:
-        rotulos[tipo] = f"{NOMES_TIPO[tipo]} ({t(f'com_rag_tipo_{tipo}_n')})"
-        aplicaveis = ("resposta_inventada",) if tipo == "sem_resposta" else (
-            s for s in CLASSES_DE_ERRO.values() if s != "resposta_inventada")
+        rotulos[tipo] = f"{NOMES_TIPO[tipo]} ({t(chave_por_tipo(tipo, 'n'))})"
+        aplicaveis = (SO_NAS_SEM_RESPOSTA,) if tipo == "sem_resposta" else CLASSES_DAS_RESPONDIVEIS
         for slug in aplicaveis:
-            if t.valor(f"com_rag_tipo_{tipo}_{slug}") > 0:
-                rotulos[f"{tipo}/{slug}"] = t(f"com_rag_tipo_{tipo}_{slug}")
+            if t.valor(chave_por_tipo(tipo, slug)) > 0:
+                rotulos[f"{tipo}/{slug}"] = t(chave_por_tipo(tipo, slug))
 
-    n = t.novo("n_perguntas", sum(t.valor(f"com_rag_tipo_{tipo}_n") for tipo in linhas),
+    n = t.novo("n_perguntas", sum(t.valor(chave_por_tipo(tipo, "n")) for tipo in linhas),
                "Perguntas da Rodada principal com RAG, respondíveis e sem resposta", "inteiro")
     subtitulo = (f"Perguntas com erro nas {n} da Rodada principal com RAG. Entre parênteses, as Perguntas do "
                  "Tipo e os erros da Classe. Resposta inventada só há nas sem resposta; as demais, nas respondíveis.")

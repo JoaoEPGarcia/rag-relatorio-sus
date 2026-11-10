@@ -32,7 +32,7 @@ import sys
 from rag_sus import config
 from rag_sus.pipeline import compilar_relatorio, passos_do_pipeline, rodar
 
-TEX = config.PROJETO / "relatorio" / "relatorio.tex"
+TEX = config.na_raiz(config.TEX_DO_RELATORIO, config.PROJETO)
 
 
 def rodar_script(nome: str) -> int:
