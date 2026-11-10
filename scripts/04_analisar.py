@@ -19,7 +19,7 @@ Sobre as Rodadas sintéticas (raiz temporária, nunca o registro real):
 import sys
 
 from rag_sus import config
-from rag_sus.avaliacao.resultados import analisar
+from rag_sus.avaliacao.resultados import RodadaSemParametros, analisar
 from rag_sus.avaliacao.rodada import RevisaoIncompleta
 from rag_sus.avaliacao.sinteticas import RaizProibida
 
@@ -28,7 +28,7 @@ def main() -> int:
     sys.stdout.reconfigure(encoding="utf-8")
     try:
         registrados = analisar(config.RODADAS, config.REVISAO_VEREDICTOS)
-    except (RevisaoIncompleta, FileNotFoundError, RaizProibida) as erro:
+    except (RevisaoIncompleta, FileNotFoundError, RaizProibida, RodadaSemParametros) as erro:
         print(f"Análise parada: {erro}")
         return 1
     print(f"{len(registrados)} números -> {config.NUMEROS}")

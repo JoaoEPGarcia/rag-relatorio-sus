@@ -309,19 +309,28 @@ def _numeros_da_concordancia(pasta_rodadas: Path) -> list[Numero]:
     return lista
 
 
+class RodadaSemParametros(RuntimeError):
+    pass
+
+
 def _numeros_dos_parametros(principal: Path) -> list[Numero | Texto]:
     """Os parâmetros com que a Rodada principal rodou, lidos do execucao.json gravado ao lado dela.
 
     Entram no registro para o Relatório de avaliação citá-los sem digitar: o k
     e os nomes dos modelos e do commit, que têm dígitos. São os da Rodada, e
     não os do parametros.toml de agora, que pode ter mudado depois dela.
-    Sem execucao.json com parâmetros, nada é registrado.
+    Sem execucao.json com parâmetros, a análise para aqui, antes de gravar
+    qualquer coisa: o Relatório de avaliação cita esses parâmetros, e a
+    compilação quebraria adiante com uma macro indefinida.
     """
     execucao = principal / "execucao.json"
     dados = json.loads(execucao.read_text(encoding="utf-8")) if execucao.exists() else {}
     p = dados.get("parametros")
     if not p:
-        return []
+        raise RodadaSemParametros(
+            f"{execucao} não traz os parametros com que a Rodada principal rodou (k, modelos): "
+            "rode de novo scripts/03_rodar_avaliacao.py --rodada principal, que os grava ao lado da Rodada"
+        )
     commit = dados["commit"]
     commit = commit[:7] if re.fullmatch(r"[0-9a-f]{40}", commit) else commit
     return [

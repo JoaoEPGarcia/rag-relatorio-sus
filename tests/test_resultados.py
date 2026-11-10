@@ -14,7 +14,7 @@ from statsmodels.stats.contingency_tables import mcnemar
 from statsmodels.stats.proportion import proportion_confint
 
 from rag_sus import numeros
-from rag_sus.avaliacao.resultados import analisar
+from rag_sus.avaliacao.resultados import RodadaSemParametros, analisar
 from rag_sus.avaliacao.rodada import RevisaoIncompleta
 
 TIPOS = ("numero_prosa", "numero_tabela", "numero_legenda", "conceito", "sintese")
@@ -85,10 +85,12 @@ def projeto(tmp_path):
     gravar_rodada(rodadas, "principal", "contexto_completo", condicao_simples("contexto_completo", 42))
     folha = tmp_path / "revisao_veredictos.csv"
     gravar_folha(folha, [])
-    return {
+    p = {
         "rodadas": rodadas, "folha": folha,
         "numeros": tmp_path / "resultados" / "numeros.json", "tabelas": tmp_path / "relatorio" / "tabelas",
     }
+    gravar_execucao(p)
+    return p
 
 
 def rodar(p):
@@ -437,6 +439,15 @@ def test_parametros_da_rodada_principal_entram_no_registro(projeto):
     assert r["parametros_commit"]["texto"] == "a1b2c3d"
 
 
-def test_rodada_principal_sem_parametros_gravados_nao_registra_parametros(projeto):
-    r = rodar(projeto)
-    assert not [c for c in r if c.startswith("parametros_")]
+@pytest.mark.parametrize("execucao", [None, {"commit": "a1b2c3d"}, {"commit": "a1b2c3d", "parametros": {}}])
+def test_rodada_principal_sem_parametros_gravados_para_a_analise_com_mensagem_clara(projeto, execucao):
+    # sem os parâmetros, o Relatório de avaliação usaria \NumParametrosK sem definição e a compilação quebraria adiante
+    destino = projeto["rodadas"] / "principal" / "execucao.json"
+    if execucao is None:
+        destino.unlink()
+    else:
+        destino.write_text(json.dumps(execucao), encoding="utf-8")
+
+    with pytest.raises(RodadaSemParametros, match="execucao.json.*parametros"):
+        rodar(projeto)
+    assert not projeto["numeros"].exists()
