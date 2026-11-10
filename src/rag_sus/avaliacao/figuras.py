@@ -26,6 +26,7 @@ from rag_sus.avaliacao.gabarito import TIPOS_RESPONDIVEIS
 from rag_sus.avaliacao.vocabulario import (
     CLASSES_DAS_RESPONDIVEIS,
     CLASSES_DE_ERRO,
+    CONCLUSOES,
     NOMES_TIPO,
     SO_NAS_SEM_RESPOSTA,
     chave_por_tipo,
@@ -126,7 +127,10 @@ def textos_custo(registro: dict[str, dict]) -> TextosDaFigura:
         if lado < 0:
             titulo = f"O contexto completo acerta mais, {cc} contra {rag} com RAG, {conectivo} {quanto}"
         else:
-            titulo = f"O contexto completo acerta {cc}, perto dos {rag} com RAG, {conectivo} {quanto}"
+            # o IC inclui o zero: a mesma leitura neutra do registro (com_rag_x_contexto_completo_conclusao)
+            neutra = CONCLUSOES[0][0]
+            titulo = (f"Com RAG, {rag}, contra o contexto completo, {cc}: {neutra}, "
+                      f"{'mas' if cc_le_mais else 'e'} o contexto completo lê {quanto}")
 
     rotulos = {"coluna/tokens": "Tokens de entrada por Pergunta (escala logarítmica)",
                "coluna/latencia": "Latência por Pergunta, em segundos"}

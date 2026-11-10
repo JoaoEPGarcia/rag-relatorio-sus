@@ -194,8 +194,10 @@ def custos(acerto_com, acerto_cc, dif_cc, tokens=(2712.4, 221.0, 94010.0), laten
 def test_titulo_do_custo_quando_o_contexto_completo_acerta_parecido_mas_le_muito_mais_tokens():
     r = registro(**custos(0.8, 0.82, dif_cc=(-0.02, -0.12, 0.08)))
 
+    # o IC da diferença inclui o zero: a mesma leitura neutra do registro, com os dois números, e nada de "perto"
     assert textos_custo(r).titulo == (
-        "O contexto completo acerta 82,0%, perto dos 80,0% com RAG, mas lê 35 vezes mais tokens por Pergunta")
+        "Com RAG, 80,0%, contra o contexto completo, 82,0%: os dados não distinguem as duas Condições, "
+        "mas o contexto completo lê 35 vezes mais tokens por Pergunta")
 
 
 def test_titulo_do_custo_quando_o_contexto_completo_acerta_mais():
