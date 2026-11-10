@@ -97,18 +97,18 @@ def preencher_readme(base: str, registro: dict[str, dict]) -> str:
 # Arquivos de relatorio/ escritos por script, com dígitos de propósito: as macros
 # (numeros.tex, por scripts/06_gerar_documentos.py) e as linhas de tabela lidas
 # com \linhasde (tabelas/, por scripts/04_analisar.py). O conferidor não os lê.
-GERADOS_NO_RELATORIO = ("numeros.tex",)
-PASTAS_GERADAS_NO_RELATORIO = ("tabelas",)
+GERADOS_NO_RELATORIO_DE_AVALIACAO = ("numeros.tex",)
+PASTAS_GERADAS_NO_RELATORIO_DE_AVALIACAO = ("tabelas",)
 
 
-def textos_do_relatorio(pasta_relatorio: Path, raiz: Path) -> dict[str, str]:
+def textos_do_relatorio_de_avaliacao(pasta_relatorio: Path, raiz: Path) -> dict[str, str]:
     """Os .tex escritos à mão no Relatório de avaliação, pelo caminho relativo à raiz."""
     textos = {}
     for p in sorted(pasta_relatorio.rglob("*.tex")):
         relativo = p.relative_to(pasta_relatorio)
-        if relativo.name in GERADOS_NO_RELATORIO and len(relativo.parts) == 1:
+        if relativo.name in GERADOS_NO_RELATORIO_DE_AVALIACAO and len(relativo.parts) == 1:
             continue
-        if relativo.parts[0] in PASTAS_GERADAS_NO_RELATORIO:
+        if relativo.parts[0] in PASTAS_GERADAS_NO_RELATORIO_DE_AVALIACAO:
             continue
         textos[p.relative_to(raiz).as_posix()] = p.read_text(encoding="utf-8")
     return textos

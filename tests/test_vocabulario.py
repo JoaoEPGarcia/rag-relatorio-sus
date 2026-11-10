@@ -46,4 +46,4 @@ def test_classes_das_respondiveis_deixam_de_fora_a_resposta_inventada():
 
 def test_na_raiz_leva_um_caminho_de_config_para_outra_raiz(tmp_path):
     assert config.na_raiz(config.RODADAS, tmp_path) == tmp_path / "resultados" / "rodadas"
-    assert config.na_raiz(config.TEX_DO_RELATORIO, Path("p")) == Path("p") / "relatorio" / "relatorio.tex"
+    assert config.na_raiz(config.TEX_DO_RELATORIO_DE_AVALIACAO, Path("p")) == Path("p") / "relatorio" / "relatorio.tex"

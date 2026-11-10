@@ -30,9 +30,9 @@ import subprocess
 import sys
 
 from rag_sus import config
-from rag_sus.pipeline import compilar_relatorio, passos_do_pipeline, rodar
+from rag_sus.pipeline import compilar_relatorio_de_avaliacao, passos_do_pipeline, rodar
 
-TEX = config.na_raiz(config.TEX_DO_RELATORIO, config.PROJETO)
+TEX = config.na_raiz(config.TEX_DO_RELATORIO_DE_AVALIACAO, config.PROJETO)
 
 
 def rodar_script(nome: str) -> int:
@@ -44,7 +44,8 @@ def rodar_script(nome: str) -> int:
 def main() -> int:
     sys.stdout.reconfigure(encoding="utf-8")
     print(f"Raiz: {config.RAIZ}", flush=True)
-    passos = passos_do_pipeline(config.RAIZ, rodar_script, lambda: compilar_relatorio(TEX, config.RELATORIO))
+    passos = passos_do_pipeline(config.RAIZ, rodar_script,
+                                lambda: compilar_relatorio_de_avaliacao(TEX, config.RELATORIO))
     return rodar(passos)
 
 

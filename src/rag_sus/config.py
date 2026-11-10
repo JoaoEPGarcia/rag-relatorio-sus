@@ -39,7 +39,7 @@ FIGURAS = RAIZ / "figuras"
 RELATORIO = RAIZ / "relatorio"
 # Linhas das tabelas do Relatório de avaliação, escritas por script e lidas com \linhasde.
 TABELAS = RELATORIO / "tabelas"
-TEX_DO_RELATORIO = RELATORIO / "relatorio.tex"
+TEX_DO_RELATORIO_DE_AVALIACAO = RELATORIO / "relatorio.tex"
 
 
 def na_raiz(caminho: Path, raiz: Path) -> Path:

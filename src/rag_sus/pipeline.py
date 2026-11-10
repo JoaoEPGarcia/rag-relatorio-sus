@@ -74,7 +74,7 @@ def _pdflatex(comando: list[str], cwd: Path) -> tuple[int, str]:
 _PEDE_OUTRA_PASSADA = ("Rerun to get", "Label(s) may have changed")
 
 
-def compilar_relatorio(
+def compilar_relatorio_de_avaliacao(
     tex: Path, pasta_saida: Path, executar: Callable[[list[str], Path], tuple[int, str]] = _pdflatex
 ) -> int:
     """Compila o .tex com o pdflatex rodando em pasta_saida: duas passadas, três se o .log pedir.

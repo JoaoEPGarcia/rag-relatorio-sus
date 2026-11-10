@@ -157,7 +157,7 @@ def fonte_dos_dados(sintetica: bool) -> str:
     if sintetica:
         return ("Fonte: Rodadas sintéticas de demonstração, com números inventados; "
                 "não é resultado do assistente.")
-    return ("Fonte: Rodada principal da avaliação do assistente sobre o relatório Gestão Hospitalar no SUS-SP, "
+    return ("Fonte: Rodada principal da avaliação do assistente sobre o Relatório-fonte Gestão Hospitalar no SUS-SP, "
             "com os Veredictos revisados pelo autor.")
 
 

@@ -15,7 +15,7 @@ import pytest
 
 from rag_sus import config
 from rag_sus.avaliacao.sinteticas import gerar_rodadas_sinteticas
-from rag_sus.pipeline import Passo, compilar_relatorio, passos_do_pipeline, rodar
+from rag_sus.pipeline import Passo, compilar_relatorio_de_avaliacao, passos_do_pipeline, rodar
 
 ORDEM = [
     "extração",
@@ -148,7 +148,7 @@ def test_compila_o_tex_do_projeto_com_entradas_e_saida_na_raiz(tmp_path):
     pasta = tmp_path / "raiz" / "relatorio"
     pdflatex = PdflatexFalso(["Output written on relatorio.pdf", "Output written on relatorio.pdf"])
 
-    assert compilar_relatorio(tex, pasta, pdflatex) == 0
+    assert compilar_relatorio_de_avaliacao(tex, pasta, pdflatex) == 0
 
     # O .tex fica no projeto; numeros.tex, tabelas/ e ../figuras/ se acham a partir do cwd, a raiz.
     comando = ["pdflatex", "-interaction=nonstopmode", "-halt-on-error", str(tex)]
@@ -159,14 +159,14 @@ def test_terceira_passada_quando_o_log_pede(tmp_path):
     pdflatex = PdflatexFalso(["", "LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.",
                               ""])
 
-    assert compilar_relatorio(tmp_path / "relatorio.tex", tmp_path, pdflatex) == 0
+    assert compilar_relatorio_de_avaliacao(tmp_path / "relatorio.tex", tmp_path, pdflatex) == 0
     assert len(pdflatex.chamadas) == 3
 
 
 def test_passada_que_falha_para_a_compilacao_e_mostra_o_erro(tmp_path, capsys):
     pdflatex = PdflatexFalso(["", ""], codigos=[1, 0])
 
-    assert compilar_relatorio(tmp_path / "relatorio.tex", tmp_path, pdflatex) == 1
+    assert compilar_relatorio_de_avaliacao(tmp_path / "relatorio.tex", tmp_path, pdflatex) == 1
     assert len(pdflatex.chamadas) == 1
     assert "! Erro qualquer." in capsys.readouterr().out
 
@@ -175,7 +175,7 @@ def test_sem_pdflatex_diz_o_que_instalar(tmp_path, capsys):
     def ausente(comando, cwd):
         raise FileNotFoundError(comando[0])
 
-    assert compilar_relatorio(tmp_path / "relatorio.tex", tmp_path, ausente) != 0
+    assert compilar_relatorio_de_avaliacao(tmp_path / "relatorio.tex", tmp_path, ausente) != 0
     assert "pdflatex não encontrado" in capsys.readouterr().out
 
 

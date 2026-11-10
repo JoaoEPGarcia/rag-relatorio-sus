@@ -12,7 +12,7 @@ from rag_sus.documentos import (
     nome_macro,
     preencher_readme,
     texto_tex,
-    textos_do_relatorio,
+    textos_do_relatorio_de_avaliacao,
     usos,
 )
 
@@ -142,7 +142,7 @@ def test_textos_conferidos_deixam_de_fora_o_que_o_script_gera(tmp_path):
     (relatorio / "numeros.tex").write_text("\\newcommand{\\NumX}{80,0\\%}", encoding="utf-8")
     (relatorio / "tabelas" / "resultados_por_condicao.tex").write_text("Com RAG & 80,0\\% \\\\", encoding="utf-8")
 
-    textos = textos_do_relatorio(relatorio, tmp_path)
+    textos = textos_do_relatorio_de_avaliacao(relatorio, tmp_path)
 
     # macros e linhas de tabela são escritas por script, com dígitos de propósito
     assert sorted(textos) == ["relatorio/relatorio.tex", "relatorio/secoes/resultados.tex"]

@@ -23,12 +23,12 @@ from rag_sus.documentos import (
     gerar_numeros_canonicos,
     gerar_numeros_tex,
     preencher_readme,
-    textos_do_relatorio,
+    textos_do_relatorio_de_avaliacao,
     usos,
 )
 
 BASE = config.PROJETO / "README.base.md"
-RELATORIO_DO_PROJETO = config.na_raiz(config.RELATORIO, config.PROJETO)
+RELATORIO_DE_AVALIACAO_DO_PROJETO = config.na_raiz(config.RELATORIO, config.PROJETO)
 README = config.RAIZ / "README.md"
 CANONICOS = config.RAIZ / "NUMEROS_CANONICOS.md"
 NUMEROS_TEX = config.RELATORIO / "numeros.tex"
@@ -41,7 +41,7 @@ def textos_tex() -> dict[str, str]:
     Como o README.base.md, eles são código: uma raiz temporária não tem cópia
     deles, e o pdflatex compila o do projeto com as entradas da raiz.
     """
-    return textos_do_relatorio(RELATORIO_DO_PROJETO, config.PROJETO)
+    return textos_do_relatorio_de_avaliacao(RELATORIO_DE_AVALIACAO_DO_PROJETO, config.PROJETO)
 
 
 def main() -> int:
