@@ -28,3 +28,6 @@ relatorio/*.synctex.gz
 
 # Configuração local do Claude Code.
 .claude/settings.local.json
+
+# Folha de Revisão do Gabarito: de trabalho, com links para o PDF nesta máquina.
+avaliacao/revisao_gabarito/
