@@ -22,14 +22,18 @@ modelo_embeddings = "intfloat/multilingual-e5-large"
 k = 6
 
 # Gemini no plano gratuito do Google AI Studio (ADR 0005). O esforço vira o
-# nível de raciocínio (thinkingLevel): low, medium ou high.
+# nível de raciocínio (thinkingLevel): low, medium ou high. A cota diária do
+# plano gratuito é por modelo: o respondedor fica num modelo só (trocá-lo no
+# meio misturaria dois sistemas na comparação), e o Juiz soma a cota de vários,
+# passando ao reserva seguinte quando a do anterior acaba.
 [respondedor]
-modelo = "gemini-3.8-flash"
+modelo = "gemini-3.5-flash-lite"
 esforco = "medium"
 max_tokens = 16000
 
 [juiz]
-modelo = "gemini-3.8-flash"
+modelo = "gemini-3.6-flash"
+reservas = ["gemini-3-flash-preview", "gemini-3.1-flash-lite", "gemini-3.8-flash"]
 esforco = "medium"
 max_tokens = 4000
 

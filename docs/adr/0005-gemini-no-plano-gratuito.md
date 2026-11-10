@@ -29,3 +29,17 @@ Preços do Tier pago em 09/11/2026, por milhão de tokens, para o `gemini-3.8-fl
 - **O mesmo modelo nos dois modos.** O modo muda só a cota e quem paga. O modelo e os parâmetros são os mesmos, então os números não dependem do modo.
 - **Sem fallback do servidor.** O registro guarda o `modelVersion` que respondeu, e `usou_fallback` só fica verdadeiro se ele diferir do modelo pedido.
 - **Troca de modelo.** Se a cota do 3.8 Flash for pequena demais, a troca do modelo em `parametros.toml` (por exemplo, por um Flash-Lite) é feita antes do congelamento (ADR 0002) e fica registrada aqui.
+
+## Troca de modelo antes do congelamento (10/11/2026)
+
+Na Rodada de desenvolvimento, a cota diária do `gemini-3.8-flash` no plano gratuito acabou depois de 5 Perguntas, e o modelo depois parou de responder. O autor não quer gastar dinheiro, e os créditos do AI Pro exigem o pré-pagamento mínimo de US$ 5. Por isso, a avaliação fica no plano gratuito, somando a cota de vários modelos. A cota é por modelo. Os modelos foram sondados com uma chamada curta cada:
+
+- respondem: `gemini-3.6-flash`, `gemini-3.5-flash-lite`, `gemini-3.1-flash-lite` e `gemini-3-flash-preview`;
+- não servem: `gemini-3.5-flash`, que é outro nome do 3.6 (a API responde como `gemini-3.6-flash`); os Pro e o `gemini-4-argon`, que no plano gratuito recusam por todos os limites ao mesmo tempo; e o `gemini-2.5-flash-lite`, que não é mais oferecido a usuários novos.
+
+A decisão:
+
+- **Respondedor: `gemini-3.5-flash-lite`, um modelo só, em todas as Condições e Rodadas.** Trocar o respondedor no meio misturaria dois sistemas na comparação entre Condições. O Flash-Lite é o tipo de modelo com a maior cota no plano gratuito, e o objetivo do projeto é comparar as Condições com o mesmo modelo, e não o modelo mais forte.
+- **Juiz: `gemini-3.6-flash`, seguido dos reservas `gemini-3-flash-preview`, `gemini-3.1-flash-lite` e `gemini-3.8-flash` (`reservas` em `parametros.toml`).** Quando a cota diária de um acaba, o seguinte assume (`ProvedorEmCadeia`). O Juiz pode trocar porque todo Veredicto dele na Rodada principal passa pela Revisão do autor, que vence o Juiz. Cada linha da Rodada grava o modelo que julgou (`modelo_juiz`), e o registro de números publica os modelos que de fato julgaram.
+- O modelo do respondedor fica fora da cadeia do Juiz, para que a cota dele sirva só às respostas.
+- As 5 linhas da primeira tentativa (respondidas pelo `gemini-3.8-flash`) foram descartadas, e a Rodada de desenvolvimento recomeça com o modelo novo.

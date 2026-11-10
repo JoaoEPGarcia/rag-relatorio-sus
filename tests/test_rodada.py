@@ -52,6 +52,7 @@ def test_numerica_certa_nao_vai_ao_juiz(tmp_path):
 
     linha = carregar_linhas(tmp_path / "r.jsonl")[0]
     assert linha["acerto_regra"] is True and linha["veredicto_juiz"] is None
+    assert linha["modelo_juiz"] == ""
     assert linha["acerto_citacao"] and linha["acerto_recuperacao"]
     assert juiz.chamadas == 0
 
@@ -64,6 +65,8 @@ def test_numerica_que_a_regra_reprova_vai_ao_juiz(tmp_path):
 
     linha = carregar_linhas(tmp_path / "r.jsonl")[0]
     assert linha["acerto_regra"] is False and linha["veredicto_juiz"] is False
+    # o Juiz pode ser uma cadeia de modelos (plano gratuito), então a linha diz qual julgou
+    assert linha["modelo_juiz"] == "j"
     assert juiz.chamadas == 1
 
 

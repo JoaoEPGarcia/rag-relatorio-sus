@@ -252,9 +252,9 @@ else
   write_env GEMINI_API_KEY "$GEMINI_API_KEY"
   say "Conferindo a chave com a lista de modelos (não gasta cota)..."
   if GEMINI_API_KEY="$GEMINI_API_KEY" uv run --no-sync python scripts/conferir_chave.py >/dev/null 2>&1; then
-    printf '  %s✓ chave válida, e o gemini-3.8-flash está disponível%s\n' "$GREEN" "$RESET"
+    printf '  %s✓ chave válida, e os modelos dos parâmetros estão disponíveis%s\n' "$GREEN" "$RESET"
   else
-    warn "A chave não passou na conferência (chave errada ou sem acesso ao gemini-3.8-flash)."
+    warn "A chave não passou na conferência (chave errada ou sem acesso aos modelos dos parâmetros)."
     SKIPPED+=("conferir a chave do Gemini: rode o wizard de novo e cole outra chave")
   fi
   pause "Enter para continuar"

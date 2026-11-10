@@ -120,3 +120,49 @@ def test_latencia_mede_so_a_requisicao_que_deu_certo_e_nao_as_esperas():
     _, meta = p.gerar_json(SISTEMA, "m", ESQUEMA)
 
     assert meta.latencia_s == pytest.approx(3.0)
+
+
+class ProvedorFalso:
+    def __init__(self, modelo, esgotado=False):
+        self.modelo = modelo
+        self.esgotado = esgotado
+        self.chamadas = 0
+
+    def gerar_json(self, sistema, mensagem, esquema):
+        self.chamadas += 1
+        if self.esgotado:
+            raise CotaDiariaEsgotada(f"cota diária esgotada para {self.modelo}")
+        from rag_sus.provedores import Metadados
+        return {"x": 1}, Metadados(self.modelo, self.modelo, False)
+
+
+def test_cadeia_passa_ao_proximo_modelo_quando_a_cota_diaria_acaba_e_nao_volta_ao_esgotado():
+    from rag_sus.provedores import ProvedorEmCadeia
+    a, b = ProvedorFalso("modelo-a", esgotado=True), ProvedorFalso("modelo-b")
+    cadeia = ProvedorEmCadeia([a, b])
+
+    _, meta1 = cadeia.gerar_json(SISTEMA, "m", ESQUEMA)
+    _, meta2 = cadeia.gerar_json(SISTEMA, "m", ESQUEMA)
+
+    assert (meta1.modelo_que_respondeu, meta2.modelo_que_respondeu) == ("modelo-b", "modelo-b")
+    assert (a.chamadas, b.chamadas) == (1, 2)
+
+
+def test_cadeia_com_todos_os_modelos_esgotados_para_com_cota_diaria_esgotada():
+    from rag_sus.provedores import ProvedorEmCadeia
+    cadeia = ProvedorEmCadeia([ProvedorFalso("a", esgotado=True), ProvedorFalso("b", esgotado=True)])
+    with pytest.raises(CotaDiariaEsgotada, match="a, b"):
+        cadeia.gerar_json(SISTEMA, "m", ESQUEMA)
+
+
+def test_juiz_do_ambiente_monta_a_cadeia_so_quando_ha_reservas_no_gemini(monkeypatch):
+    from rag_sus.provedores import ProvedorEmCadeia, ProvedorOllama, juiz_do_ambiente
+    monkeypatch.setenv("GEMINI_API_KEY", "chave-falsa")
+    monkeypatch.setenv("PROVEDOR", "gemini")
+
+    cadeia = juiz_do_ambiente(["a", "b"], "medium", 100)
+    assert isinstance(cadeia, ProvedorEmCadeia) and [p.modelo for p in cadeia.provedores] == ["a", "b"]
+    assert isinstance(juiz_do_ambiente(["a"], "medium", 100), ProvedorGemini)
+
+    monkeypatch.setenv("PROVEDOR", "ollama")
+    assert isinstance(juiz_do_ambiente(["a", "b"], "medium", 100), ProvedorOllama)

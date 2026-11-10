@@ -32,7 +32,7 @@ from rag_sus.avaliacao.juiz import Juiz
 from rag_sus.avaliacao.rodada import executar_rodada, gravar_folha_de_revisao
 from rag_sus.avaliacao.travas import RODADAS, commit_atual, status_git, verificar_congelamento
 from rag_sus.busca import E5Embutidor, IndiceDeTrechos
-from rag_sus.provedores import CotaDiariaEsgotada, CotaEsgotada, provedor_do_ambiente
+from rag_sus.provedores import CotaDiariaEsgotada, CotaEsgotada, juiz_do_ambiente, provedor_do_ambiente
 
 FOLHA = config.REVISAO_VEREDICTOS
 
@@ -60,7 +60,8 @@ def main() -> int:
     pasta = config.RODADAS / args.rodada
     print(f"Rodada {args.rodada}: {len(itens)} Perguntas x {len(condicoes)} Condições "
           f"= até {len(itens) * len(condicoes)} chamadas ao respondedor ({p.modelo_respondedor}), "
-          f"mais as do Juiz. Retoma o que já está em {pasta}.")
+          f"mais as do Juiz ({', '.join([p.modelo_juiz, *p.reservas_juiz])}, em cadeia). "
+          f"Retoma o que já está em {pasta}.")
     if os.environ.get("PROVEDOR", "gemini") == "gemini":
         plano = os.environ.get("GEMINI_PLANO", "gratuito")
         print(f"Plano do Gemini: {plano}"
@@ -74,7 +75,7 @@ def main() -> int:
     indice = IndiceDeTrechos.carregar(config.INDICE, embutidor)
     texto = config.TEXTO_COMPLETO.read_text(encoding="utf-8")
     respondedor = provedor_do_ambiente(p.modelo_respondedor, p.esforco_respondedor, p.max_tokens_respondedor)
-    juiz = Juiz(provedor_do_ambiente(p.modelo_juiz, p.esforco_juiz, p.max_tokens_juiz))
+    juiz = Juiz(juiz_do_ambiente([p.modelo_juiz, *p.reservas_juiz], p.esforco_juiz, p.max_tokens_juiz))
     assistente = Assistente(respondedor, indice, embutidor, k=p.k, texto_completo=texto)
 
     pasta.mkdir(parents=True, exist_ok=True)

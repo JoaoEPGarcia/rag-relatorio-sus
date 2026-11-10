@@ -98,6 +98,7 @@ def _responder_e_pontuar(item: ItemGabarito, condicao: str, assistente, juiz) ->
         "acerto_regra": acerto_regra,
         "veredicto_juiz": veredicto.acerto if veredicto else None,
         "justificativa_juiz": veredicto.justificativa if veredicto else "",
+        "modelo_juiz": meta_juiz.modelo_que_respondeu if meta_juiz else "",
         "acerto_citacao": acerto_citacao(r.paginas_citadas, item.paginas) if item.respondivel else None,
         "acerto_recuperacao": (
             acerto_recuperacao(r.paginas_recuperadas, item.paginas)

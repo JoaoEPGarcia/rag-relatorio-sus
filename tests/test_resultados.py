@@ -477,6 +477,20 @@ def test_parametros_da_rodada_principal_entram_no_registro(projeto):
     assert r["parametros_commit"]["texto"] == "a1b2c3d"
 
 
+def test_modelos_que_de_fato_julgaram_entram_no_registro_quando_a_cadeia_do_juiz_foi_usada(projeto):
+    # Plano gratuito: quando a cota diária do primeiro modelo do Juiz acaba, o seguinte assume.
+    gravar_execucao(projeto)
+    linhas = condicao_simples("com_rag", 40, abstencoes_corretas=9)
+    for l, modelo in zip(linhas[:3], ("gemini-3.6-flash", "gemini-3.6-flash", "gemini-3-flash-preview"), strict=True):
+        l.update(veredicto_juiz=True, acerto_regra=None, modelo_juiz=modelo)
+    gravar_rodada(projeto["rodadas"], "principal", "com_rag", linhas)
+    gravar_folha(projeto["folha"], [("com_rag", l["id"], "certo", "certo") for l in linhas[:3]])
+
+    r = rodar(projeto)
+
+    assert r["parametros_modelo_juiz"]["texto"] == "gemini-3.6-flash e gemini-3-flash-preview"
+
+
 @pytest.mark.parametrize("execucao", [None, {"commit": "a1b2c3d"}, {"commit": "a1b2c3d", "parametros": {}}])
 def test_rodada_principal_sem_parametros_gravados_para_a_analise_com_mensagem_clara(projeto, execucao):
     # sem os parâmetros, o Relatório de avaliação usaria \NumParametrosK sem definição e a compilação quebraria adiante

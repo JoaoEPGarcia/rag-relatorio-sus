@@ -327,16 +327,34 @@ def _numeros_dos_parametros(principal: Path) -> list[Numero | Texto]:
             f"{execucao} não traz os parametros com que a Rodada principal rodou (k, modelos): "
             "rode de novo scripts/03_rodar_avaliacao.py --rodada principal, que os grava ao lado da Rodada"
         )
+    juizes = _modelos_que_julgaram(principal) or [p["modelo_juiz"]]
     commit = dados["commit"]
     commit = commit[:7] if re.fullmatch(r"[0-9a-f]{40}", commit) else commit
     return [
         Numero("parametros_k", p["k"], "Trechos recuperados por Pergunta na Condição com RAG (Rodada principal)"),
         Texto("parametros_modelo_respondedor", p["modelo_respondedor"], p["modelo_respondedor"],
               "modelo que responde às Perguntas na Rodada principal"),
-        Texto("parametros_modelo_juiz", p["modelo_juiz"], p["modelo_juiz"], "modelo do Juiz na Rodada principal"),
+        Texto("parametros_modelo_juiz", juntar(juizes), juntar(juizes, "and"),
+              "modelo(s) que julgaram na Rodada principal (a cadeia do Juiz, na ordem de uso)"),
         Texto("parametros_commit", commit, commit,
               "commit em que a Rodada principal rodou, com os parâmetros congelados"),
     ]
+
+
+def _modelos_que_julgaram(principal: Path) -> list[str]:
+    """Os modelos que de fato julgaram na Rodada principal, na ordem em que entraram.
+
+    No plano gratuito o Juiz é uma cadeia de modelos (ADR 0005): quando a cota
+    diária de um acaba, o seguinte assume. Linhas sem `modelo_juiz` (Rodadas
+    anteriores à cadeia, ou sem Veredicto do Juiz) não contam.
+    """
+    vistos: list[str] = []
+    for c in CONDICOES:
+        for l in carregar_linhas(principal / f"{c}.jsonl"):
+            m = l.get("modelo_juiz") or ""
+            if m and m not in vistos:
+                vistos.append(m)
+    return vistos
 
 
 def _textos_da_origem(principal: Path) -> list[Texto]:

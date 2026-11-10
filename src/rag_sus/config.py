@@ -66,6 +66,8 @@ class Parametros:
     esforco_juiz: str
     max_tokens_juiz: int
     repeticoes: int
+    # Modelos que assumem o Juiz, em ordem, quando a cota diária do anterior acaba (ADR 0005).
+    reservas_juiz: tuple[str, ...] = ()
 
 
 def carregar_parametros(caminho: Path = PARAMETROS) -> Parametros:
@@ -84,6 +86,7 @@ def carregar_parametros(caminho: Path = PARAMETROS) -> Parametros:
         esforco_juiz=p["juiz"]["esforco"],
         max_tokens_juiz=p["juiz"]["max_tokens"],
         repeticoes=p["avaliacao"]["repeticoes"],
+        reservas_juiz=tuple(p["juiz"].get("reservas", ())),
     )
 
 

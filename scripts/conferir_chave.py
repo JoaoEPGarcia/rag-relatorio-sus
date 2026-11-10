@@ -42,11 +42,12 @@ def main() -> int:
             if not pagina:
                 break
 
-    faltando = sorted({p.modelo_respondedor, p.modelo_juiz} - ids)
+    modelos = [p.modelo_respondedor, p.modelo_juiz, *p.reservas_juiz]
+    faltando = sorted(set(modelos) - ids)
     if faltando:
         print(f"A chave funciona, mas estes modelos não aparecem para ela: {', '.join(faltando)}")
         return 1
-    print(f"Chave válida; {p.modelo_respondedor} e {p.modelo_juiz} disponíveis.")
+    print(f"Chave válida; {', '.join(modelos)} disponíveis.")
     return 0
 
 

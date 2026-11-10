@@ -243,6 +243,34 @@ class ProvedorOllama:
         return json.loads(corpo["message"]["content"]), meta
 
 
+class ProvedorEmCadeia:
+    """Vários modelos em ordem: quando a cota diária de um acaba, o seguinte assume.
+
+    Serve só ao Juiz (ADR 0005). No plano gratuito a cota é por modelo, e somar
+    a de vários modelos é o que faz a Rodada caber em poucos dias. O
+    respondedor não usa cadeia: trocar o modelo no meio misturaria dois
+    sistemas na comparação entre Condições. O Juiz pode trocar, porque todo
+    Veredicto dele passa pela Revisão do autor, e cada linha da Rodada
+    registra o modelo que julgou. Um modelo esgotado não é chamado de novo
+    nesta execução.
+    """
+
+    nome = "cadeia"
+
+    def __init__(self, provedores: list[Provedor]):
+        self.provedores = list(provedores)
+        self._atual = 0
+
+    def gerar_json(self, sistema: list[dict], mensagem: str, esquema: dict) -> tuple[dict, Metadados]:
+        while self._atual < len(self.provedores):
+            try:
+                return self.provedores[self._atual].gerar_json(sistema, mensagem, esquema)
+            except CotaDiariaEsgotada:
+                self._atual += 1
+        modelos = ", ".join(p.modelo for p in self.provedores)
+        raise CotaDiariaEsgotada(f"cota diária esgotada em todos os modelos da cadeia ({modelos})")
+
+
 def provedor_do_ambiente(modelo: str, esforco: str, max_tokens: int) -> Provedor:
     """Escolhe o provedor pela variável PROVEDOR do .env (padrão: gemini)."""
     if os.environ.get("PROVEDOR", "gemini") == "ollama":
@@ -251,3 +279,13 @@ def provedor_do_ambiente(modelo: str, esforco: str, max_tokens: int) -> Provedor
             os.environ.get("OLLAMA_URL", "http://localhost:11434"),
         )
     return ProvedorGemini(modelo, esforco, max_tokens)
+
+
+def juiz_do_ambiente(modelos: list[str], esforco: str, max_tokens: int) -> Provedor:
+    """O Juiz: o primeiro modelo, seguido dos reservas, em cadeia (só no Gemini).
+
+    No Ollama não há cota, e o modelo local é um só.
+    """
+    if os.environ.get("PROVEDOR", "gemini") == "ollama" or len(modelos) == 1:
+        return provedor_do_ambiente(modelos[0], esforco, max_tokens)
+    return ProvedorEmCadeia([ProvedorGemini(m, esforco, max_tokens) for m in modelos])
