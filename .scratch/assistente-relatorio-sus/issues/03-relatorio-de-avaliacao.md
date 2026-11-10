@@ -16,10 +16,14 @@ O texto declara que as Perguntas foram propostas com ajuda de um modelo e confer
 
 **Blocked by:** 01 (Da Rodada aos números), 02 (Figuras)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Compila com pdfLaTeX (duas ou três passadas) sobre a raiz sintética, sem erro e sem referência indefinida.
-- [ ] O conferidor de números passa: nenhum número digitado no texto corrido, e toda macro `\Num...` usada está definida.
-- [ ] O preâmbulo do kit está intacto (diff vazio contra o modelo nesse bloco).
-- [ ] As limitações citam: só texto (gráficos fora), amostra pequena, um documento, Gabarito proposto com ajuda de um modelo, e o número de Veredictos revisados.
-- [ ] O PDF da raiz sintética não é versionado; o PDF versionado só será gerado no ticket 11.
+- [x] Compila com pdfLaTeX (duas ou três passadas) sobre a raiz sintética, sem erro e sem referência indefinida.
+- [x] O conferidor de números passa: nenhum número digitado no texto corrido, e toda macro `\Num...` usada está definida.
+- [x] O preâmbulo do kit está intacto (diff vazio contra o modelo nesse bloco).
+- [x] As limitações citam: só texto (gráficos fora), amostra pequena, um documento, Gabarito proposto com ajuda de um modelo, e o número de Veredictos revisados.
+- [x] O PDF da raiz sintética não é versionado; o PDF versionado só será gerado no ticket 11.
+
+## Comments
+
+Resolvido na branch `integracao/assistente-relatorio-sus` (09/11/2026). `relatorio/relatorio.tex`: preâmbulo do kit intacto, desenho da capa como macro definida depois do bloco do kit, `\graphicspath{{../figuras/}}` redeclarado. Sobre a raiz sintética, o PDF tem 11 páginas, compila sem referência indefinida e o conferidor dá "ok". Frases que dependem do resultado vêm do registro; sobre Rodadas sintéticas aparece uma caixa "Números inventados". O PDF versionado só sai no ticket 11.

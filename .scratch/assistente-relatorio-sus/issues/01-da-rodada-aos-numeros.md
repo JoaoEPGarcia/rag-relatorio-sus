@@ -15,13 +15,17 @@ Inclui um gerador de Rodadas sintéticas de demonstração, que grava numa raiz 
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Teste com Rodadas sintéticas: os números registrados por Condição (acerto, limites do IC, n) batem com uma conta feita à parte no teste.
-- [ ] O número de destaque usa só as Perguntas respondíveis, e as sem resposta saem em chaves próprias (abstenção correta com IC).
-- [ ] Faltando Revisão de algum Veredicto do Juiz na Rodada principal, a análise falha e lista as Perguntas pendentes.
-- [ ] A Revisão do autor prevalece sobre o Juiz, e o registro guarda quantos Veredictos foram revisados e quantos o autor mudou.
-- [ ] As linhas das tabelas LaTeX (resultados por Condição, comparação pareada, erros por Tipo de pergunta) saem em pt-BR, com `%` e o sinal de menos escapados, prontas para `\linhasde`.
-- [ ] Rodar a análise duas vezes não muda o registro (sem data, ordenado).
-- [ ] A concordância entre Rodadas só é registrada quando a repetição existe, e é rotulada como Veredictos não revisados.
-- [ ] O script de análise é uma casca fina sobre a função; o lint e todos os testes passam.
+- [x] Teste com Rodadas sintéticas: os números registrados por Condição (acerto, limites do IC, n) batem com uma conta feita à parte no teste.
+- [x] O número de destaque usa só as Perguntas respondíveis, e as sem resposta saem em chaves próprias (abstenção correta com IC).
+- [x] Faltando Revisão de algum Veredicto do Juiz na Rodada principal, a análise falha e lista as Perguntas pendentes.
+- [x] A Revisão do autor prevalece sobre o Juiz, e o registro guarda quantos Veredictos foram revisados e quantos o autor mudou.
+- [x] As linhas das tabelas LaTeX (resultados por Condição, comparação pareada, erros por Tipo de pergunta) saem em pt-BR, com `%` e o sinal de menos escapados, prontas para `\linhasde`.
+- [x] Rodar a análise duas vezes não muda o registro (sem data, ordenado).
+- [x] A concordância entre Rodadas só é registrada quando a repetição existe, e é rotulada como Veredictos não revisados.
+- [x] O script de análise é uma casca fina sobre a função; o lint e todos os testes passam.
+
+## Comments
+
+Resolvido na branch `integracao/assistente-relatorio-sus` (09/11/2026). `rag_sus.avaliacao.resultados.analisar` (casca: `scripts/04_analisar.py`) grava o registro e as linhas de tabela em `relatorio/tabelas/`; o conferidor ignora essa pasta. Rodadas sintéticas: `scripts/gerar_rodadas_sinteticas.py` (só numa raiz temporária via `RAG_SUS_RAIZ`). Depois da revisão de código: vocabulário único em `avaliacao/vocabulario.py`, nível do IC tirado de `estatistica.NIVEL`, e a análise recusa Rodada principal sem `parametros` no `execucao.json`.
