@@ -102,13 +102,55 @@ def _cartao(l: dict, pdf_fonte: Path) -> str:
     return "\n".join(partes)
 
 
-def gerar_tex(gabarito_csv: Path, pdf_fonte: Path, modelo_do_kit: Path = MODELO_DO_KIT) -> str:
-    with open(gabarito_csv, encoding="utf-8", newline="") as f:
-        linhas = list(csv.DictReader(f))
+def documento_do_kit(*, gerado_por: str, rotulo: str, titulo: str, subtitulo: str, delimitacao: str,
+                     macros: dict, marcas: str, corpo: list[str], modelo_do_kit: Path = MODELO_DO_KIT) -> str:
+    """Uma folha de trabalho com o preâmbulo e a capa do kit, lidos sem edição.
+
+    `marcas` é a linha de caixas de marcar no fim de cada cartão; `corpo` vem
+    depois da capa. As contagens entram como macros, calculadas por quem chama.
+    """
     kit = Path(modelo_do_kit).read_text(encoding="utf-8")
     preambulo = _trecho_do_kit(kit, r"\documentclass", "% FIM DO PREÂMBULO DO KIT\n"
                                "% ══════════════════════════════════════════════════════════════════════")
     capa = _trecho_do_kit(kit, r"\begin{titlepage}", r"\end{titlepage}")
+    return "\n".join([
+        f"% GERADO por {gerado_por}. Não edite à mão.",
+        preambulo,
+        "",
+        rf"\newcommand{{\RotuloCapa}}{{{rotulo}}}",
+        rf"\newcommand{{\TituloRelatorio}}{{{titulo}}}",
+        rf"\newcommand{{\SubtituloRelatorio}}{{{subtitulo}}}",
+        rf"\newcommand{{\DelimitacaoRelatorio}}{{{delimitacao}}}",
+        r"\newcommand{\AutorNome}{João Eduardo Pastori Garcia}",
+        r"\newcommand{\AutorPapel}{Estatístico responsável}",
+        r"\newcommand{\AutorLinkedIn}{https://www.linkedin.com/in/joao-eduardo-garcia/}",
+        r"\newcommand{\AutorGitHub}{https://github.com/JoaoEPGarcia}",
+        r"\newcommand{\LocalCapa}{São Paulo -- SP}",
+        r"\newcommand{\DataCapa}{\ifcase\month\or Janeiro\or Fevereiro\or Março\or Abril\or Maio\or Junho\or"
+        r" Julho\or Agosto\or Setembro\or Outubro\or Novembro\or Dezembro\fi\ de \number\year}",
+        "",
+        *(rf"\newcommand{{\{k}}}{{{v}}}" for k, v in macros.items()),
+        "",
+        r"\newcommand{\selo}[2]{{\lato\small\bfseries\color{#1}\MakeUppercase{#2}}}",
+        r"\newcommand{\cartao}[3]{\needspace{12\baselineskip}\subsection*{#1 \textperiodcentered\ "
+        r"{\mdseries\color{tinta2}#2}\hfill #3}}",
+        r"\newcommand{\campo}[1]{\noindent{\lato\small\bfseries\color{tinta2}#1.}~}",
+        r"\newcommand{\marcas}{\par\smallskip\noindent{\lato\small\color{tinta2}" + marcas + "}"
+        r"\par\medskip\noindent{\color{zebraclara}\rule{\linewidth}{0.8pt}}\par}",
+        "",
+        r"\begin{document}",
+        capa.replace(r"\faDatabase", r"\faFilePdf").replace(r"\faChartLine", r"\faSearch")
+            .replace(r"\faCalculator", r"\faClipboardCheck").replace(r"\faCalendarDay", r"\faComments"),
+        "",
+        *corpo,
+        r"\end{document}",
+        "",
+    ])
+
+
+def gerar_tex(gabarito_csv: Path, pdf_fonte: Path, modelo_do_kit: Path = MODELO_DO_KIT) -> str:
+    with open(gabarito_csv, encoding="utf-8", newline="") as f:
+        linhas = list(csv.DictReader(f))
 
     respondiveis = [l for l in linhas if l["tipo"] != "sem_resposta"]
     sem_resposta = [l for l in linhas if l["tipo"] == "sem_resposta"]
@@ -125,36 +167,6 @@ def gerar_tex(gabarito_csv: Path, pdf_fonte: Path, modelo_do_kit: Path = MODELO_
         "NumAtencao": len(ids_atencao), "NumConferir": len(ids_conferir), "NumTroca": len(ids_troca),
     }
     corpo = [
-        "% GERADO por scripts/gerar_folha_do_gabarito.py a partir de avaliacao/gabarito.csv. Não edite à mão.",
-        preambulo,
-        "",
-        r"\newcommand{\RotuloCapa}{FOLHA DE TRABALHO \textperiodcentered\ REVISÃO DO GABARITO}",
-        r"\newcommand{\TituloRelatorio}{Revisão do Gabarito}",
-        r"\newcommand{\SubtituloRelatorio}{As Perguntas propostas, para conferir no PDF do Relatório-fonte}",
-        r"\newcommand{\DelimitacaoRelatorio}{Assistente de perguntas sobre o relatório Gestão Hospitalar no SUS-SP"
-        r" \\ \NumPerguntas{} Perguntas: \NumRespondiveis{} respondíveis e \NumSemResposta{} sem resposta}",
-        r"\newcommand{\AutorNome}{João Eduardo Pastori Garcia}",
-        r"\newcommand{\AutorPapel}{Estatístico responsável}",
-        r"\newcommand{\AutorLinkedIn}{https://www.linkedin.com/in/joao-eduardo-garcia/}",
-        r"\newcommand{\AutorGitHub}{https://github.com/JoaoEPGarcia}",
-        r"\newcommand{\LocalCapa}{São Paulo -- SP}",
-        r"\newcommand{\DataCapa}{\ifcase\month\or Janeiro\or Fevereiro\or Março\or Abril\or Maio\or Junho\or"
-        r" Julho\or Agosto\or Setembro\or Outubro\or Novembro\or Dezembro\fi\ de \number\year}",
-        "",
-        *(rf"\newcommand{{\{k}}}{{{v}}}" for k, v in macros.items()),
-        "",
-        r"\newcommand{\selo}[2]{{\lato\small\bfseries\color{#1}\MakeUppercase{#2}}}",
-        r"\newcommand{\cartao}[3]{\needspace{12\baselineskip}\subsection*{#1 \textperiodcentered\ "
-        r"{\mdseries\color{tinta2}#2}\hfill #3}}",
-        r"\newcommand{\campo}[1]{\noindent{\lato\small\bfseries\color{tinta2}#1.}~}",
-        r"\newcommand{\marcas}{\par\smallskip\noindent{\lato\small\color{tinta2}"
-        r"\faSquare[regular]~ok\qquad\faSquare[regular]~corrigir\qquad\faSquare[regular]~trocar}"
-        r"\par\medskip\noindent{\color{zebraclara}\rule{\linewidth}{0.8pt}}\par}",
-        "",
-        r"\begin{document}",
-        capa.replace(r"\faDatabase", r"\faFilePdf").replace(r"\faChartLine", r"\faSearch")
-            .replace(r"\faCalculator", r"\faClipboardCheck").replace(r"\faCalendarDay", r"\faComments"),
-        "",
         r"\section*{Como revisar}",
         r"Abra o PDF do Relatório-fonte ao lado desta folha. Para cada Pergunta, confira quatro coisas:",
         r"\begin{enumerate}[nosep]",
@@ -195,7 +207,16 @@ def gerar_tex(gabarito_csv: Path, pdf_fonte: Path, modelo_do_kit: Path = MODELO_
         r"\clearpage",
         r"\section*{As Perguntas sem resposta}",
         *(_cartao(l, pdf_fonte) for l in sem_resposta),
-        r"\end{document}",
-        "",
     ]
-    return "\n".join(corpo)
+    return documento_do_kit(
+        gerado_por="scripts/gerar_folha_do_gabarito.py a partir de avaliacao/gabarito.csv",
+        rotulo=r"FOLHA DE TRABALHO \textperiodcentered\ REVISÃO DO GABARITO",
+        titulo="Revisão do Gabarito",
+        subtitulo="As Perguntas propostas, para conferir no PDF do Relatório-fonte",
+        delimitacao=r"Assistente de perguntas sobre o relatório Gestão Hospitalar no SUS-SP"
+                    r" \\ \NumPerguntas{} Perguntas: \NumRespondiveis{} respondíveis e \NumSemResposta{} sem resposta",
+        macros=macros,
+        marcas=r"\faSquare[regular]~ok\qquad\faSquare[regular]~corrigir\qquad\faSquare[regular]~trocar",
+        corpo=corpo,
+        modelo_do_kit=modelo_do_kit,
+    )
