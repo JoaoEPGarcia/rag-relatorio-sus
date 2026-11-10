@@ -11,3 +11,7 @@
 - [ ] A folha de Revisão foi gerada com todos os Veredictos do Juiz da Rodada principal.
 - [ ] As duas repetições estão completas.
 - [ ] Respostas vindas de fallback do servidor, se houver, estão identificadas.
+
+## Comments
+
+10/11/2026. Rodada principal completa: 60 Perguntas × 3 Condições, com o `gemini-3.5-flash-lite` (commits `85d3e4c` e `fc1a063`, com os mesmos parâmetros congelados; só mudou o tratamento de tempo esgotado). Ela foi retomada três vezes: um Juiz preso, a memória baixa da máquina e a cota diária da cadeia do Juiz. A folha de Revisão saiu com 42 Veredictos do Juiz: com RAG, 15 certos e 6 errados; contexto completo, 20 certos e 1 errado. A folha em PDF (`scripts/gerar_folha_dos_veredictos.py`) foi aberta para o autor. A repetição 1 parou em 49 de 60 (com RAG), pela cota diária da cadeia do Juiz, e a repetição 2 não começou.
