@@ -6,9 +6,10 @@ título afirmando o achado: o Acerto da resposta por Condição, com o IC de
 Wilson; as Classes de erro por Tipo de pergunta, com RAG; e os tokens de
 entrada e a latência por Pergunta, por Condição, ao lado do acerto. O texto
 de cada figura sai de rag_sus.avaliacao.figuras, a partir do registro que o
-scripts/04_analisar.py grava; aqui fica só o desenho. Cada número impresso
-numa figura é registrado em resultados/numeros.json, com a figura em
-"Onde aparece".
+scripts/04_analisar.py grava; aqui fica só o desenho. Cada número da análise
+impresso numa figura ganha a figura em "Onde aparece", sem cópia no registro;
+os que só a figura calcula (a razão dos tokens, a soma dos erros) são
+registrados como deste script.
 
 Uso (depois do scripts/04_analisar.py):
   uv run python scripts/05_figuras.py
@@ -47,12 +48,16 @@ from matplotlib.ticker import FuncFormatter, NullLocator  # noqa: E402
 
 from rag_sus import config, numeros  # noqa: E402
 from rag_sus.assistente import CONDICOES  # noqa: E402
-from rag_sus.avaliacao.figuras import TextosDaFigura, fonte_dos_dados, textos_das_figuras  # noqa: E402
+from rag_sus.avaliacao.figuras import (  # noqa: E402
+    TextosDaFigura,
+    fonte_dos_dados,
+    registrar_figuras,
+    textos_das_figuras,
+)
 from rag_sus.avaliacao.rodada import carregar_linhas  # noqa: E402
 from rag_sus.avaliacao.sinteticas import RaizProibida, recusar_no_projeto, rodada_sintetica  # noqa: E402
 from rag_sus.avaliacao.vocabulario import chave_por_tipo, rotulo_condicao  # noqa: E402
 
-SCRIPT = "scripts/05_figuras.py"
 ALTURA_DA_LINHA = 1.3  # entrelinha, em múltiplos do tamanho da fonte
 
 
@@ -198,10 +203,11 @@ def main() -> int:
     rodape = fonte_dos_dados(rodada_sintetica(principal))
     gravadas = [figura_acerto(acerto, registro, rodape), figura_erros(erros, registro, rodape),
                 figura_custo(custo, linhas, rodape)]
-    registrados = numeros.registrar_do_script(SCRIPT, [n for t in (acerto, erros, custo) for n in t.numeros])
+    registrados = registrar_figuras([acerto, erros, custo])
     for caminho, t in zip(gravadas, (acerto, erros, custo), strict=True):
         print(f"{caminho}: {t.titulo}")
-    print(f"{len(registrados)} números das figuras -> {config.NUMEROS}")
+    usados = len({chave for t in (acerto, erros, custo) for chave in t.usos})
+    print(f"{len(registrados)} números das figuras e {usados} usos de números da análise -> {config.NUMEROS}")
     return 0
 
 

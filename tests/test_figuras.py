@@ -14,6 +14,7 @@ import pytest
 from rag_sus import numeros
 from rag_sus.avaliacao.figuras import (
     fonte_dos_dados,
+    registrar_figuras,
     textos_acerto,
     textos_custo,
     textos_das_figuras,
@@ -21,12 +22,14 @@ from rag_sus.avaliacao.figuras import (
 )
 from rag_sus.avaliacao.resultados import analisar
 from rag_sus.avaliacao.sinteticas import RaizProibida, gerar_rodadas_sinteticas, recusar_no_projeto
+from rag_sus.documentos import usos
 
 SCRIPT_04 = "scripts/04_analisar.py"
 
 
 def registro(**valores):
-    """Um registro mínimo: chave -> (valor, formato), como o 04_analisar.py grava."""
+    """Um registro mínimo: chave -> (valor, formato), como o 04_analisar.py grava (com o nível do IC)."""
+    valores = {"ic_nivel": (95, "inteiro"), **valores}
     return {
         chave: {"valor": v, "texto": numeros.formatar(v, f), "formato": f, "descricao": chave, "script": SCRIPT_04}
         for chave, (v, f) in valores.items()
@@ -79,14 +82,20 @@ def impressos(t):
     return [m for texto in textos for m in NUMERO_IMPRESSO.findall(texto)]
 
 
-def conferir_registrados(t, prefixo):
-    """Todo número impresso está num Numero da figura, e todo Numero declara a figura em aparece_em."""
-    textos = [numeros.formatar(n.valor, n.formato) for n in t.numeros]
+def conferir_registrados(t, r, prefixo):
+    """Todo número impresso é uma chave do registro cujo uso a figura declara, ou um número só da figura.
+
+    Os números da análise não são copiados: a figura declara que os usa (t.usos). Só os
+    calculados pela figura (uma razão, um total) viram chaves próprias, com a figura em aparece_em.
+    """
+    textos = [r[chave]["texto"] for chave in t.usos] + [numeros.formatar(n.valor, n.formato) for n in t.numeros]
     for impresso in impressos(t):
         assert any(impresso in texto for texto in textos), f"{impresso} impresso sem registro"
+    assert all(chave in r and not chave.startswith("figura_") for chave in t.usos)
     for n in t.numeros:
         assert n.chave.startswith(prefixo)
         assert n.aparece_em == (t.arquivo,)
+        assert n.chave not in r  # nenhuma cópia de número da análise
 
 
 def test_figura_do_acerto_rotula_cada_condicao_com_o_ic_e_registra_o_que_imprime():
@@ -100,9 +109,9 @@ def test_figura_do_acerto_rotula_cada_condicao_com_o_ic_e_registra_o_que_imprime
     assert t.rotulos["contexto_completo"] == "82,0% (IC 69,0% a 90,0%)"
     assert "50 Perguntas respondíveis" in t.subtitulo
     assert "95%" in t.subtitulo
-    conferir_registrados(t, "figura_acerto_")
-    por_chave = {n.chave: n for n in t.numeros}
-    assert por_chave["figura_acerto_com_rag_acerto_resposta_inf"].valor == 0.67
+    conferir_registrados(t, r, "figura_acerto_")
+    assert {"com_rag_acerto_resposta_inf", "ic_nivel", "destaque_n_respondiveis"} <= set(t.usos)
+    assert t.numeros == ()  # tudo o que a figura do acerto imprime já está no registro
 
 
 TIPOS = ("numero_prosa", "numero_tabela", "numero_legenda", "conceito", "sintese")
@@ -124,6 +133,7 @@ def erros(por_tipo, inventadas=0, n=10, n_sem=10):
     for slug, k in totais.items():
         valores[f"com_rag_erros_{slug}"] = (k, "inteiro")
     valores["com_rag_erros_resposta_inventada"] = (inventadas, "inteiro")
+    valores["gabarito_n_perguntas"] = (len(TIPOS) * n + n_sem, "inteiro")
     return valores
 
 
@@ -165,7 +175,9 @@ def test_figura_dos_erros_ordena_os_tipos_pelos_erros_rotula_so_o_que_existe_e_r
     assert t.rotulos["sem_resposta/resposta_inventada"] == "1"
     assert "numero_prosa/falha_leitura" not in t.rotulos  # zero: sem barra e sem rótulo
     assert t.rotulos["coluna/falha_leitura"] == "Falha de leitura (5)"
-    conferir_registrados(t, "figura_erros_")
+    assert "60 da Rodada principal" in t.subtitulo
+    conferir_registrados(t, r, "figura_erros_")
+    assert [n.chave for n in t.numeros] == ["figura_erros_total"]  # a soma dos erros só a figura calcula
 
 
 def custos(acerto_com, acerto_cc, dif_cc, tokens=(2712.4, 221.0, 94010.0), latencia=(2.61, 1.62, 10.4)):
@@ -202,7 +214,8 @@ def test_titulo_do_custo_quando_com_rag_acerta_mais():
 
 
 def test_figura_do_custo_rotula_acerto_tokens_e_latencia_de_cada_condicao_e_registra_o_que_imprime():
-    t = textos_custo(registro(**custos(0.8, 0.82, dif_cc=(-0.02, -0.12, 0.08))))
+    r = registro(**custos(0.8, 0.82, dif_cc=(-0.02, -0.12, 0.08)))
+    t = textos_custo(r)
 
     assert t.arquivo == "figuras/custo_por_condicao.png"
     assert t.linhas == ("com_rag", "sem_rag", "contexto_completo")
@@ -211,7 +224,8 @@ def test_figura_do_custo_rotula_acerto_tokens_e_latencia_de_cada_condicao_e_regi
     assert t.rotulos["com_rag/tokens"] == "média 2.712"
     assert t.rotulos["contexto_completo/latencia"] == "mediana 10,4 s"
     assert "60 Perguntas" in t.subtitulo
-    conferir_registrados(t, "figura_custo_")
+    conferir_registrados(t, r, "figura_custo_")
+    assert [n.chave for n in t.numeros] == ["figura_custo_razao_tokens"]
 
 
 def test_sobre_rodadas_sinteticas_as_tres_figuras_registram_chaves_proprias_com_a_figura_em_onde_aparece(tmp_path):
@@ -221,14 +235,38 @@ def test_sobre_rodadas_sinteticas_as_tres_figuras_registram_chaves_proprias_com_
     analisar(pasta_rodadas, raiz / "avaliacao" / "revisao_veredictos.csv", numeros_json=numeros_json,
              pasta_tabelas=raiz / "relatorio" / "tabelas")
 
-    figuras = textos_das_figuras(numeros.carregar(numeros_json))
+    r = numeros.carregar(numeros_json)
+    figuras = textos_das_figuras(r)
 
     assert [t.arquivo for t in figuras] == [
         "figuras/acerto_por_condicao.png", "figuras/erros_por_tipo.png", "figuras/custo_por_condicao.png"]
     chaves = [n.chave for t in figuras for n in t.numeros]
     assert len(chaves) == len(set(chaves))
     for t, prefixo in zip(figuras, ("figura_acerto_", "figura_erros_", "figura_custo_"), strict=True):
-        conferir_registrados(t, prefixo)
+        conferir_registrados(t, r, prefixo)
+
+
+def test_onde_aparece_do_numero_da_analise_inclui_a_figura_e_sobrevive_a_nova_analise(tmp_path):
+    raiz = tmp_path / "raiz"
+    pasta_rodadas = gerar_rodadas_sinteticas(raiz, semente=7, repeticoes=0)
+    numeros_json = raiz / "resultados" / "numeros.json"
+
+    def analisar_raiz():
+        analisar(pasta_rodadas, raiz / "avaliacao" / "revisao_veredictos.csv", numeros_json=numeros_json,
+                 pasta_tabelas=raiz / "relatorio" / "tabelas")
+
+    analisar_raiz()
+    registrar_figuras(textos_das_figuras(numeros.carregar(numeros_json)), caminho=numeros_json)
+    analisar_raiz()  # o 04 roda de novo depois das figuras
+
+    r = numeros.carregar(numeros_json)
+    onde = usos(r, "", {})
+    assert r["com_rag_acerto_resposta"]["script"] == SCRIPT_04
+    assert "figuras/acerto_por_condicao.png" in onde["com_rag_acerto_resposta"]
+    assert "figuras/custo_por_condicao.png" in onde["com_rag_acerto_resposta"]
+    assert "relatorio/tabelas/resultados_por_condicao.tex" in onde["com_rag_acerto_resposta"]
+    assert not [c for c in r if c.startswith("figura_acerto_")]  # nenhuma cópia
+    assert onde["figura_custo_razao_tokens"] == ["figuras/custo_por_condicao.png"]
 
 
 def test_figuras_de_rodadas_sinteticas_nunca_vao_para_uma_copia_do_projeto(tmp_path):

@@ -29,6 +29,8 @@ _MENOS = "−"  # sinal de menos tipográfico
 
 
 IDIOMAS = ("pt", "en")
+# Onde outro script imprime um número que não é dele: {script: [lugares]}, dentro da entrada do número.
+USOS = "usos_declarados"
 _PONTOS_PERCENTUAIS = {"pt": " p.p.", "en": " pp"}
 
 
@@ -152,6 +154,8 @@ def registrar(
     entrada = _entrada(Numero(chave, valor, descricao, formato, tuple(aparece_em)), script)
     caminho = caminho or config.NUMEROS
     dados = carregar(caminho)
+    if USOS in dados.get(chave, {}):
+        entrada[USOS] = dados[chave][USOS]
     dados[chave] = entrada
     _gravar(dados, caminho)
     return entrada["texto"]
@@ -173,7 +177,38 @@ def registrar_do_script(
             raise ValueError(f"chave repetida no lote de {script}: {n.chave}")
         novos[n.chave] = _entrada(n, script)
     caminho = caminho or config.NUMEROS
-    dados = {c: e for c, e in carregar(caminho).items() if e.get("script") != script}
+    antigos = carregar(caminho)
+    for chave, entrada in novos.items():
+        # os usos que outro script declarou sobre um número deste ficam (as figuras, por exemplo)
+        if USOS in antigos.get(chave, {}):
+            entrada[USOS] = antigos[chave][USOS]
+    dados = {c: e for c, e in antigos.items() if e.get("script") != script}
     dados.update(novos)
     _gravar(dados, caminho)
     return {c: e["texto"] for c, e in novos.items()}
+
+
+def declarar_usos(script: str, usos: dict[str, Iterable[str]], caminho: Path | None = None) -> None:
+    """Declara onde `script` imprime números que outro script registrou, sem copiá-los.
+
+    É como uma figura diz que imprime o acerto do scripts/04_analisar.py: o
+    número continua um só, do dono, e o lugar entra na coluna "Onde aparece"
+    do NUMEROS_CANONICOS.md. Os usos ficam guardados sob o script que os
+    declarou, numa vez só: os que ele declarou antes e não estão em `usos`
+    saem, e os dos outros ficam. Sobrevivem a uma nova execução do dono
+    (registrar_do_script os preserva). Chave que o registro não tem é erro.
+    """
+    caminho = caminho or config.NUMEROS
+    dados = carregar(caminho)
+    faltam = sorted(set(usos) - set(dados))
+    if faltam:
+        raise KeyError(f"{script} declara uso de números que o registro não tem: {', '.join(faltam)}")
+    for entrada in dados.values():
+        entrada.get(USOS, {}).pop(script, None)
+        if USOS in entrada and not entrada[USOS]:
+            del entrada[USOS]
+    for chave, lugares in usos.items():
+        lugares = list(dict.fromkeys(lugares))
+        if lugares:
+            dados[chave].setdefault(USOS, {})[script] = lugares
+    _gravar(dados, caminho)

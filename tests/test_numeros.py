@@ -5,7 +5,7 @@ import json
 
 import pytest
 
-from rag_sus.numeros import Numero, Texto, carregar, formatar, registrar, registrar_do_script
+from rag_sus.numeros import Numero, Texto, carregar, declarar_usos, formatar, registrar, registrar_do_script
 
 
 @pytest.mark.parametrize(
@@ -141,6 +141,41 @@ def test_registrar_do_script_aceita_texto_escolhido_a_partir_do_resultado(tmp_pa
     assert e["texto"] == "os dados não distinguem as duas Condições"
     assert e["texto_en"] == "the data cannot tell the two conditions apart"
     assert e["script"] == "scripts/04_analisar.py"
+
+
+def test_uso_declarado_por_outro_script_sobrevive_a_nova_execucao_do_dono(tmp_path):
+    caminho = tmp_path / "numeros.json"
+    registrar_do_script("scripts/04_analisar.py", [Numero("acerto", 0.8, "acerto", "pct1",
+                                                          aparece_em=("relatorio/tabelas/x.tex",))], caminho=caminho)
+
+    declarar_usos("scripts/05_figuras.py", {"acerto": ["figuras/a.png", "figuras/c.png"]}, caminho=caminho)
+    registrar_do_script("scripts/04_analisar.py", [Numero("acerto", 0.82, "acerto", "pct1",
+                                                          aparece_em=("relatorio/tabelas/x.tex",))], caminho=caminho)
+
+    e = carregar(caminho)["acerto"]
+    assert e["script"] == "scripts/04_analisar.py"  # o número continua do dono, sem cópia
+    assert e["texto"] == "82,0%"
+    assert e["aparece_em"] == ["relatorio/tabelas/x.tex"]
+    assert e["usos_declarados"] == {"scripts/05_figuras.py": ["figuras/a.png", "figuras/c.png"]}
+
+
+def test_declarar_usos_troca_de_uma_vez_os_usos_do_script(tmp_path):
+    caminho = tmp_path / "numeros.json"
+    registrar_do_script("s.py", [Numero("a", 1, "um"), Numero("b", 2, "dois")], caminho=caminho)
+    declarar_usos("f.py", {"a": ["figuras/x.png"]}, caminho=caminho)
+
+    declarar_usos("f.py", {"b": ["figuras/y.png"]}, caminho=caminho)
+
+    dados = carregar(caminho)
+    assert "usos_declarados" not in dados["a"]  # o uso velho sai
+    assert dados["b"]["usos_declarados"] == {"f.py": ["figuras/y.png"]}
+
+
+def test_declarar_uso_de_chave_que_o_registro_nao_tem_e_erro(tmp_path):
+    caminho = tmp_path / "numeros.json"
+    registrar_do_script("s.py", [Numero("a", 1, "um")], caminho=caminho)
+    with pytest.raises(KeyError, match="nao_existe"):
+        declarar_usos("f.py", {"nao_existe": ["figuras/x.png"]}, caminho=caminho)
 
 
 def test_registrar_do_script_recusa_chave_repetida(tmp_path):

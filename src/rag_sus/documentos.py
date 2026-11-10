@@ -15,6 +15,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from rag_sus.numeros import USOS
+
 _DIGITOS_POR_EXTENSO = {
     "0": "Zero", "1": "Um", "2": "Dois", "3": "Tres", "4": "Quatro",
     "5": "Cinco", "6": "Seis", "7": "Sete", "8": "Oito", "9": "Nove",
@@ -113,7 +115,11 @@ def textos_do_relatorio(pasta_relatorio: Path, raiz: Path) -> dict[str, str]:
 
 
 def usos(registro: dict[str, dict], readme_base: str, textos_tex: dict[str, str]) -> dict[str, list[str]]:
-    """Onde cada número aparece: README, cada .tex e o que o script declarou (figuras)."""
+    """Onde cada número aparece: README, cada .tex, o que o dono declarou e o que outros scripts declararam.
+
+    Os usos declarados por outro script (uma figura que imprime um número da
+    análise) vêm de numeros.declarar_usos, guardados à parte na entrada.
+    """
     no_readme = {chave for chave, _ in _MARCADOR.findall(readme_base)}
     saida: dict[str, list[str]] = {}
     for chave, entrada in registro.items():
@@ -123,7 +129,9 @@ def usos(registro: dict[str, dict], readme_base: str, textos_tex: dict[str, str]
         padrao = re.compile(r"\\" + nome_macro(chave) + r"(?![A-Za-z])")
         lugares.extend(nome for nome, texto in textos_tex.items() if padrao.search(texto))
         lugares.extend(entrada.get("aparece_em", []))
-        saida[chave] = lugares
+        for de_outro in entrada.get(USOS, {}).values():
+            lugares.extend(de_outro)
+        saida[chave] = list(dict.fromkeys(lugares))
     return saida
 
 

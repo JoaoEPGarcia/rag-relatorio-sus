@@ -7,18 +7,21 @@ NUMEROS_CANONICOS.md com a figura na coluna "Onde aparece" (ADR 0003). Aqui,
 sem matplotlib, sai o texto de cada figura a partir do registro gravado por
 scripts/04_analisar.py; o desenho fica em scripts/05_figuras.py.
 
-Cada número impresso é registrado de novo, com a chave prefixada pela figura
-(`figura_acerto_com_rag_acerto_resposta`), pelo scripts/05_figuras.py: a
-entrada de origem continua do 04_analisar.py, que a reescreve a cada análise,
-e a da figura declara onde aparece. O valor é o mesmo, copiado do registro.
+Um número da análise impresso numa figura não é copiado: a figura declara
+que o usa (numeros.declarar_usos), e a entrada continua uma só, do
+scripts/04_analisar.py, com a figura em "Onde aparece" mesmo depois de uma
+nova análise. Só o número que a própria figura calcula (a razão entre os
+tokens, a soma dos erros) vira chave do scripts/05_figuras.py, prefixada pela
+figura (`figura_custo_razao_tokens`).
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
 
+from rag_sus import numeros
 from rag_sus.assistente import CONDICOES
-from rag_sus.avaliacao.estatistica import NIVEL
 from rag_sus.avaliacao.gabarito import TIPOS_RESPONDIVEIS
 from rag_sus.avaliacao.vocabulario import (
     CLASSES_DAS_RESPONDIVEIS,
@@ -40,30 +43,30 @@ class TextosDaFigura:
     titulo: str
     subtitulo: str
     rotulos: dict[str, str] = field(default_factory=dict)
-    numeros: tuple[Numero, ...] = ()
+    numeros: tuple[Numero, ...] = ()  # os números que só a figura calcula, registrados como dela
+    usos: tuple[str, ...] = ()  # as chaves do registro que a figura imprime, sem copiá-las
     linhas: tuple[str, ...] = ()  # ordem das categorias no eixo, de cima para baixo
     colunas: tuple[str, ...] = ()  # ordem dos painéis, da esquerda para a direita
     destaque: tuple[str, ...] = ()  # o que sai em DESTAQUE; o resto sai em NEUTRO
 
 
 class _Impressos:
-    """Devolve o texto de uma chave do registro e anota o número como impresso na figura."""
+    """Devolve o texto de uma chave do registro e anota que a figura a imprime."""
 
     def __init__(self, registro: dict[str, dict], nome: str, arquivo: str):
         self.registro, self.nome, self.arquivo = registro, nome, arquivo
         self.numeros: dict[str, Numero] = {}
+        self.usos: list[str] = []
 
     def __call__(self, chave: str) -> str:
         if chave not in self.registro:
             raise KeyError(f"{chave} não está no registro: rode scripts/04_analisar.py antes das figuras")
-        e = self.registro[chave]
-        return self._anotar(chave, e["valor"], e["descricao"], e["formato"])
+        if chave not in self.usos:
+            self.usos.append(chave)
+        return self.registro[chave]["texto"]
 
     def novo(self, chave: str, valor, descricao: str, formato: str) -> str:
-        """Um número calculado aqui, e não no 04_analisar.py (uma razão, por exemplo)."""
-        return self._anotar(chave, valor, descricao, formato)
-
-    def _anotar(self, chave: str, valor, descricao: str, formato: str) -> str:
+        """Um número calculado aqui, e não no 04_analisar.py (uma razão, por exemplo): vira chave da figura."""
         nova = f"figura_{self.nome}_{chave}"
         self.numeros[nova] = Numero(nova, valor, f"{descricao}, impresso na figura", formato, (self.arquivo,))
         return formatar(valor, formato)
@@ -95,10 +98,10 @@ def textos_acerto(registro: dict[str, dict]) -> TextosDaFigura:
         for c in CONDICOES
     }
     n = t("destaque_n_respondiveis")
-    nivel = t.novo("nivel_ic", round(100 * NIVEL), "nível de confiança dos intervalos, em %", "inteiro")
+    nivel = t("ic_nivel")
     subtitulo = (f"Acerto da resposta nas {n} Perguntas respondíveis, Rodada principal. "
                  f"A linha fina é o intervalo de confiança de Wilson de {nivel}%.")
-    return TextosDaFigura(arquivo, titulo, subtitulo, rotulos, tuple(t.numeros.values()),
+    return TextosDaFigura(arquivo, titulo, subtitulo, rotulos, tuple(t.numeros.values()), tuple(t.usos),
                           linhas=CONDICOES, destaque=("com_rag",))
 
 
@@ -134,7 +137,7 @@ def textos_custo(registro: dict[str, dict]) -> TextosDaFigura:
     n = t("gabarito_n_perguntas")
     subtitulo = (f"Cada caixa resume as {n} Perguntas da Rodada principal numa Condição (traço: mediana; "
                  "losango: média). O acerto é o da resposta, nas Perguntas respondíveis.")
-    return TextosDaFigura(arquivo, titulo, subtitulo, rotulos, tuple(t.numeros.values()),
+    return TextosDaFigura(arquivo, titulo, subtitulo, rotulos, tuple(t.numeros.values()), tuple(t.usos),
                           linhas=CONDICOES, colunas=("tokens", "latencia"), destaque=("com_rag",))
 
 
@@ -186,9 +189,26 @@ def textos_erros(registro: dict[str, dict]) -> TextosDaFigura:
             if t.valor(chave_por_tipo(tipo, slug)) > 0:
                 rotulos[f"{tipo}/{slug}"] = t(chave_por_tipo(tipo, slug))
 
-    n = t.novo("n_perguntas", sum(t.valor(chave_por_tipo(tipo, "n")) for tipo in linhas),
-               "Perguntas da Rodada principal com RAG, respondíveis e sem resposta", "inteiro")
+    n = t("gabarito_n_perguntas")
     subtitulo = (f"Perguntas com erro nas {n} da Rodada principal com RAG. Entre parênteses, as Perguntas do "
                  "Tipo e os erros da Classe. Resposta inventada só há nas sem resposta; as demais, nas respondíveis.")
-    return TextosDaFigura(arquivo, titulo, subtitulo, rotulos, tuple(t.numeros.values()),
+    return TextosDaFigura(arquivo, titulo, subtitulo, rotulos, tuple(t.numeros.values()), tuple(t.usos),
                           linhas=linhas, colunas=colunas, destaque=destaque)
+
+
+SCRIPT = "scripts/05_figuras.py"
+
+
+def registrar_figuras(figuras: list[TextosDaFigura], caminho: Path | None = None) -> dict[str, str]:
+    """Grava os números que só as figuras calculam e declara onde elas imprimem os da análise.
+
+    Os da análise não são copiados: cada figura entra no "Onde aparece" da
+    chave de origem, e o uso sobrevive a uma nova execução do 04_analisar.py.
+    """
+    registrados = numeros.registrar_do_script(SCRIPT, [n for t in figuras for n in t.numeros], caminho=caminho)
+    usos: dict[str, list[str]] = {}
+    for t in figuras:
+        for chave in t.usos:
+            usos.setdefault(chave, []).append(t.arquivo)
+    numeros.declarar_usos(SCRIPT, usos, caminho=caminho)
+    return registrados

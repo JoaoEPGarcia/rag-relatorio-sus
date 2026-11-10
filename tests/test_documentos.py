@@ -86,6 +86,14 @@ def test_usos_encontra_readme_relatorio_e_figuras():
     assert u["dif_repeticao1"] == ["figuras/acerto.png (título)"]
 
 
+def test_usos_juntam_os_declarados_por_outro_script_ao_que_o_dono_declarou():
+    registro = {"acerto": {**REGISTRO["acerto_com_rag"], "aparece_em": ["relatorio/tabelas/x.tex"],
+                           "usos_declarados": {"scripts/05_figuras.py": ["figuras/a.png", "figuras/c.png"]}}}
+
+    assert usos(registro, "{{acerto}}", {})["acerto"] == [
+        "README", "relatorio/tabelas/x.tex", "figuras/a.png", "figuras/c.png"]
+
+
 def test_macro_que_e_prefixo_de_outra_nao_conta_como_uso():
     registro = {"k": {"texto": "6", "descricao": "", "script": "s", "valor": 6, "formato": "inteiro"},
                 "k_maximo": {"texto": "9", "descricao": "", "script": "s", "valor": 9, "formato": "inteiro"}}
