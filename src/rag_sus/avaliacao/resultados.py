@@ -38,7 +38,7 @@ from rag_sus.avaliacao import estatistica
 from rag_sus.avaliacao.analise import comparar, concordancia, erros_por_tipo, resumir
 from rag_sus.avaliacao.gabarito import TIPOS_RESPONDIVEIS
 from rag_sus.avaliacao.rodada import RevisaoIncompleta, carregar_linhas, consolidar
-from rag_sus.avaliacao.sinteticas import recusar_no_projeto
+from rag_sus.avaliacao.sinteticas import recusar_no_projeto, rodada_sintetica
 from rag_sus.avaliacao.travas import RODADAS_PUBLICADAS
 from rag_sus.avaliacao.vocabulario import (
     CLASSES_DAS_RESPONDIVEIS,
@@ -269,17 +269,26 @@ def _numeros_da_rodada(resumos: dict[str, dict]) -> list[Numero]:
     ]
 
 
-def _numeros_da_concordancia(pasta_rodadas: Path) -> list[Numero]:
+def _numeros_da_concordancia(pasta_rodadas: Path) -> list[Numero | Texto]:
     """Concordância entre a Rodada principal e cada repetição que existir, por Condição.
 
     Compara os Veredictos automáticos (Juiz ou regra), sem a Revisão: as
     repetições não são revisadas, e a principal entra do mesmo jeito para a
     comparação ser justa.
     """
-    lista: list[Numero] = []
+    lista: list[Numero | Texto] = []
     existentes = [r for r in REPETICOES if any(carregar_linhas(pasta_rodadas / r / f"{c}.jsonl") for c in CONDICOES)]
     lista.append(Numero("repeticoes_comparadas", len(existentes),
                         "repetições da Rodada principal comparadas com ela (Veredictos não revisados)"))
+    if existentes:
+        pt = "Para medir isso, a Rodada principal foi repetida, e cada repetição é comparada com ela."
+        en = "To measure this, the main run was repeated and compared with each repeat."
+    else:
+        pt = ("A Rodada principal não foi repetida: sem repetição, não há concordância a medir, e a tabela "
+              "abaixo sai vazia.")
+        en = "The main run was not repeated: without a repeat there is no agreement to measure."
+    lista.append(Texto("repeticoes_leitura", pt, en,
+                       "frase do Relatório de avaliação sobre as repetições, escolhida por repeticoes_comparadas"))
     for rodada in REPETICOES:
         for c in CONDICOES:
             repeticao = carregar_linhas(pasta_rodadas / rodada / f"{c}.jsonl")
@@ -327,6 +336,31 @@ def _numeros_dos_parametros(principal: Path) -> list[Numero | Texto]:
         Texto("parametros_modelo_juiz", p["modelo_juiz"], p["modelo_juiz"], "modelo do Juiz na Rodada principal"),
         Texto("parametros_commit", commit, commit,
               "commit em que a Rodada principal rodou, com os parâmetros congelados"),
+    ]
+
+
+def _textos_da_origem(principal: Path) -> list[Texto]:
+    """De onde vêm as Rodadas, para a capa do Relatório de avaliação e o topo do README.
+
+    Sobre Rodadas sintéticas, o aviso diz que os números são inventados; sobre
+    as reais, ele é vazio e não aparece. A origem, na capa, só diz que os
+    Veredictos do Juiz foram revisados quando a Rodada é real (a análise já
+    recusou qualquer Veredicto sem Revisão).
+    """
+    if rodada_sintetica(principal):
+        aviso = ("Atenção: os números deste documento saem de Rodadas sintéticas de demonstração e são "
+                 "inventados; não são resultado do assistente.",
+                 "Warning: the numbers in this document come from synthetic demo runs and are made up; "
+                 "they are not results of the assistant.")
+        origem = ("Rodadas sintéticas de demonstração, com números inventados",
+                  "Synthetic demo runs, with made-up numbers")
+    else:
+        aviso = ("", "")
+        origem = ("Rodada principal, com os Veredictos do Juiz revisados pelo autor",
+                  "Main run, with the Judge's verdicts reviewed by the author")
+    return [
+        Texto("aviso_sintetico", *aviso, "aviso de números inventados, só sobre Rodadas sintéticas (senão, vazio)"),
+        Texto("rodadas_origem", *origem, "de onde vêm as Rodadas analisadas, para a capa"),
     ]
 
 
@@ -453,6 +487,7 @@ def analisar(
         + _numeros_da_rodada(resumos)
         + _numeros_da_revisao(consolidadas)
         + _numeros_dos_parametros(pasta_rodadas / "principal")
+        + _textos_da_origem(pasta_rodadas / "principal")
     )
     for c in CONDICOES:
         lista += _numeros_da_condicao(c, resumos[c]) + _numeros_dos_erros(c, resumos[c])

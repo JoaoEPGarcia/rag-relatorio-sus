@@ -16,7 +16,7 @@ import pytest
 from rag_sus import config, numeros
 from rag_sus.avaliacao.resultados import analisar
 from rag_sus.avaliacao.sinteticas import gerar_rodadas_sinteticas
-from rag_sus.documentos import digitos_soltos_no_markdown
+from rag_sus.documentos import digitos_soltos_no_markdown, preencher_readme
 
 SAIDAS_DO_PROJETO = ("README.md", "NUMEROS_CANONICOS.md", "relatorio/numeros.tex", "resultados/numeros.json")
 
@@ -78,6 +78,33 @@ def test_principais_resultados_em_portugues_e_in_english_em_ingles(raiz_sintetic
                   "com_rag_erro_mais_frequente"):
         assert r[chave]["texto"] in resultados
         assert r[chave]["texto_en"] in ingles
+
+
+def test_readme_sintetico_avisa_que_os_numeros_sao_inventados_e_o_real_nao(raiz_sintetica):
+    raiz = raiz_sintetica["raiz"]
+    r = numeros.carregar(raiz / "resultados" / "numeros.json")
+    readme = (raiz / "README.md").read_text(encoding="utf-8")
+    topo, ingles = readme.split("## Principais resultados")[0], readme.split("## In English")[1]
+    assert r["aviso_sintetico"]["texto"] in topo and "inventados" in topo
+    assert r["aviso_sintetico"]["texto_en"] in ingles
+
+    # sobre Rodadas reais, o aviso é vazio: nada aparece no lugar dele
+    base = (config.PROJETO / "README.base.md").read_text(encoding="utf-8")
+    real = {**r, "aviso_sintetico": {**r["aviso_sintetico"], "texto": "", "texto_en": ""}}
+    readme_real = preencher_readme(base, real)
+    assert "inventad" not in readme_real.split("## Principais resultados")[0]
+    assert "made up" not in readme_real.split("## In English")[1]
+
+
+def test_relatorio_tex_tira_do_registro_o_que_depende_das_rodadas():
+    # nenhuma frase fixa que o registro não sustente: repetição, aviso de sintético e origem das Rodadas
+    tex = (config.PROJETO / "relatorio" / "relatorio.tex").read_text(encoding="utf-8")
+    corpo = tex[tex.index("\\begin{document}"):]
+    assert "foi repetida" not in corpo and "\\NumRepeticoesLeitura" in corpo
+    assert "família" not in corpo and "\\NumParametrosModeloJuiz" in corpo
+    assert "\\ifdefempty{\\NumAvisoSintetico}" in corpo
+    assert "Veredictos do Juiz revisados" not in tex and "\\NumRodadasOrigem" in tex
+    assert "scripts/reproduzir.py" in corpo.split("\\appendix")[1]
 
 
 def test_readme_base_nao_tem_numero_digitado():

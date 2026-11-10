@@ -432,6 +432,28 @@ def test_tabela_de_concordancia_tem_uma_linha_por_repeticao_e_condicao_que_exist
     assert "relatorio/tabelas/concordancia.tex" in r["concordancia_repeticao1_com_rag"]["aparece_em"]
 
 
+def test_frase_sobre_as_repeticoes_depende_de_quantas_foram_comparadas(projeto):
+    # o Relatório de avaliação não afirma que a Rodada principal foi repetida se nenhuma repetição existe
+    r = rodar(projeto)
+    assert r["repeticoes_leitura"]["texto"] == (
+        "A Rodada principal não foi repetida: sem repetição, não há concordância a medir, e a tabela abaixo "
+        "sai vazia.")
+    assert "repetida" not in r["repeticoes_leitura"]["texto"].replace("não foi repetida", "")
+
+    gravar_rodada(projeto["rodadas"], "repeticao1", "com_rag", condicao_simples("com_rag", 34, abstencoes_corretas=9))
+    r = rodar(projeto)
+    assert r["repeticoes_leitura"]["texto"] == (
+        "Para medir isso, a Rodada principal foi repetida, e cada repetição é comparada com ela.")
+    assert r["repeticoes_leitura"]["texto_en"] == (
+        "To measure this, the main run was repeated and compared with each repeat.")
+
+
+def test_rodadas_reais_nao_trazem_aviso_e_dizem_que_os_veredictos_foram_revisados(projeto):
+    r = rodar(projeto)
+    assert (r["aviso_sintetico"]["texto"], r["aviso_sintetico"]["texto_en"]) == ("", "")
+    assert r["rodadas_origem"]["texto"] == "Rodada principal, com os Veredictos do Juiz revisados pelo autor"
+
+
 def gravar_execucao(p, rodada="principal", **parametros):
     """O execucao.json que scripts/03_rodar_avaliacao.py grava ao lado da Rodada."""
     dados = {"commit": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678", "parametros": {

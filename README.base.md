@@ -2,10 +2,12 @@
 
 Um assistente que responde perguntas sobre um relatório de pesquisa em saúde pública, citando a página, e uma avaliação estatística da pergunta que importa antes de usar um assistente desses: **com que frequência ele acerta, e quanto disso vem da busca no documento?** As mesmas Perguntas, com resposta e página conferidas pelo autor no PDF, passam por três Condições: com RAG, sem RAG e com o relatório inteiro no contexto do modelo.
 
+{{aviso_sintetico}}
+
 | | |
 |---|---|
 | **Dados** | o relatório "Gestão Hospitalar no SUS-SP" ({{corpus_paginas}} páginas e {{corpus_palavras}} palavras extraídas), quebrado em {{corpus_trechos}} Trechos: {{corpus_trechos_texto}} de texto, {{corpus_trechos_tabela}} de tabela e {{corpus_trechos_legenda}} de legenda de figura |
-| **Avaliação** | **{{gabarito_n_perguntas}} Perguntas** com resposta e página conferidas pelo autor no PDF: {{gabarito_n_respondiveis}} respondíveis, em {{gabarito_n_tipos}} Tipos (número na prosa, em tabela e em legenda, conceito e síntese entre páginas), e {{gabarito_n_sem_resposta}} sem resposta no relatório |
+| **Avaliação** | **{{gabarito_n_perguntas}} Perguntas** com resposta e página conferidas pelo autor no PDF: {{gabarito_n_respondiveis}} respondíveis, em {{gabarito_n_tipos}} Tipos (número na prosa, em tabela e em legenda, conceito e síntese entre páginas), e {{gabarito_n_sem_resposta}} sem resposta no Relatório-fonte |
 | **Métodos** | intervalo de Wilson para cada taxa; teste exato de McNemar e intervalo de Newcombe para a diferença pareada entre Condições; Classes de erro derivadas das medidas; parâmetros congelados antes da Rodada principal |
 | **Entrega** | API em FastAPI com Docker, e um Relatório de avaliação em LaTeX para público técnico |
 | **Ferramentas** | Python (pdfplumber, fastembed, FAISS, FastAPI, API do Gemini, SciPy, matplotlib), pytest e LaTeX |
@@ -15,8 +17,8 @@ Um assistente que responde perguntas sobre um relatório de pesquisa em saúde p
 Os números abaixo são os da Rodada principal, analisada por `scripts/04_analisar.py` e detalhada no Relatório de avaliação (`relatorio/relatorio.pdf`). A fonte de cada número impresso está em `NUMEROS_CANONICOS.md`.
 
 - **Acerto da resposta.** Com RAG, o assistente acerta **{{destaque_acerto_com_rag}}** das {{destaque_n_respondiveis}} Perguntas respondíveis (IC de {{ic_nivel}}%: {{destaque_acerto_com_rag_inf}} a {{destaque_acerto_com_rag_sup}}). Sem RAG, o mesmo modelo acerta {{destaque_acerto_sem_rag}} das mesmas Perguntas. A diferença pareada, com RAG menos sem RAG, é de **{{com_rag_x_sem_rag_diferenca}}** (IC de {{ic_nivel}}%: {{com_rag_x_sem_rag_diferenca_inf}} a {{com_rag_x_sem_rag_diferenca_sup}}): {{com_rag_x_sem_rag_conclusao}}.
-- **Busca ou relatório inteiro.** Com o relatório inteiro no prompt, o acerto é de {{contexto_completo_acerto_resposta}} (IC de {{ic_nivel}}%: {{contexto_completo_acerto_resposta_inf}} a {{contexto_completo_acerto_resposta_sup}}). A diferença pareada, com RAG menos contexto completo, é de **{{com_rag_x_contexto_completo_diferenca}}** (IC de {{ic_nivel}}%: {{com_rag_x_contexto_completo_diferenca_inf}} a {{com_rag_x_contexto_completo_diferenca_sup}}): {{com_rag_x_contexto_completo_conclusao}}. Por Pergunta, o contexto completo lê em média {{contexto_completo_tokens_entrada_medio}} tokens de entrada e responde em {{contexto_completo_latencia_mediana_s}} s (mediana); com RAG, são {{com_rag_tokens_entrada_medio}} tokens e {{com_rag_latencia_mediana_s}} s.
-- **Perguntas sem resposta.** Nas {{com_rag_n_sem_resposta}} Perguntas que o relatório não responde, o assistente com RAG se abstém, como deve, em **{{com_rag_abstencao_correta}}** (IC de {{ic_nivel}}%: {{com_rag_abstencao_correta_inf}} a {{com_rag_abstencao_correta_sup}}); sem RAG, em {{sem_rag_abstencao_correta}}, e com o contexto completo, em {{contexto_completo_abstencao_correta}}.
+- **Busca ou Relatório-fonte inteiro.** Com o Relatório-fonte inteiro no prompt, o acerto é de {{contexto_completo_acerto_resposta}} (IC de {{ic_nivel}}%: {{contexto_completo_acerto_resposta_inf}} a {{contexto_completo_acerto_resposta_sup}}). A diferença pareada, com RAG menos contexto completo, é de **{{com_rag_x_contexto_completo_diferenca}}** (IC de {{ic_nivel}}%: {{com_rag_x_contexto_completo_diferenca_inf}} a {{com_rag_x_contexto_completo_diferenca_sup}}): {{com_rag_x_contexto_completo_conclusao}}. Por Pergunta, o contexto completo lê em média {{contexto_completo_tokens_entrada_medio}} tokens de entrada e responde em {{contexto_completo_latencia_mediana_s}} s (mediana); com RAG, são {{com_rag_tokens_entrada_medio}} tokens e {{com_rag_latencia_mediana_s}} s.
+- **Perguntas sem resposta.** Nas {{com_rag_n_sem_resposta}} Perguntas que o Relatório-fonte não responde, o assistente com RAG se abstém, como deve, em **{{com_rag_abstencao_correta}}** (IC de {{ic_nivel}}%: {{com_rag_abstencao_correta_inf}} a {{com_rag_abstencao_correta_sup}}); sem RAG, em {{sem_rag_abstencao_correta}}, e com o contexto completo, em {{contexto_completo_abstencao_correta}}.
 - **Onde erra.** Com RAG, a Classe de erro mais frequente é {{com_rag_erro_mais_frequente}}, com **{{com_rag_erro_mais_frequente_n}}** das {{com_rag_n_com_erro}} respostas que erram o conteúdo, a página citada ou a Abstenção. O cruzamento com o Tipo de pergunta está no Relatório de avaliação.
 
 ## Como a avaliação foi feita
@@ -79,6 +81,8 @@ Os números abaixo são os da Rodada principal, analisada por `scripts/04_analis
 ## In English
 
 An assistant that answers questions about a public-health research report, citing the page, and a statistical evaluation of how often it is right with retrieval (RAG), without it, and with the whole report in the model's context.
+
+{{aviso_sintetico:en}}
 
 - **Data:** the report "Gestão Hospitalar no SUS-SP" ({{corpus_paginas:en}} pages, {{corpus_palavras:en}} words), split into {{corpus_trechos:en}} passages that never cross a page; {{gabarito_n_perguntas:en}} questions checked by the author against the PDF: {{gabarito_n_respondiveis:en}} answerable, in {{gabarito_n_tipos:en}} types, and {{gabarito_n_sem_resposta:en}} that the report does not answer.
 - **Methods:** Wilson intervals, exact McNemar test and Newcombe's paired-difference interval; error classes derived from the metrics; parameters frozen before the main run.

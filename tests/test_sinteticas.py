@@ -41,6 +41,20 @@ def test_rodadas_sinteticas_viram_numeros_e_tabelas(tmp_path):
         "resultados_por_condicao.tex"]
 
 
+def test_analise_de_rodadas_sinteticas_registra_o_aviso_de_numeros_inventados(tmp_path):
+    # o README e o PDF imprimem estes textos: sobre as Rodadas sintéticas, avisam; sobre as reais, somem
+    raiz = tmp_path / "raiz"
+    gerar_rodadas_sinteticas(raiz, semente=7, repeticoes=0)
+
+    analisar_raiz(raiz)
+
+    r = numeros.carregar(raiz / "resultados" / "numeros.json")
+    assert "inventados" in r["aviso_sintetico"]["texto"]
+    assert "made up" in r["aviso_sintetico"]["texto_en"]
+    assert "sintéticas" in r["rodadas_origem"]["texto"]
+    assert "revisados" not in r["rodadas_origem"]["texto"]
+
+
 def test_rodadas_sinteticas_gravam_os_parametros_do_projeto_como_a_rodada_real(tmp_path):
     # o Relatório de avaliação cita o k e os modelos; na raiz sintética, são os do parametros.toml do projeto
     raiz = tmp_path / "raiz"

@@ -190,7 +190,9 @@
 \newcommand{\RotuloCapa}{RELATÓRIO DE AVALIAÇÃO \textperiodcentered\ PROJETO DE PORTFÓLIO}
 \newcommand{\TituloRelatorio}{Assistente do relatório Gestão Hospitalar no SUS-SP}
 \newcommand{\SubtituloRelatorio}{Quanto um assistente com RAG acerta, medido com intervalo de confiança e comparação pareada}
-\newcommand{\DelimitacaoRelatorio}{Relatório-fonte de \NumCorpusPaginas{} páginas, \NumGabaritoNPerguntas{} Perguntas conferidas pelo autor \\ Rodada principal com os Veredictos do Juiz revisados}
+% A segunda linha vem do registro: sobre as Rodadas reais, diz que os Veredictos foram revisados; sobre as
+% sintéticas, que os números são inventados (scripts/04_analisar.py escolhe o texto).
+\newcommand{\DelimitacaoRelatorio}{Relatório-fonte de \NumCorpusPaginas{} páginas e \NumGabaritoNPerguntas{} Perguntas \\ \NumRodadasOrigem}
 \newcommand{\AutorNome}{João Eduardo Pastori Garcia}
 \newcommand{\AutorPapel}{Estatístico responsável}
 \newcommand{\AutorLinkedIn}{https://www.linkedin.com/in/joao-eduardo-garcia/}
@@ -288,6 +290,13 @@
 \tableofcontents
 \clearpage
 
+% O aviso de números inventados só existe sobre Rodadas sintéticas: sobre as
+% reais, \NumAvisoSintetico é vazio e a caixa não aparece.
+\ifdefempty{\NumAvisoSintetico}{}{%
+  \begin{destaque}[Números inventados]
+    \NumAvisoSintetico
+  \end{destaque}}
+
 % ══════════════════════════════════════════════════════════════════════
 % CONTEÚDO DO PROJETO
 % ══════════════════════════════════════════════════════════════════════
@@ -303,13 +312,13 @@
 Quase todo assistente com RAG (geração aumentada por recuperação) que se vê
 em portfólio é uma demonstração sem medida: ele ``parece responder bem'', mas
 ninguém sabe com que frequência acerta, nem se o acerto vem da busca no
-documento ou do que o modelo de linguagem já sabia antes de ler qualquer
+texto consultado ou do que o modelo de linguagem já sabia antes de ler qualquer
 coisa. Este projeto constrói um assistente que responde, em português,
-perguntas sobre um relatório de pesquisa, e mede quanto ele acerta com as
+perguntas sobre um relatório de pesquisa, o Relatório-fonte, e mede quanto ele acerta com as
 ferramentas de um estatístico: intervalo de confiança, comparação pareada e
 um desenho fixado antes de olhar a prova.
 
-O documento consultado, chamado aqui de \textbf{Relatório-fonte}, é o
+O texto consultado, chamado aqui de \textbf{Relatório-fonte}, é o
 relatório ``Gestão Hospitalar no SUS-SP'', um PDF com publicação autorizada e
 \NumCorpusPaginas{} páginas numeradas, além da capa. Um gestor de saúde
 pergunta, por exemplo, quanto mudou um indicador numa rede de hospitais, e o
@@ -319,7 +328,7 @@ Relatório-fonte não trata do assunto, o comportamento certo é dizer isso, e
 não inventar um número.
 
 A pergunta do projeto tem três partes, e cada uma vira uma medida deste
-relatório:
+Relatório de avaliação:
 
 \begin{enumerate}[leftmargin=*, itemsep=2pt]
   \item \textbf{Quanto o assistente acerta?} O Acerto da resposta nas
@@ -327,12 +336,12 @@ relatório:
   \item \textbf{O acerto vem da busca?} A mesma prova é feita sem RAG, com o
     modelo respondendo só com o que já sabe, e as duas Condições são
     comparadas Pergunta a Pergunta.
-  \item \textbf{Se o documento cabe inteiro no contexto do modelo, para que
+  \item \textbf{Se o Relatório-fonte cabe inteiro no contexto do modelo, para que
     RAG?} Uma terceira Condição põe o Relatório-fonte inteiro no prompt, e o
     custo de cada Condição é medido em tokens de entrada e em latência.
 \end{enumerate}
 
-\begin{destaque}[O que este relatório entrega]
+\begin{destaque}[O que este Relatório de avaliação entrega]
   O número de destaque é o Acerto da resposta com RAG nas
   \NumDestaqueNRespondiveis{} Perguntas respondíveis, com o intervalo de
   confiança de \NumIcNivel\%, ao lado do mesmo acerto sem RAG. Não se usa um
@@ -411,7 +420,7 @@ espalhadas pelos capítulos em proporção ao volume de texto.
 
 As Perguntas e o Gabarito de cada uma (a resposta certa e as páginas que a
 sustentam) foram \textbf{propostos com ajuda de um modelo de linguagem e
-conferidos pelo autor} diretamente no PDF, linha a linha. Essa conferência é
+conferidos pelo autor} diretamente no Relatório-fonte, linha a linha. Essa conferência é
 a Revisão: o script de avaliação recusa um Gabarito com qualquer linha sem
 ela e lista as pendentes. Antes da Revisão, uma conferência mecânica compara
 o Gabarito com o texto extraído (formato, páginas existentes, valores
@@ -435,7 +444,7 @@ só o que o modelo recebe:
 
 A comparação principal é com RAG contra sem RAG: ela responde quanto do
 acerto vem da busca. A comparação com o contexto completo responde se a
-busca ainda se justifica quando o documento cabe na janela do modelo.
+busca ainda se justifica quando o Relatório-fonte cabe na janela do modelo.
 
 \subsection{As medidas}
 
@@ -502,7 +511,7 @@ commitados. A Rodada principal registrou o commit em que rodou,
       resultado.
     \item Todo número impresso sai de um registro alimentado por script, e um
       conferidor falha diante de número digitado no README ou neste
-      relatório.
+      Relatório de avaliação.
   \end{itemize}
 \end{destaque}
 
@@ -734,9 +743,8 @@ diferente do pedido (fallback do servidor): \NumPrincipalNFallback.
 \section{Variabilidade entre Rodadas}
 
 O projeto não fixa a temperatura do modelo, então duas Rodadas iguais podem
-dar Veredictos diferentes. Para medir isso, a Rodada principal foi repetida
-com os mesmos parâmetros; o número de repetições comparadas com ela é
-\NumRepeticoesComparadas. As repetições
+dar Veredictos diferentes. \NumRepeticoesLeitura{} O número de repetições
+comparadas com a Rodada principal é \NumRepeticoesComparadas. As repetições
 não passam pela Revisão do autor: a concordância compara os Veredictos
 automáticos (da regra ou do Juiz) e, para a comparação ser justa, a Rodada
 principal entra do mesmo jeito, sem a Revisão. A Tabela~\ref{tab:concordancia}
@@ -766,7 +774,7 @@ número de destaque vem da Rodada revisada, e não da média das Rodadas.
 
 \section{Limitações}
 
-O que os dados deste relatório não autorizam afirmar:
+O que os dados deste Relatório de avaliação não autorizam afirmar:
 
 \begin{itemize}[leftmargin=*, itemsep=3pt]
   \item \textbf{Só texto.} O assistente lê o texto, as tabelas e as legendas
@@ -781,20 +789,21 @@ O que os dados deste relatório não autorizam afirmar:
     poucas Perguntas por célula: diferenças entre Tipos são indícios, e não
     resultados.
   \item \textbf{Um documento.} Tudo foi medido sobre um único Relatório-fonte,
-    em português, com o layout de um relatório em LaTeX. O acerto não se
+    em português, com o layout do Relatório-fonte, escrito em LaTeX. O acerto não se
     transfere para outro documento, outro layout ou outro idioma sem medir
     de novo.
   \item \textbf{Gabarito proposto com ajuda de um modelo.} As Perguntas e as
     respostas do Gabarito foram propostas com ajuda de um modelo de
-    linguagem e conferidas pelo autor no PDF. A Revisão corrige erros, mas
+    linguagem e conferidas pelo autor no Relatório-fonte. A Revisão corrige erros, mas
     não apaga o viés de escolha: Perguntas que um modelo acha naturais de
     propor podem ser mais fáceis para um modelo responder.
   \item \textbf{Veredictos revisados por uma pessoa.} Dos
     \NumRevisaoVeredictosJuiz{} Veredictos do Juiz na Rodada principal,
     \NumRevisaoVeredictosRevisados{} foram revisados pelo autor, que mudou
     \NumRevisaoVeredictosMudados. A Revisão é de um revisor só, sem medida
-    de concordância entre revisores, e o Juiz é da mesma família de modelos
-    que o respondedor.
+    de concordância entre revisores. O Juiz foi o
+    \texttt{\NumParametrosModeloJuiz}, e o respondedor, o
+    \texttt{\NumParametrosModeloRespondedor}.
   \item \textbf{Repetições não revisadas.} A concordância entre Rodadas usa
     Veredictos automáticos e mede a estabilidade, e não o acerto.
   \item \textbf{Um modelo.} Os números publicados são de um só modelo, o
@@ -805,23 +814,22 @@ O que os dados deste relatório não autorizam afirmar:
     no momento da Rodada.
 \end{itemize}
 
+\clearpage
+\appendix
 \section{Como refazer os números}
 
 As Rodadas ficam versionadas no repositório, com o commit e os parâmetros de
-cada execução ao lado. Refazer a análise não chama o modelo nem gasta cota.
-Os scripts, na ordem:
+cada execução ao lado. Um comando refaz tudo a partir delas, sem chamar o
+modelo nem gastar cota:
 
-\begin{itemize}[leftmargin=*, itemsep=2pt]
-  \item \texttt{scripts/04\_analisar.py}: consolida a Rodada principal com a
-    folha de Revisão e grava o registro de números e as linhas das tabelas;
-  \item \texttt{scripts/05\_figuras.py}: desenha as figuras;
-  \item \texttt{scripts/06\_gerar\_documentos.py}: gera as macros deste
-    relatório, o README e a lista de números canônicos;
-  \item \texttt{scripts/conferir\_numeros.py}: falha se algum número tiver
-    sido digitado ou estiver desatualizado.
-\end{itemize}
+\begin{center}
+  \texttt{uv run python scripts/reproduzir.py}
+\end{center}
 
-Cada número impresso aqui tem uma linha em \texttt{NUMEROS\_CANONICOS.md},
-com o script que o calcula e os lugares onde aparece.
+Ele refaz a análise, as figuras, as macros deste Relatório de avaliação, o
+README e a lista de números canônicos, compila este PDF e roda o conferidor
+de números, parando no primeiro passo que falhar. Cada número impresso aqui
+tem uma linha em \texttt{NUMEROS\_CANONICOS.md}, com o script que o calcula
+e os lugares onde aparece.
 
 \end{document}
