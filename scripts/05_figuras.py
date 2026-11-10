@@ -33,7 +33,6 @@ from estilo_portfolio import (  # noqa: E402
     GRAY_80,
     NEUTRO,
     TAM_ROTULO_EIXO,
-    TAM_SUBTITULO,
     cor_de_texto,
     destacar,
     eixo_no_zero,
@@ -58,33 +57,32 @@ from rag_sus.avaliacao.rodada import carregar_linhas  # noqa: E402
 from rag_sus.avaliacao.sinteticas import RaizProibida, recusar_no_projeto, rodada_sintetica  # noqa: E402
 from rag_sus.avaliacao.vocabulario import chave_por_tipo, rotulo_condicao  # noqa: E402
 
-ALTURA_DA_LINHA = 1.3  # entrelinha, em múltiplos do tamanho da fonte
+# Folga no alto do eixo, em unidades de categoria, para o nome do painel caber dentro dele.
+FOLGA_DO_NOME_DO_PAINEL = 0.7
 
 
-def _cabecalho(ax, texto: str, subtitulo: str, largura: int, folga: float = 0.0) -> None:
-    """O título e o subtítulo do kit, quebrados em linhas; `folga` (pt) abre espaço para o nome dos painéis."""
-    texto = textwrap.fill(texto, largura)
-    subtitulo = textwrap.fill(subtitulo, round(largura * 1.25))
-    titulo(ax, texto, subtitulo)
-    acima = 9 + folga
-    ax.texts[-1].xyann = (0, acima)  # o subtítulo que o kit acabou de pôr
-    altura = subtitulo.count("\n") * TAM_SUBTITULO * ALTURA_DA_LINHA + TAM_SUBTITULO
-    ax.set_title(texto, pad=acima + altura + 10)
+def _cabecalho(ax, texto: str, subtitulo: str, largura: int) -> None:
+    """O título e o subtítulo, pela função do kit, sem mexer no que ela posiciona.
+
+    Só o título se quebra em linhas (ele cresce para cima a partir do pad do
+    kit); o subtítulo cabe numa linha, que é o espaço que o kit reserva para ele.
+    """
+    titulo(ax, textwrap.fill(texto, largura), subtitulo)
 
 
 def _nome_do_painel(ax, texto: str) -> None:
-    ax.annotate(texto, xy=(0, 1), xycoords="axes fraction", xytext=(0, 6), textcoords="offset points",
-                ha="left", va="bottom", fontsize=TAM_ROTULO_EIXO, color=GRAY_70)
+    """O nome do painel, dentro do eixo, no alto: o espaço acima do eixo é do título e do subtítulo do kit."""
+    ax.annotate(texto, xy=(0, 1), xycoords="axes fraction", xytext=(0, -2), textcoords="offset points",
+                ha="left", va="top", fontsize=TAM_ROTULO_EIXO, color=GRAY_70)
 
 
 def _eixo_de_categorias(ax, linhas: tuple[str, ...], rotulos: dict[str, str], destaque: tuple[str, ...]):
-    """Categorias de cima para baixo; a que está em destaque, em negrito e na cor de texto do destaque."""
+    """Categorias de cima para baixo; a que está em destaque, na cor de texto do destaque (o peso é o regular)."""
     y = {c: len(linhas) - 1 - i for i, c in enumerate(linhas)}
     ax.set_yticks([y[c] for c in linhas], [rotulos[c] for c in linhas])
     for marca, c in zip(ax.get_yticklabels(), linhas, strict=True):
         if c in destaque:
             marca.set_color(cor_de_texto(DESTAQUE))
-            marca.set_fontweight("bold")
     return y
 
 
@@ -140,7 +138,8 @@ def figura_erros(t: TextosDaFigura, registro: dict[str, dict], rodape: str) -> P
         sem_grade(ax)
         ax.set_xticks([])
         eixo_no_zero(ax, "x", topo=max(maior, 1) * 1.35)
-    _cabecalho(eixos[0], t.titulo, t.subtitulo, largura=82, folga=TAM_ROTULO_EIXO * ALTURA_DA_LINHA + 6)
+    eixos[0].set_ylim(-0.6, len(t.linhas) - 0.4 + FOLGA_DO_NOME_DO_PAINEL)
+    _cabecalho(eixos[0], t.titulo, t.subtitulo, largura=82)
     fig.subplots_adjust(wspace=0.12)
     fonte(eixos[0], rodape)
     return _salvar(fig, t)
@@ -168,7 +167,7 @@ def figura_custo(t: TextosDaFigura, linhas_por_condicao: dict[str, list[dict]], 
             em_destaque = c in t.destaque
             rotular_ponta(ax, max(valores), y[c], t.rotulos[f"{c}/{coluna}"],
                           cor=DESTAQUE if em_destaque else GRAY_60, negrito=em_destaque, dx=8.0)
-        _nome_do_painel(ax, t.rotulos[f"coluna/{coluna}"])
+        ax.set_xlabel(t.rotulos[f"coluna/{coluna}"])
         sem_grade(ax)
     ax_tokens.set_ylim(-0.6, len(t.linhas) - 0.4)
     ax_tokens.set_xscale("log")
@@ -178,7 +177,7 @@ def figura_custo(t: TextosDaFigura, linhas_por_condicao: dict[str, list[dict]], 
     ax_tokens.xaxis.set_minor_locator(NullLocator())
     eixo_no_zero(ax_latencia, "x")
     ax_latencia.xaxis.set_major_formatter(FuncFormatter(lambda v, _p: numeros.formatar(v, "inteiro")))
-    _cabecalho(ax_tokens, t.titulo, t.subtitulo, largura=82, folga=TAM_ROTULO_EIXO * ALTURA_DA_LINHA + 6)
+    _cabecalho(ax_tokens, t.titulo, t.subtitulo, largura=82)
     fig.subplots_adjust(wspace=0.35)
     fonte(ax_tokens, rodape)
     return _salvar(fig, t)

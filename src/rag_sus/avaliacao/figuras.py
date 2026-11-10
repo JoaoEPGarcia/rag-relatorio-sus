@@ -37,6 +37,10 @@ from rag_sus.avaliacao.vocabulario import (
 )
 from rag_sus.numeros import Numero, formatar
 
+# O kit (estilo_portfolio.titulo) reserva uma linha para o subtítulo, entre o eixo e o título;
+# em caracteres, o que cabe nela na largura da menor figura, sem invadir o título.
+MAX_SUBTITULO = 110
+
 
 @dataclass(frozen=True)
 class TextosDaFigura:
@@ -100,8 +104,7 @@ def textos_acerto(registro: dict[str, dict]) -> TextosDaFigura:
     }
     n = t("destaque_n_respondiveis")
     nivel = t("ic_nivel")
-    subtitulo = (f"Acerto da resposta nas {n} Perguntas respondíveis, Rodada principal. "
-                 f"A linha fina é o intervalo de confiança de Wilson de {nivel}%.")
+    subtitulo = f"Acerto da resposta nas {n} Perguntas respondíveis da Rodada principal; linha fina: IC de {nivel}%"
     return TextosDaFigura(arquivo, titulo, subtitulo, rotulos, tuple(t.numeros.values()), tuple(t.usos),
                           linhas=CONDICOES, destaque=("com_rag",))
 
@@ -139,8 +142,7 @@ def textos_custo(registro: dict[str, dict]) -> TextosDaFigura:
         rotulos[f"{c}/tokens"] = f"média {t(f'{c}_tokens_entrada_medio')}"
         rotulos[f"{c}/latencia"] = f"mediana {t(f'{c}_latencia_mediana_s')} s"
     n = t("gabarito_n_perguntas")
-    subtitulo = (f"Cada caixa resume as {n} Perguntas da Rodada principal numa Condição (traço: mediana; "
-                 "losango: média). O acerto é o da resposta, nas Perguntas respondíveis.")
+    subtitulo = f"Cada caixa resume as {n} Perguntas da Rodada principal numa Condição; traço: mediana, losango: média"
     return TextosDaFigura(arquivo, titulo, subtitulo, rotulos, tuple(t.numeros.values()), tuple(t.usos),
                           linhas=CONDICOES, colunas=("tokens", "latencia"), destaque=("com_rag",))
 
@@ -194,8 +196,7 @@ def textos_erros(registro: dict[str, dict]) -> TextosDaFigura:
                 rotulos[f"{tipo}/{slug}"] = t(chave_por_tipo(tipo, slug))
 
     n = t("gabarito_n_perguntas")
-    subtitulo = (f"Perguntas com erro nas {n} da Rodada principal com RAG. Entre parênteses, as Perguntas do "
-                 "Tipo e os erros da Classe. Resposta inventada só há nas sem resposta; as demais, nas respondíveis.")
+    subtitulo = f"Perguntas com erro, entre as {n} da Rodada principal com RAG; entre parênteses, os totais"
     return TextosDaFigura(arquivo, titulo, subtitulo, rotulos, tuple(t.numeros.values()), tuple(t.usos),
                           linhas=linhas, colunas=colunas, destaque=destaque)
 

@@ -13,6 +13,7 @@ import pytest
 
 from rag_sus import numeros
 from rag_sus.avaliacao.figuras import (
+    MAX_SUBTITULO,
     fonte_dos_dados,
     registrar_figuras,
     textos_acerto,
@@ -246,6 +247,19 @@ def test_sobre_rodadas_sinteticas_as_tres_figuras_registram_chaves_proprias_com_
     assert len(chaves) == len(set(chaves))
     for t, prefixo in zip(figuras, ("figura_acerto_", "figura_erros_", "figura_custo_"), strict=True):
         conferir_registrados(t, r, prefixo)
+
+
+def test_subtitulo_de_cada_figura_cabe_numa_linha_do_kit(tmp_path):
+    # o kit reserva uma linha para o subtítulo, entre o eixo e o título: quebrado, ele invadiria o título
+    raiz = tmp_path / "raiz"
+    pasta_rodadas = gerar_rodadas_sinteticas(raiz, semente=7, repeticoes=0)
+    numeros_json = raiz / "resultados" / "numeros.json"
+    analisar(pasta_rodadas, raiz / "avaliacao" / "revisao_veredictos.csv", numeros_json=numeros_json,
+             pasta_tabelas=raiz / "relatorio" / "tabelas")
+
+    for t in textos_das_figuras(numeros.carregar(numeros_json)):
+        assert "\n" not in t.subtitulo
+        assert len(t.subtitulo) <= MAX_SUBTITULO, t.subtitulo
 
 
 def test_onde_aparece_do_numero_da_analise_inclui_a_figura_e_sobrevive_a_nova_analise(tmp_path):
