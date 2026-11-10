@@ -33,9 +33,10 @@ def main() -> int:
         return 1
     print(f"{len(registrados)} números -> {config.NUMEROS}")
     print(f"Linhas das tabelas -> {config.TABELAS}")
-    destaque = (registrados["destaque_acerto_com_rag"], registrados["destaque_acerto_com_rag_inf"],
-                registrados["destaque_acerto_com_rag_sup"], registrados["destaque_acerto_sem_rag"])
-    print("Acerto da resposta com RAG: {} (IC 95%: {} a {}), contra {} sem RAG".format(*destaque))
+    destaque = (registrados["ic_nivel"], registrados["destaque_acerto_com_rag"],
+                registrados["destaque_acerto_com_rag_inf"], registrados["destaque_acerto_com_rag_sup"],
+                registrados["destaque_acerto_sem_rag"])
+    print("Acerto da resposta com RAG: {1} (IC {0}%: {2} a {3}), contra {4} sem RAG".format(*destaque))
     return 0
 
 

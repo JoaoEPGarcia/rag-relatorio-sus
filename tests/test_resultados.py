@@ -14,6 +14,7 @@ from statsmodels.stats.contingency_tables import mcnemar
 from statsmodels.stats.proportion import proportion_confint
 
 from rag_sus import numeros
+from rag_sus.avaliacao import estatistica
 from rag_sus.avaliacao.resultados import RodadaSemParametros, analisar
 from rag_sus.avaliacao.rodada import RevisaoIncompleta
 
@@ -346,6 +347,21 @@ def test_registra_o_nivel_de_confianca_dos_intervalos(projeto):
     r = rodar(projeto)
     assert r["ic_nivel"]["valor"] == 95  # o README escreve "IC de {{ic_nivel}}%", sem digitar o nível
     assert r["ic_nivel"]["texto"] == "95"
+
+
+def test_descricoes_e_tabelas_citam_o_nivel_do_ic_que_a_estatistica_usa(projeto, monkeypatch):
+    # nenhum "95%" digitado: se o nível mudar, as descrições e os cabeçalhos das tabelas mudam junto
+    monkeypatch.setattr(estatistica, "NIVEL", 0.9)
+
+    r = rodar(projeto)
+
+    assert r["ic_nivel"]["valor"] == 90
+    for chave in ("com_rag_acerto_resposta_inf", "com_rag_x_sem_rag_diferenca_sup"):
+        assert "IC de" in r[chave]["descricao"]
+        assert "90%" in r[chave]["descricao"] and "95%" not in r[chave]["descricao"]
+    for nome in ("resultados_por_condicao.tex", "comparacao_pareada.tex"):
+        cabecalho = (projeto["tabelas"] / nome).read_text(encoding="utf-8").splitlines()[1]
+        assert "90%" in cabecalho and "95%" not in cabecalho
 
 
 def test_conclusao_da_comparacao_segue_o_intervalo_da_diferenca(projeto):

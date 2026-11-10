@@ -34,8 +34,8 @@ from pathlib import Path
 
 from rag_sus import config, numeros
 from rag_sus.assistente import CONDICOES
+from rag_sus.avaliacao import estatistica
 from rag_sus.avaliacao.analise import comparar, concordancia, erros_por_tipo, resumir
-from rag_sus.avaliacao.estatistica import NIVEL
 from rag_sus.avaliacao.gabarito import TIPOS_RESPONDIVEIS
 from rag_sus.avaliacao.rodada import RevisaoIncompleta, carregar_linhas, consolidar
 from rag_sus.avaliacao.sinteticas import RaizProibida, dentro_de_uma_copia_do_projeto, rodada_sintetica
@@ -78,11 +78,17 @@ CLASSES_DE_ERRO_EN = {
 COMPARADAS_COM_RAG = ("sem_rag", "contexto_completo")
 
 
+def _nivel() -> int:
+    """O nível dos intervalos em %, lido da estatística na hora, para nenhuma descrição o digitar."""
+    return round(100 * estatistica.NIVEL)
+
+
 def _intervalo(chave: str, intervalo, o_que: str) -> list[Numero]:
+    ic = f"IC de Wilson de {_nivel()}%"
     return [
         Numero(chave, intervalo.proporcao, o_que, "pct1"),
-        Numero(f"{chave}_inf", intervalo.inferior, f"{o_que}: limite inferior do IC de Wilson de 95%", "pct1"),
-        Numero(f"{chave}_sup", intervalo.superior, f"{o_que}: limite superior do IC de Wilson de 95%", "pct1"),
+        Numero(f"{chave}_inf", intervalo.inferior, f"{o_que}: limite inferior do {ic}", "pct1"),
+        Numero(f"{chave}_sup", intervalo.superior, f"{o_que}: limite superior do {ic}", "pct1"),
     ]
 
 
@@ -240,6 +246,7 @@ def _numeros_da_comparacao(outra: str, com_rag: list[dict], linhas_outra: list[d
     nome = f"com RAG × {NOMES_CONDICAO[outra]}"
     c = comparar(com_rag, linhas_outra)
     t, d = c["tabela"], c["diferenca"]
+    ic = f"IC de Newcombe de {_nivel()}%"
     return [
         _conclusao(outra, d),
         Numero(f"{k}_n_pares", t.n, f"{nome}: Perguntas respondíveis pareadas"),
@@ -248,8 +255,8 @@ def _numeros_da_comparacao(outra: str, com_rag: list[dict], linhas_outra: list[d
         Numero(f"{k}_so_{outra}", t.so_b, f"{nome}: só {NOMES_CONDICAO[outra]} acerta"),
         Numero(f"{k}_nenhum", t.nenhum, f"{nome}: as duas Condições erram"),
         Numero(f"{k}_diferenca", d.diferenca, f"{nome}: diferença pareada do Acerto da resposta", "pp1"),
-        Numero(f"{k}_diferenca_inf", d.inferior, f"{nome}: limite inferior do IC de Newcombe de 95%", "pp1"),
-        Numero(f"{k}_diferenca_sup", d.superior, f"{nome}: limite superior do IC de Newcombe de 95%", "pp1"),
+        Numero(f"{k}_diferenca_inf", d.inferior, f"{nome}: limite inferior do {ic}", "pp1"),
+        Numero(f"{k}_diferenca_sup", d.superior, f"{nome}: limite superior do {ic}", "pp1"),
         Numero(f"{k}_p_mcnemar", c["p_mcnemar"], f"{nome}: valor-p do teste exato de McNemar", "p3"),
     ]
 
@@ -371,7 +378,7 @@ class _Celulas:
         return texto_tex(self.textos[chave])
 
     def com_ic(self, chave: str) -> str:
-        """"80,0\\% (67,0\\% a 88,8\\%)": o valor e o IC de 95%."""
+        """"80,0\\% (67,0\\% a 88,8\\%)": o valor e o IC."""
         return f"{self(chave)} ({self(chave + '_inf')} a {self(chave + '_sup')})"
 
 
@@ -405,7 +412,7 @@ def _montar_tabelas(textos: dict[str, str]) -> dict[str, tuple[str, list[str]]]:
         ])
     tabelas["resultados_por_condicao.tex"] = (_arquivo(
         "Condição; Acerto da resposta; Acerto da citação; Acerto da recuperação (respondíveis); "
-        "Abstenção correta (sem resposta); cada medida com o IC de Wilson de 95%", linhas), t.usadas)
+        f"Abstenção correta (sem resposta); cada medida com o IC de Wilson de {_nivel()}%", linhas), t.usadas)
 
     t = _Celulas(textos)
     linhas = []
@@ -419,7 +426,7 @@ def _montar_tabelas(textos: dict[str, str]) -> dict[str, tuple[str, list[str]]]:
         ])
     tabelas["comparacao_pareada.tex"] = (_arquivo(
         "Comparação; as duas acertam; só com RAG acerta; só a outra acerta; as duas erram; "
-        "diferença com RAG menos a outra (IC de Newcombe de 95%); valor-p do McNemar exato", linhas), t.usadas)
+        f"diferença com RAG menos a outra (IC de Newcombe de {_nivel()}%); valor-p do McNemar exato", linhas), t.usadas)
 
     t = _Celulas(textos)
     linhas = []
@@ -473,7 +480,7 @@ def analisar(
     consolidadas = _consolidar_principal(pasta_rodadas / "principal", folha)
     resumos = {c: resumir(consolidadas[c]) for c in CONDICOES}
     lista: list[Numero | Texto] = (
-        [Numero("ic_nivel", round(100 * NIVEL), "nível de confiança dos intervalos de Wilson e de Newcombe, em %")]
+        [Numero("ic_nivel", _nivel(), "nível de confiança dos intervalos de Wilson e de Newcombe, em %")]
         + _numeros_de_destaque(resumos)
         + _numeros_do_gabarito(consolidadas["com_rag"])
         + _numeros_da_rodada(resumos)
