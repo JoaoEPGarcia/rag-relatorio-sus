@@ -32,7 +32,13 @@ from rag_sus.avaliacao.juiz import Juiz
 from rag_sus.avaliacao.rodada import executar_rodada, gravar_folha_de_revisao
 from rag_sus.avaliacao.travas import RODADAS, commit_atual, status_git, verificar_congelamento
 from rag_sus.busca import E5Embutidor, IndiceDeTrechos
-from rag_sus.provedores import CotaDiariaEsgotada, CotaEsgotada, juiz_do_ambiente, provedor_do_ambiente
+from rag_sus.provedores import (
+    CotaDiariaEsgotada,
+    CotaEsgotada,
+    ModeloIndisponivel,
+    juiz_do_ambiente,
+    provedor_do_ambiente,
+)
 
 FOLHA = config.REVISAO_VEREDICTOS
 
@@ -99,6 +105,10 @@ def main() -> int:
             quando = "amanhã" if isinstance(erro, CotaDiariaEsgotada) else "quando houver saldo"
             print(f"O que já foi respondido está salvo. Rode o mesmo comando {quando} para continuar.")
             return 3
+        except ModeloIndisponivel as erro:
+            print(f"Parado: {erro}.")
+            print("O que já foi respondido está salvo. Rode o mesmo comando mais tarde para continuar.")
+            return 4
         rodadas.append(destino)
 
     if args.rodada == "principal":

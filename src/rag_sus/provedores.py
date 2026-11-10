@@ -31,6 +31,10 @@ from typing import Protocol
 import httpx
 
 URL_GEMINI = "https://generativelanguage.googleapis.com/v1beta"
+# Uma resposta normal leva segundos (a mais lenta da Rodada de desenvolvimento,
+# com o Relatório-fonte inteiro no prompt, levou menos de 20 s). Quatro minutos
+# sem resposta é modelo preso, e a requisição é tentada de novo.
+TEMPO_LIMITE_S = 240
 
 
 @dataclass
@@ -72,6 +76,15 @@ class SaldoEsgotado(CotaEsgotada):
 
     É o teto de gasto do projeto: com Prepay e sem recarga automática, a API
     devolve 402 e nada mais é cobrado (ADR 0005).
+    """
+
+
+class ModeloIndisponivel(RuntimeError):
+    """O modelo não respondeu (tempo esgotado ou sobrecarga) em nenhuma das tentativas.
+
+    Acontece no plano gratuito: um modelo às vezes fica sem responder por
+    muito tempo. A Rodada para (o respondedor) ou passa ao reserva seguinte (o
+    Juiz em cadeia), e o mesmo comando retoma depois.
     """
 
 
@@ -128,19 +141,29 @@ class ProvedorGemini:
         self._dormir = dormir
         self._relogio = relogio
         self._http = cliente or httpx.Client(
-            base_url=URL_GEMINI, headers={"x-goog-api-key": chave}, timeout=600
+            base_url=URL_GEMINI, headers={"x-goog-api-key": chave}, timeout=TEMPO_LIMITE_S
         )
 
     def _post(self, corpo: dict) -> tuple[httpx.Response, float]:
         """Devolve a resposta e a latência só da requisição que deu certo.
 
-        As esperas por cota (429) e por sobrecarga (5xx) não entram na latência,
-        que é comparada entre Condições.
+        As esperas por cota (429), por sobrecarga (5xx) e por tempo esgotado não
+        entram na latência, que é comparada entre Condições. Sobrecarga e tempo
+        esgotado em todas as tentativas viram `ModeloIndisponivel`.
         """
         espera = 5.0
         for tentativa in range(1, self.tentativas + 1):
             inicio = self._relogio()
-            r = self._http.post(f"/models/{self.modelo}:generateContent", json=corpo)
+            try:
+                r = self._http.post(f"/models/{self.modelo}:generateContent", json=corpo)
+            except httpx.TransportError as erro:  # tempo esgotado ou conexão caída
+                if tentativa == self.tentativas:
+                    raise ModeloIndisponivel(
+                        f"{self.modelo} não respondeu em {self.tentativas} tentativas ({type(erro).__name__})"
+                    ) from erro
+                self._dormir(espera + 1)
+                espera = min(espera * 2, 120)
+                continue
             latencia = self._relogio() - inicio
             if r.status_code == 402:
                 raise SaldoEsgotado(
@@ -157,6 +180,10 @@ class ProvedorGemini:
                 pausa = _espera_sugerida(erro) or espera
             elif r.status_code in (500, 502, 503, 504):
                 pausa = espera  # modelo sobrecarregado, comum no plano gratuito
+                if tentativa == self.tentativas:
+                    raise ModeloIndisponivel(
+                        f"{self.modelo} sobrecarregado em {self.tentativas} tentativas (HTTP {r.status_code})"
+                    )
             else:
                 r.raise_for_status()
                 return r, latencia
@@ -246,6 +273,7 @@ class ProvedorOllama:
 class ProvedorEmCadeia:
     """Vários modelos em ordem: quando a cota diária de um acaba, o seguinte assume.
 
+    Também passa ao seguinte quando o atual não responde (`ModeloIndisponivel`).
     Serve só ao Juiz (ADR 0005). No plano gratuito a cota é por modelo, e somar
     a de vários modelos é o que faz a Rodada caber em poucos dias. O
     respondedor não usa cadeia: trocar o modelo no meio misturaria dois
@@ -265,10 +293,10 @@ class ProvedorEmCadeia:
         while self._atual < len(self.provedores):
             try:
                 return self.provedores[self._atual].gerar_json(sistema, mensagem, esquema)
-            except CotaDiariaEsgotada:
+            except (CotaDiariaEsgotada, ModeloIndisponivel):
                 self._atual += 1
         modelos = ", ".join(p.modelo for p in self.provedores)
-        raise CotaDiariaEsgotada(f"cota diária esgotada em todos os modelos da cadeia ({modelos})")
+        raise CotaDiariaEsgotada(f"cota diária esgotada ou modelo indisponível em todos os modelos da cadeia ({modelos})")
 
 
 def provedor_do_ambiente(modelo: str, esforco: str, max_tokens: int) -> Provedor:

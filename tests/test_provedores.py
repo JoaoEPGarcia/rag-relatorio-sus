@@ -166,3 +166,58 @@ def test_juiz_do_ambiente_monta_a_cadeia_so_quando_ha_reservas_no_gemini(monkeyp
 
     monkeypatch.setenv("PROVEDOR", "ollama")
     assert isinstance(juiz_do_ambiente(["a", "b"], "medium", 100), ProvedorOllama)
+
+
+def provedor_com_tratador(tratar, pausas=None, tentativas=6):
+    cliente = httpx.Client(base_url=URL_GEMINI, transport=httpx.MockTransport(tratar))
+    dormir = pausas.append if pausas is not None else (lambda s: None)
+    return ProvedorGemini("gemini-teste", "medium", 500, cliente=cliente, dormir=dormir, tentativas=tentativas)
+
+
+def test_tempo_esgotado_e_tentado_de_novo_como_sobrecarga():
+    # Plano gratuito: às vezes o modelo não responde nunca; a requisição presa não pode derrubar a Rodada.
+    chamadas = []
+
+    def tratar(req):
+        chamadas.append(req)
+        if len(chamadas) == 1:
+            raise httpx.ReadTimeout("sem resposta", request=req)
+        return httpx.Response(200, json=resposta_ok())
+
+    pausas = []
+    dados, _ = provedor_com_tratador(tratar, pausas).gerar_json(SISTEMA, "m", ESQUEMA)
+
+    assert dados == {"x": 7} and len(chamadas) == 2 and len(pausas) == 1
+
+
+def test_modelo_que_nunca_responde_vira_modelo_indisponivel():
+    from rag_sus.provedores import ModeloIndisponivel
+
+    def tratar(req):
+        raise httpx.ReadTimeout("sem resposta", request=req)
+
+    with pytest.raises(ModeloIndisponivel, match="gemini-teste"):
+        provedor_com_tratador(tratar, tentativas=3).gerar_json(SISTEMA, "m", ESQUEMA)
+
+
+def test_sobrecarga_que_nao_passa_vira_modelo_indisponivel():
+    from rag_sus.provedores import ModeloIndisponivel
+
+    def tratar(req):
+        return httpx.Response(503, json={"error": {"code": 503}})
+
+    with pytest.raises(ModeloIndisponivel):
+        provedor_com_tratador(tratar, tentativas=2).gerar_json(SISTEMA, "m", ESQUEMA)
+
+
+def test_cadeia_passa_ao_proximo_modelo_quando_o_atual_esta_indisponivel():
+    from rag_sus.provedores import Metadados, ModeloIndisponivel, ProvedorEmCadeia
+
+    class Preso(ProvedorFalso):
+        def gerar_json(self, sistema, mensagem, esquema):
+            self.chamadas += 1
+            raise ModeloIndisponivel(f"{self.modelo} não respondeu")
+
+    a, b = Preso("modelo-a"), ProvedorFalso("modelo-b")
+    _, meta = ProvedorEmCadeia([a, b]).gerar_json(SISTEMA, "m", ESQUEMA)
+    assert meta.modelo_que_respondeu == "modelo-b" and isinstance(meta, Metadados)
