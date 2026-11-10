@@ -97,3 +97,26 @@ def test_ignora_partes_de_pensamento():
     r["candidates"][0]["content"]["parts"].insert(0, {"text": "pensando...", "thought": True})
     dados, _ = provedor([(200, r)]).gerar_json(SISTEMA, "m", ESQUEMA)
     assert dados == {"x": 7}
+
+
+def test_latencia_mede_so_a_requisicao_que_deu_certo_e_nao_as_esperas():
+    # A latência entra na comparação entre Condições; as esperas da cota não podem contar.
+    agora = [0.0]
+
+    def tratar(req: httpx.Request) -> httpx.Response:
+        agora[0] += 3.0  # cada requisição leva 3 s no relógio falso
+        if tratar.chamadas == 0:
+            tratar.chamadas += 1
+            return httpx.Response(429, json=erro_429("GenerateRequestsPerMinutePerProjectPerModel-FreeTier", "41s"))
+        return httpx.Response(200, json=resposta_ok())
+
+    tratar.chamadas = 0
+    cliente = httpx.Client(base_url=URL_GEMINI, transport=httpx.MockTransport(tratar))
+
+    def dormir(s):
+        agora[0] += s
+
+    p = ProvedorGemini("gemini-teste", "medium", 500, cliente=cliente, dormir=dormir, relogio=lambda: agora[0])
+    _, meta = p.gerar_json(SISTEMA, "m", ESQUEMA)
+
+    assert meta.latencia_s == pytest.approx(3.0)

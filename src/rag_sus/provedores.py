@@ -116,7 +116,8 @@ class ProvedorGemini:
     nome = "gemini"
 
     def __init__(self, modelo: str, esforco: str, max_tokens: int, chave: str | None = None,
-                 cliente: httpx.Client | None = None, tentativas: int = 6, dormir=time.sleep):
+                 cliente: httpx.Client | None = None, tentativas: int = 6, dormir=time.sleep,
+                 relogio=time.perf_counter):
         chave = chave or os.environ.get("GEMINI_API_KEY", "")
         if not chave and cliente is None:
             raise RuntimeError("GEMINI_API_KEY não está no ambiente nem no .env")
@@ -125,14 +126,22 @@ class ProvedorGemini:
         self.max_tokens = max_tokens
         self.tentativas = tentativas
         self._dormir = dormir
+        self._relogio = relogio
         self._http = cliente or httpx.Client(
             base_url=URL_GEMINI, headers={"x-goog-api-key": chave}, timeout=600
         )
 
-    def _post(self, corpo: dict) -> httpx.Response:
+    def _post(self, corpo: dict) -> tuple[httpx.Response, float]:
+        """Devolve a resposta e a latência só da requisição que deu certo.
+
+        As esperas por cota (429) e por sobrecarga (5xx) não entram na latência,
+        que é comparada entre Condições.
+        """
         espera = 5.0
         for tentativa in range(1, self.tentativas + 1):
+            inicio = self._relogio()
             r = self._http.post(f"/models/{self.modelo}:generateContent", json=corpo)
+            latencia = self._relogio() - inicio
             if r.status_code == 402:
                 raise SaldoEsgotado(
                     "o saldo pré-pago do faturamento zerou (créditos do Google AI Pro e pré-pagamento); "
@@ -150,7 +159,7 @@ class ProvedorGemini:
                 pausa = espera  # modelo sobrecarregado, comum no plano gratuito
             else:
                 r.raise_for_status()
-                return r
+                return r, latencia
             if tentativa == self.tentativas:
                 r.raise_for_status()
             self._dormir(pausa + 1)
@@ -168,9 +177,8 @@ class ProvedorGemini:
                 "thinkingConfig": {"thinkingLevel": self.esforco},
             },
         }
-        inicio = time.perf_counter()
-        resposta = self._post(corpo).json()
-        latencia = time.perf_counter() - inicio
+        r, latencia = self._post(corpo)
+        resposta = r.json()
 
         uso = resposta.get("usageMetadata", {})
         candidatos = resposta.get("candidates") or [{}]
