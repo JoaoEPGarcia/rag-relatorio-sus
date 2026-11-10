@@ -29,6 +29,7 @@ Um assistente que responde perguntas sobre o Relatório-fonte ("Gestão Hospital
 - **Repetições**: mais 2 Rodadas automáticas, só para medir a concordância entre Rodadas. Esse número fica rotulado como "Veredictos não revisados".
 - **Classes de erro**: falha de recuperação, falha de leitura, abstenção indevida, resposta inventada e citação errada. São derivadas automaticamente das medidas e cruzadas com o Tipo de pergunta.
 - **Pré-registro**: os parâmetros são congelados antes da Rodada principal, e os ajustes são feitos só com Perguntas de desenvolvimento (ADR 0002).
+- **Rodada de desenvolvimento (10/11/2026) e ajustes**: rodou nas 12 Perguntas de desenvolvimento, nas três Condições, com o `gemini-3.5-flash-lite` (`resultados/rodadas/desenvolvimento/`). A única troca foi a de modelo, por causa da cota (ADR 0005). Não houve ajuste de k, de tamanho de Trecho nem de prompt. Os erros com RAG foram abstenções em Perguntas de tabela, em que o Trecho da página certa fica bem abaixo dos k recuperados. Subir o k até alcançá-los seria ajustar o sistema a duas Perguntas e multiplicaria os tokens de entrada. A fraqueza fica como achado, visível nas Classes de erro por Tipo de pergunta. Sem RAG, o modelo se abstém em vez de inventar, que é o comportamento pedido pelo prompt.
 
 ## Números e documentos
 

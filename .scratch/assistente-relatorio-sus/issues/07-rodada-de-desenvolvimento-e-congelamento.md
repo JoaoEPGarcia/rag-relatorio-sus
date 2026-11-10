@@ -12,14 +12,14 @@ Cada ajuste e o motivo dele ficam registrados (nota no `docs/DESENHO.md` ou ADR,
 
 **Blocked by:** 06 (Chave da API e Docker Desktop)
 
-**Status:** ready-for-human
+**Status:** resolved
 
-- [ ] O autor aprovou cada execução com `--confirmar`.
-- [ ] Os tokens e a latência medidos por Pergunta e por Condição foram mostrados ao autor, com a estimativa de dias de cota da Rodada principal e das repetições.
-- [ ] Se a cota diária do `gemini-3.8-flash` não comportar a avaliação em prazo razoável, o modelo foi trocado antes do congelamento, e a troca está no ADR 0005.
-- [ ] Os ajustes feitos (ou "nenhum") e o porquê estão registrados.
-- [ ] `parametros.toml` está com `congelado = true` num commit, e a trava da Rodada principal libera.
-- [ ] Nenhuma Pergunta do Gabarito foi usada para ajustar parâmetros.
+- [x] O autor aprovou cada execução com `--confirmar`.
+- [x] Os tokens e a latência medidos por Pergunta e por Condição foram mostrados ao autor, com a estimativa de dias de cota da Rodada principal e das repetições.
+- [x] Se a cota diária do `gemini-3.8-flash` não comportar a avaliação em prazo razoável, o modelo foi trocado antes do congelamento, e a troca está no ADR 0005.
+- [x] Os ajustes feitos (ou "nenhum") e o porquê estão registrados.
+- [x] `parametros.toml` está com `congelado = true` num commit, e a trava da Rodada principal libera.
+- [x] Nenhuma Pergunta do Gabarito foi usada para ajustar parâmetros.
 
 ## Comments
 
@@ -30,3 +30,20 @@ Cada ajuste e o motivo dele ficam registrados (nota no `docs/DESENHO.md` ou ADR,
 - A latência registrada (131 a 249 s) não serve: `ProvedorGemini.gerar_json` mede o tempo em volta de `_post`, que inclui as esperas e as novas tentativas depois de 429 e 503. Antes da Rodada principal, a medida precisa cobrir só a requisição que deu certo.
 - Com uma cota dessa ordem, a Rodada principal (180 chamadas ao respondedor, mais as do Juiz) e as duas repetições levariam semanas. O item "trocar o modelo antes do congelamento" passa a valer, e a decisão é do autor (ver a resposta no chat).
 - As linhas gravadas ficam em `resultados/rodadas/desenvolvimento/` (sem commit). O mesmo comando retoma de D06.
+
+10/11/2026, segunda tentativa, sem gastar dinheiro (o autor: "Vamos usar todos os modelos gratis pode prosseguir").
+
+- Os modelos foram sondados e houve troca antes do congelamento (ADR 0005): o respondedor passou a ser o `gemini-3.5-flash-lite`, um modelo só, e o Juiz o `gemini-3.6-flash`, com os reservas em cadeia `gemini-3-flash-preview`, `gemini-3.1-flash-lite` e `gemini-3.8-flash`. As 5 linhas da primeira tentativa foram descartadas.
+- A Rodada de desenvolvimento completou as 12 Perguntas nas três Condições, sem parada de cota. O Juiz julgou 9 vezes, todas com o `gemini-3.6-flash`.
+- Mostrado ao autor (`resultados/rodadas/desenvolvimento/`):
+
+  | Condição | acerto nas respondíveis | abstenção nas sem resposta | tokens de entrada (mediana) | latência (mediana) |
+  |---|---|---|---|---|
+  | com RAG | 8/10 | 2/2 | 1.621 | 3,1 s |
+  | sem RAG | 0/10 (abstém-se) | 2/2 | 183 | 2,7 s |
+  | contexto completo | 9/10 | 2/2 | 99.195 | 5,4 s |
+
+- Com RAG, os dois erros (D01 e D07) são abstenções em Perguntas de tabela. O primeiro Trecho da página certa aparece nas posições 19 e 18 da busca, contra 1 ou 2 nas outras oito Perguntas. No contexto completo, o único erro foi D10, por falha de leitura.
+- Ajustes: nenhum, fora a troca de modelo. O motivo está em `docs/DESENHO.md` (Avaliação, "Rodada de desenvolvimento").
+- Cota: uma Rodada faz 180 chamadas ao respondedor, mais cerca de um quarto disso ao Juiz, na proporção da Rodada de desenvolvimento. A Rodada principal e as duas repetições somam 540 chamadas ao `gemini-3.5-flash-lite`. Neste dia, ele aceitou 39 chamadas sem bater na cota. O RPD exato aparece no AI Studio, e a Rodada é retomável de um dia para o outro.
+- `parametros.toml` congelado (`congelado = true`) por commit.

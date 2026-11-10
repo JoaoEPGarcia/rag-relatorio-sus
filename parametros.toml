@@ -7,7 +7,7 @@
 # enquanto `congelado` for false ou este arquivo tiver mudança não commitada.
 
 [estado]
-congelado = false
+congelado = true
 
 [quebra]
 # Máximo de palavras do corpo de um Trecho de texto (sem a linha da seção).
