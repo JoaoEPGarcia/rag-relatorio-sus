@@ -7,6 +7,8 @@ a análise roda sobre elas, o resultado é sempre o mesmo para a mesma semente,
 e nada sintético chega ao registro de uma cópia do projeto.
 """
 
+import json
+
 import pytest
 
 from rag_sus import config, numeros
@@ -67,7 +69,11 @@ def test_rodadas_sinteticas_gravam_os_parametros_do_projeto_como_a_rodada_real(t
     assert r["parametros_k"]["valor"] == p.k
     assert r["parametros_modelo_respondedor"]["texto"] == p.modelo_respondedor
     assert r["parametros_modelo_juiz"]["texto"] == p.modelo_juiz
-    assert r["parametros_commit"]["texto"] == "sintetico"  # só o hash de verdade é encurtado
+    assert r["parametros_commits"]["texto"] == "sintetico"  # só o hash de verdade é encurtado
+    assert r["parametros_n_commits"]["valor"] == 1
+    # o execucao.json no formato que scripts/03_rodar_avaliacao.py grava: a lista dos commits
+    execucao = json.loads((raiz / "resultados" / "rodadas" / "principal" / "execucao.json").read_text(encoding="utf-8"))
+    assert execucao["commits"] == ["sintetico"] and "commit" not in execucao
 
 
 def test_respostas_e_juiz_sinteticos_usam_os_modelos_do_parametros_toml(tmp_path):

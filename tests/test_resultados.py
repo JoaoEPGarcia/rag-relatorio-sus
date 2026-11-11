@@ -15,7 +15,7 @@ from statsmodels.stats.proportion import proportion_confint
 
 from rag_sus import numeros
 from rag_sus.avaliacao import estatistica
-from rag_sus.avaliacao.resultados import RodadaSemParametros, analisar
+from rag_sus.avaliacao.resultados import RodadaIncompleta, RodadaSemParametros, analisar
 from rag_sus.avaliacao.rodada import RevisaoIncompleta
 
 TIPOS = ("numero_prosa", "numero_tabela", "numero_legenda", "conceito", "sintese")
@@ -95,7 +95,8 @@ def projeto(tmp_path):
 
 
 def rodar(p):
-    analisar(p["rodadas"], p["folha"], numeros_json=p["numeros"], pasta_tabelas=p["tabelas"])
+    analisar(p["rodadas"], p["folha"], numeros_json=p["numeros"], pasta_tabelas=p["tabelas"],
+             ids_do_gabarito=RESPONDIVEIS + SEM_RESPOSTA)
     return numeros.carregar(p["numeros"])
 
 
@@ -295,6 +296,22 @@ def test_condicao_sem_rodada_principal_e_recusada(projeto):
         rodar(projeto)
 
 
+def test_rodada_principal_sem_alguma_pergunta_do_gabarito_e_recusada_e_lista_as_que_faltam(projeto):
+    # o destaque é sobre as respondíveis do Gabarito inteiro: uma Condição parada pela cota não vira resultado
+    gravar_rodada(projeto["rodadas"], "principal", "contexto_completo",
+                  condicao_simples("contexto_completo", 42)[:25])
+    sem_s10 = [l for l in condicao_simples("sem_rag", 15) if l["id"] != "S10"]
+    gravar_rodada(projeto["rodadas"], "principal", "sem_rag", sem_s10)
+
+    with pytest.raises(RodadaIncompleta) as erro:
+        rodar(projeto)
+
+    mensagem = str(erro.value)
+    assert "contexto_completo: G26, G27" in mensagem and "S10" in mensagem
+    assert "sem_rag: S10" in mensagem and "com_rag" not in mensagem
+    assert not projeto["numeros"].exists()
+
+
 def test_falta_de_revisao_trava_a_analise_e_lista_as_perguntas_pendentes(projeto):
     com_juiz(projeto, "com_rag", {"G41": True, "G42": False})
     com_juiz(projeto, "sem_rag", {"G43": False})
@@ -448,6 +465,44 @@ def test_frase_sobre_as_repeticoes_depende_de_quantas_foram_comparadas(projeto):
         "To measure this, the main run was repeated and compared with each repeat.")
 
 
+def test_repeticao_incompleta_numa_condicao_fica_fora_da_concordancia_e_e_dita_incompleta(projeto):
+    # repetição 1 parada pela cota: com RAG completa, contexto completo em 25 de 60
+    gravar_rodada(projeto["rodadas"], "repeticao1", "com_rag", condicao_simples("com_rag", 34, abstencoes_corretas=9))
+    gravar_rodada(projeto["rodadas"], "repeticao1", "contexto_completo",
+                  condicao_simples("contexto_completo", 42)[:25])
+
+    r = rodar(projeto)
+
+    assert r["concordancia_repeticao1_com_rag_n"]["valor"] == 60
+    assert "concordancia_repeticao1_contexto_completo" not in r
+    assert ler_tabela(projeto, "concordancia.tex") == [r"Primeira repetição & Com RAG & 90,0\% & 60 \\"]
+    assert r["repeticoes_comparadas"]["valor"] == 1
+    assert r["repeticoes_condicoes_incompletas"]["valor"] == 1
+    assert r["repeticoes_incompletas"]["texto"] == "Primeira repetição, contexto completo"
+    assert r["repeticoes_incompletas"]["texto_en"] == "first repeat, full context"
+    # a frase não descreve a repetição parcial como feita
+    assert r["repeticoes_leitura"]["texto"] == (
+        "Para medir isso, a Rodada principal foi repetida, e cada repetição é comparada com ela nas Condições em "
+        "que já respondeu todas as Perguntas; ainda incompleta, e fora da comparação: Primeira repetição, "
+        "contexto completo.")
+
+
+def test_repeticao_so_com_condicoes_incompletas_nao_conta_como_comparada(projeto):
+    gravar_rodada(projeto["rodadas"], "repeticao1", "com_rag",
+                  condicao_simples("com_rag", 34, abstencoes_corretas=9)[:59])
+
+    r = rodar(projeto)
+
+    assert not [c for c in r if c.startswith("concordancia_")]
+    assert r["repeticoes_comparadas"]["valor"] == 0
+    assert ler_tabela(projeto, "concordancia.tex") == []
+    assert r["repeticoes_leitura"]["texto"] == (
+        "A repetição da Rodada principal ainda não respondeu todas as Perguntas em nenhuma Condição (incompleta: "
+        "Primeira repetição, com RAG): sem repetição completa, não há concordância a medir, e a tabela abaixo "
+        "sai vazia.")
+    assert "repeated" not in r["repeticoes_leitura"]["texto_en"].replace("not yet repeated", "")
+
+
 def test_rodadas_reais_nao_trazem_aviso_e_dizem_que_os_veredictos_foram_revisados(projeto):
     r = rodar(projeto)
     assert (r["aviso_sintetico"]["texto"], r["aviso_sintetico"]["texto_en"]) == ("", "")
@@ -474,8 +529,26 @@ def test_parametros_da_rodada_principal_entram_no_registro(projeto):
     # textos com dígito (versão do modelo, hash do commit) também saem do registro, para o .tex não digitá-los
     assert r["parametros_modelo_respondedor"]["texto"] == "gemini-3.8-flash"
     assert r["parametros_modelo_juiz"]["texto"] == "gemini-3.8-flash-lite"
+    # o README cita o modelo de embeddings sem o dono do repositório no Hugging Face
+    assert r["parametros_modelo_embeddings"]["texto"] == "multilingual-e5-large"
     assert r["parametros_n_modelos_juiz"]["valor"] == 1
-    assert r["parametros_commit"]["texto"] == "a1b2c3d"
+    assert r["parametros_commits"]["texto"] == "a1b2c3d"  # execucao.json antigo: um "commit" só
+    assert r["parametros_n_commits"]["valor"] == 1
+
+
+def test_todos_os_commits_em_que_a_rodada_principal_rodou_entram_no_registro_na_ordem(projeto):
+    # a Rodada é retomável: cada retomada acrescenta o commit dela ao execucao.json
+    destino = projeto["rodadas"] / "principal" / "execucao.json"
+    dados = json.loads(destino.read_text(encoding="utf-8"))
+    del dados["commit"]
+    dados["commits"] = ["85d3e4c", "fc1a063", "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678"]
+    destino.write_text(json.dumps(dados), encoding="utf-8")
+
+    r = rodar(projeto)
+
+    assert r["parametros_commits"]["texto"] == "85d3e4c, fc1a063 e a1b2c3d"
+    assert r["parametros_commits"]["texto_en"] == "85d3e4c, fc1a063 and a1b2c3d"
+    assert r["parametros_n_commits"]["valor"] == 3  # o .tex escolhe a frase (um commit ou vários) por este número
 
 
 def test_modelos_que_de_fato_julgaram_entram_no_registro_quando_a_cadeia_do_juiz_foi_usada(projeto):

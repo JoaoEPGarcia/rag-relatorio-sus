@@ -77,13 +77,26 @@ _PEDE_OUTRA_PASSADA = ("Rerun to get", "Label(s) may have changed")
 def compilar_relatorio_de_avaliacao(
     tex: Path, pasta_saida: Path, executar: Callable[[list[str], Path], tuple[int, str]] = _pdflatex
 ) -> int:
-    """Compila o .tex com o pdflatex rodando em pasta_saida: duas passadas, três se o .log pedir.
+    """Compila o Relatório de avaliação com o pdflatex rodando em pasta_saida.
 
     O .tex é o do projeto (escrito à mão, como o README.base.md); numeros.tex,
     tabelas/ e ../figuras/ ele acha a partir do diretório corrente, que é a
     pasta relatorio/ da raiz, e é lá que o PDF sai. Assim nada é copiado e, sobre
     uma raiz temporária, o PDF usa os números dela, e não os do projeto.
     """
+    return compilar_pdf(tex, pasta_saida, "Relatório de avaliação", executar)
+
+
+def compilar_pdf(
+    tex: Path, pasta_saida: Path, nome: str,
+    executar: Callable[[list[str], Path], tuple[int, str]] = _pdflatex,
+) -> int:
+    """Compila um .tex com o pdflatex rodando em pasta_saida: duas passadas, três se o .log pedir.
+
+    Serve ao Relatório de avaliação e às folhas de Revisão; `nome` é o do
+    documento nas mensagens. Devolve 0, ou o código do pdflatex que falhou.
+    """
+    pasta_saida = Path(pasta_saida)
     pasta_saida.mkdir(parents=True, exist_ok=True)
     comando = ["pdflatex", "-interaction=nonstopmode", "-halt-on-error", str(tex)]
     log = pasta_saida / (Path(tex).stem + ".log")
@@ -101,7 +114,7 @@ def compilar_relatorio_de_avaliacao(
                                            for t in _PEDE_OUTRA_PASSADA)
         if passada >= 2 and not pede_outra:
             break
-    print(f"Relatório de avaliação compilado em {passada} passadas -> {pasta_saida / (Path(tex).stem + '.pdf')}")
+    print(f"{nome}: {passada} passadas do pdflatex -> {pasta_saida / (Path(tex).stem + '.pdf')}")
     return 0
 
 

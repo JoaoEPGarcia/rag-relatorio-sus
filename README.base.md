@@ -24,9 +24,9 @@ Os números abaixo são os da Rodada principal, analisada por `scripts/04_analis
 ## Como a avaliação foi feita
 
 1. **Extração e quebra.** O texto sai do PDF página a página, com tabelas e legendas separadas do texto corrido, e é quebrado em Trechos que nunca atravessam a página. Cada Trecho guarda a página impressa no rodapé, que é a que se cita.
-2. **Busca.** Os Trechos viram vetores com o modelo `multilingual-e5-large`, e a busca é exata (FAISS `IndexFlatIP`): a mesma Pergunta recupera sempre os mesmos Trechos ([ADR](docs/adr/0001-faiss-com-busca-exata.md)).
+2. **Busca.** Os Trechos viram vetores com o modelo `{{parametros_modelo_embeddings}}`, e a busca é exata (FAISS `IndexFlatIP`): a mesma Pergunta recupera sempre os mesmos Trechos ([ADR](docs/adr/0001-faiss-com-busca-exata.md)).
 3. **Gabarito.** As Perguntas foram propostas a partir do texto e conferidas uma a uma pelo autor no PDF. O script de avaliação recusa rodar se alguma linha estiver sem Revisão.
-4. **Condições.** O mesmo modelo (`gemini-3.5-flash-lite`, pelo Google AI Studio) responde às mesmas Perguntas com os Trechos recuperados (com RAG), sem nada do relatório (sem RAG) e com o texto inteiro no prompt (contexto completo).
+4. **Condições.** O mesmo modelo (`{{parametros_modelo_respondedor}}`, pelo Google AI Studio) responde às mesmas Perguntas com os Trechos recuperados (com RAG), sem nada do Relatório-fonte (sem RAG) e com o texto inteiro no prompt (contexto completo).
 5. **Veredicto.** As respostas numéricas são conferidas por regra; as descritivas, por um Juiz (modelo de linguagem), e todo Veredicto do Juiz passa pela Revisão do autor antes de valer.
 6. **Pré-registro.** O número de Trechos recuperados, o tamanho do Trecho, o modelo e os prompts foram ajustados só com Perguntas de desenvolvimento e congelados por commit antes da Rodada principal ([ADR](docs/adr/0002-parametros-congelados-antes-da-rodada-principal.md)).
 
@@ -71,7 +71,7 @@ Os números abaixo são os da Rodada principal, analisada por `scripts/04_analis
 
 - **Só o texto do PDF.** Os valores que existem apenas dentro da imagem de um gráfico não são extraídos; Perguntas que dependem deles ficaram fora do Gabarito.
 - **Amostra pequena.** Com {{gabarito_n_perguntas}} Perguntas, os intervalos são largos: a avaliação distingue diferenças grandes entre Condições, mas não diferenças pequenas.
-- **Um documento só.** O resultado vale para este relatório, com esta diagramação; outro documento pede outra avaliação.
+- **Um documento só.** O resultado vale para este Relatório-fonte, com esta diagramação; outro documento pede outra avaliação.
 - **Quem propôs o Gabarito.** As Perguntas foram propostas com ajuda de um modelo de linguagem e conferidas pelo autor; elas podem favorecer o que um modelo acha fácil de perguntar.
 
 ## Autoria

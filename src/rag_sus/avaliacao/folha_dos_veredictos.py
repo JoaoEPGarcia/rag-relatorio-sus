@@ -19,7 +19,7 @@ import csv
 from pathlib import Path
 
 from rag_sus.assistente import CONDICOES
-from rag_sus.avaliacao.folha_do_gabarito import MODELO_DO_KIT, documento_do_kit, escapar
+from rag_sus.avaliacao.folha_do_kit import MODELO_DO_KIT, documento_do_kit, escapar
 from rag_sus.avaliacao.vocabulario import NOMES_TIPO, rotulo_condicao
 
 
@@ -65,7 +65,7 @@ def gerar_tex(folha_csv: Path, gabarito_csv: Path, modelo_do_kit: Path = MODELO_
         r"  \item \textbf{certo}: tem a informação central do Gabarito, com os mesmos números quando ele tem "
         r"números; palavras diferentes e detalhes a mais valem, desde que não o contradigam;",
         r"  \item \textbf{errado}: falta a informação central, algum número diverge, a resposta contradiz o "
-        r"Gabarito ou diz que o relatório não trata do assunto.",
+        r"Gabarito ou diz que o Relatório-fonte não trata do assunto.",
         r"\end{itemize}",
         r"As páginas citadas não entram aqui: elas são conferidas à parte, por regra. A sua Revisão vence o "
         r"Juiz, e sem ela os resultados não são publicados.",

@@ -69,6 +69,11 @@ class Parametros:
     # Modelos que assumem o Juiz, em ordem, quando a cota diária do anterior acaba (ADR 0005).
     reservas_juiz: tuple[str, ...] = ()
 
+    @property
+    def cadeia_juiz(self) -> tuple[str, ...]:
+        """Os modelos do Juiz na ordem em que assumem: o principal, depois os reservas."""
+        return (self.modelo_juiz, *self.reservas_juiz)
+
 
 def carregar_parametros(caminho: Path = PARAMETROS) -> Parametros:
     with open(caminho, "rb") as f:

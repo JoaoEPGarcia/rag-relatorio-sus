@@ -153,45 +153,43 @@ class ProvedorGemini:
         """
         espera = 5.0
         for tentativa in range(1, self.tentativas + 1):
+            ultima = tentativa == self.tentativas
+            pausa = espera
             inicio = self._relogio()
             try:
                 r = self._http.post(f"/models/{self.modelo}:generateContent", json=corpo)
             except httpx.TransportError as erro:  # tempo esgotado ou conexão caída
-                if tentativa == self.tentativas:
-                    raise ModeloIndisponivel(
-                        f"{self.modelo} não respondeu em {self.tentativas} tentativas ({type(erro).__name__})"
-                    ) from erro
-                self._dormir(espera + 1)
-                espera = min(espera * 2, 120)
-                continue
-            latencia = self._relogio() - inicio
-            if r.status_code == 402:
-                raise SaldoEsgotado(
-                    "o saldo pré-pago do faturamento zerou (créditos do Google AI Pro e pré-pagamento); "
-                    "a API volta quando houver saldo ou créditos novos"
-                )
-            if r.status_code == 429:
-                erro = r.json()
-                if _cota_diaria(erro):
-                    raise CotaDiariaEsgotada(
-                        f"cota diária do plano gratuito esgotada para {self.modelo}; "
-                        "ela renova à meia-noite do Pacífico"
-                    )
-                pausa = _espera_sugerida(erro) or espera
-            elif r.status_code in (500, 502, 503, 504):
-                pausa = espera  # modelo sobrecarregado, comum no plano gratuito
-                if tentativa == self.tentativas:
-                    raise ModeloIndisponivel(
-                        f"{self.modelo} sobrecarregado em {self.tentativas} tentativas (HTTP {r.status_code})"
-                    )
+                if ultima:
+                    raise self._indisponivel("não respondeu",type(erro).__name__) from erro
             else:
-                r.raise_for_status()
-                return r, latencia
-            if tentativa == self.tentativas:
-                r.raise_for_status()
+                latencia = self._relogio() - inicio
+                if r.status_code == 402:
+                    raise SaldoEsgotado(
+                        "o saldo pré-pago do faturamento zerou (créditos do Google AI Pro e pré-pagamento); "
+                        "a API volta quando houver saldo ou créditos novos"
+                    )
+                if r.status_code == 429:
+                    erro = r.json()
+                    if _cota_diaria(erro):
+                        raise CotaDiariaEsgotada(
+                            f"cota diária do plano gratuito esgotada para {self.modelo}; "
+                            "ela renova à meia-noite do Pacífico"
+                        )
+                    pausa = _espera_sugerida(erro) or espera
+                    if ultima:
+                        r.raise_for_status()
+                elif r.status_code in (500, 502, 503, 504):  # modelo sobrecarregado, comum no plano gratuito
+                    if ultima:
+                        raise self._indisponivel("sobrecarregado", f"HTTP {r.status_code}")
+                else:
+                    r.raise_for_status()
+                    return r, latencia
             self._dormir(pausa + 1)
             espera = min(espera * 2, 120)
         raise AssertionError("inalcançável")
+
+    def _indisponivel(self, o_que: str, motivo: str) -> ModeloIndisponivel:
+        return ModeloIndisponivel(f"{self.modelo} {o_que} em {self.tentativas} tentativas ({motivo})")
 
     def gerar_json(self, sistema: list[dict], mensagem: str, esquema: dict) -> tuple[dict, Metadados]:
         corpo = {
@@ -288,20 +286,44 @@ class ProvedorEmCadeia:
     def __init__(self, provedores: list[Provedor]):
         self.provedores = list(provedores)
         self._atual = 0
+        self._sem_cota: list[str] = []
+        self._indisponiveis: list[str] = []
 
     def gerar_json(self, sistema: list[dict], mensagem: str, esquema: dict) -> tuple[dict, Metadados]:
         while self._atual < len(self.provedores):
+            provedor = self.provedores[self._atual]
             try:
-                return self.provedores[self._atual].gerar_json(sistema, mensagem, esquema)
-            except (CotaDiariaEsgotada, ModeloIndisponivel):
-                self._atual += 1
-        modelos = ", ".join(p.modelo for p in self.provedores)
-        raise CotaDiariaEsgotada(f"cota diária esgotada ou modelo indisponível em todos os modelos da cadeia ({modelos})")
+                return provedor.gerar_json(sistema, mensagem, esquema)
+            except CotaDiariaEsgotada:
+                self._sem_cota.append(provedor.modelo)
+            except ModeloIndisponivel:
+                self._indisponiveis.append(provedor.modelo)
+            self._atual += 1
+        raise self._fim_da_cadeia()
+
+    def _fim_da_cadeia(self) -> CotaDiariaEsgotada | ModeloIndisponivel:
+        """O motivo de parar, para quem roda saber se espera a cota renovar ou só tenta mais tarde.
+
+        Basta um modelo sem cota para a parada ser pela cota diária; sem nenhum,
+        todos estavam presos (tempo esgotado ou sobrecarga), e a cota não acabou.
+        """
+        partes = []
+        if self._sem_cota:
+            partes.append(f"cota diária esgotada em {', '.join(self._sem_cota)}")
+        if self._indisponiveis:
+            partes.append(f"modelo indisponível em {', '.join(self._indisponiveis)}")
+        texto = f"nenhum modelo da cadeia do Juiz respondeu ({'; '.join(partes)})"
+        return CotaDiariaEsgotada(texto) if self._sem_cota else ModeloIndisponivel(texto)
+
+
+def provedor_escolhido() -> str:
+    """O provedor pedido na variável PROVEDOR do .env: "gemini" (o padrão) ou "ollama"."""
+    return os.environ.get("PROVEDOR", "gemini")
 
 
 def provedor_do_ambiente(modelo: str, esforco: str, max_tokens: int) -> Provedor:
     """Escolhe o provedor pela variável PROVEDOR do .env (padrão: gemini)."""
-    if os.environ.get("PROVEDOR", "gemini") == "ollama":
+    if provedor_escolhido() == "ollama":
         return ProvedorOllama(
             os.environ.get("OLLAMA_MODELO", "qwen2.5:7b"),
             os.environ.get("OLLAMA_URL", "http://localhost:11434"),
@@ -314,6 +336,6 @@ def juiz_do_ambiente(modelos: list[str], esforco: str, max_tokens: int) -> Prove
 
     No Ollama não há cota, e o modelo local é um só.
     """
-    if os.environ.get("PROVEDOR", "gemini") == "ollama" or len(modelos) == 1:
+    if provedor_escolhido() == "ollama" or len(modelos) == 1:
         return provedor_do_ambiente(modelos[0], esforco, max_tokens)
     return ProvedorEmCadeia([ProvedorGemini(m, esforco, max_tokens) for m in modelos])

@@ -240,6 +240,16 @@
     ordem: \NumParametrosModeloJuiz; quando a cota diária gratuita de um
     acabava, o seguinte assumia.%
   \fi}
+\newcommand{\CommitsDaRodada}{%
+  \ifcase\NumParametrosNCommits\relax
+  \or
+    A Rodada principal registrou o commit em que rodou,
+    \texttt{\NumParametrosCommits}.%
+  \else
+    A Rodada principal foi retomada e registrou os
+    \NumParametrosNCommits{} commits em que rodou, todos com os mesmos
+    parâmetros congelados: \NumParametrosCommits.%
+  \fi}
 
 \title{\TituloRelatorio}
 
@@ -516,8 +526,7 @@ foram ajustados só com Perguntas de desenvolvimento, que nunca entram no
 Gabarito, e congelados por commit antes da Rodada principal: ajustar o
 sistema olhando a prova inflaria a taxa de acerto. O script de avaliação
 recusa a Rodada principal enquanto os parâmetros não estiverem congelados e
-commitados. A Rodada principal registrou o commit em que rodou,
-\texttt{\NumParametrosCommit}.
+commitados. \CommitsDaRodada
 
 \begin{destaque}[As regras de confiança viram código]
   \begin{itemize}[leftmargin=*, itemsep=1pt, topsep=2pt]

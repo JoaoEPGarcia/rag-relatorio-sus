@@ -42,7 +42,7 @@ def main() -> int:
             if not pagina:
                 break
 
-    modelos = [p.modelo_respondedor, p.modelo_juiz, *p.reservas_juiz]
+    modelos = [p.modelo_respondedor, *p.cadeia_juiz]
     faltando = sorted(set(modelos) - ids)
     if faltando:
         print(f"A chave funciona, mas estes modelos não aparecem para ela: {', '.join(faltando)}")

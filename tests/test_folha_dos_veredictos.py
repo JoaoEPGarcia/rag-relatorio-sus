@@ -5,6 +5,7 @@ import csv
 
 from rag_sus.avaliacao.folha_dos_veredictos import gerar_tex
 from rag_sus.avaliacao.rodada import COLUNAS_FOLHA
+from tests.test_folha_do_gabarito import relatorio_solto
 
 COLUNAS_GABARITO = ["id", "pergunta", "tipo", "resposta", "valores", "paginas", "revisado", "observacao"]
 
@@ -43,3 +44,4 @@ def test_folha_traz_cada_veredicto_por_condicao_com_as_contagens_do_script(tmp_p
     assert r"\newcommand{\NumJuizCerto}{2}" in tex and r"\newcommand{\NumJuizErrado}{1}" in tex
     assert r"50\% e R\$ 3." in tex
     assert "Conceito ou método" in tex
+    assert relatorio_solto(tex) == []  # Relatório-fonte, como o glossário pede

@@ -113,3 +113,19 @@ def test_relatorio_tex_tira_do_registro_o_que_depende_das_rodadas():
 def test_readme_base_nao_tem_numero_digitado():
     base = (config.PROJETO / "README.base.md").read_text(encoding="utf-8")
     assert digitos_soltos_no_markdown(base) == []
+
+
+def test_readme_base_tira_do_registro_os_nomes_de_modelo_com_digito():
+    # o nome do modelo tem dígitos e muda com o parametros.toml: sai do registro, como o Relatório de avaliação
+    base = (config.PROJETO / "README.base.md").read_text(encoding="utf-8")
+    p = config.carregar_parametros(config.PROJETO / "parametros.toml")
+    for modelo in (p.modelo_respondedor, *p.cadeia_juiz, p.modelo_embeddings.split("/")[-1]):
+        assert modelo not in base
+    assert "{{parametros_modelo_respondedor}}" in base and "{{parametros_modelo_embeddings}}" in base
+
+
+def test_relatorio_tex_escolhe_a_frase_dos_commits_pela_contagem():
+    tex = (config.PROJETO / "relatorio" / "relatorio.tex").read_text(encoding="utf-8")
+    corpo = tex[tex.index("\\begin{document}"):]
+    assert "\\ifcase\\NumParametrosNCommits" in tex and "\\CommitsDaRodada" in corpo
+    assert "registrou o commit em que rodou" not in corpo

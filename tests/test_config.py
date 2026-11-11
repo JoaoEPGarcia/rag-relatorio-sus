@@ -14,3 +14,14 @@ def test_le_os_modelos_reserva_do_juiz_na_ordem(tmp_path):
     sem_reservas = tmp_path / "parametros.toml"
     sem_reservas.write_text(texto.replace("reservas =", "# reservas ="), encoding="utf-8")
     assert config.carregar_parametros(sem_reservas).reservas_juiz == ()
+
+
+def test_cadeia_do_juiz_e_o_juiz_seguido_dos_reservas_na_ordem(tmp_path):
+    texto = (config.PARAMETROS).read_text(encoding="utf-8")
+    p = config.carregar_parametros(config.PARAMETROS)
+    assert p.cadeia_juiz == (p.modelo_juiz, *p.reservas_juiz)
+    assert "cadeia_juiz" not in p.__dict__  # o execucao.json grava p.__dict__: só os parâmetros do arquivo
+
+    sem_reservas = tmp_path / "parametros.toml"
+    sem_reservas.write_text(texto.replace("reservas =", "# reservas ="), encoding="utf-8")
+    assert config.carregar_parametros(sem_reservas).cadeia_juiz == (p.modelo_juiz,)

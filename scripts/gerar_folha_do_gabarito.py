@@ -12,30 +12,21 @@ PDF nesta máquina. Regere depois de cada mudança no Gabarito.
 Uso: uv run python scripts/gerar_folha_do_gabarito.py
 """
 
-import subprocess
 import sys
 
 from rag_sus import config
 from rag_sus.avaliacao.folha_do_gabarito import gerar_tex
+from rag_sus.pipeline import compilar_pdf
 
-PASTA = config.RAIZ / "avaliacao" / "revisao_gabarito"
+PASTA = config.AVALIACAO / "revisao_gabarito"
 NOME = "revisao_gabarito"
 
 
 def main() -> int:
     PASTA.mkdir(parents=True, exist_ok=True)
     tex = PASTA / f"{NOME}.tex"
-    tex.write_text(gerar_tex(config.GABARITO, config.RAIZ / "dados" / "relatorio_fonte.pdf"),
-                   encoding="utf-8", newline="\n")
-    for passada in (1, 2):
-        r = subprocess.run(["pdflatex", "-interaction=nonstopmode", "-halt-on-error", tex.name],
-                           cwd=PASTA, capture_output=True, text=True, encoding="utf-8", errors="replace")
-        if r.returncode != 0:
-            print("\n".join(r.stdout.splitlines()[-30:]))
-            print(f"pdflatex falhou na passada {passada}; o log está em {PASTA / (NOME + '.log')}")
-            return 1
-    print(f"Folha de Revisão do Gabarito: {PASTA / (NOME + '.pdf')}")
-    return 0
+    tex.write_text(gerar_tex(config.GABARITO, config.PDF), encoding="utf-8", newline="\n")
+    return 1 if compilar_pdf(tex, PASTA, "Folha de Revisão do Gabarito") else 0
 
 
 if __name__ == "__main__":

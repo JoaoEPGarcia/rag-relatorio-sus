@@ -13,6 +13,10 @@ avisa; o mesmo comando continua dali quando a cota renovar (ADR 0005).
   avaliacao/revisao_veredictos.csv, que o autor preenche.
 - repeticao1, repeticao2: mesmas travas; só medem a concordância entre Rodadas.
 
+Cada execução acrescenta o commit em que rodou ao execucao.json da Rodada,
+sem apagar os anteriores; uma Rodada publicada não é retomada com parâmetros
+diferentes dos registrados nele.
+
 Sem --confirmar, o script só mostra quantas chamadas faria e para.
 
 Uso:
@@ -21,7 +25,6 @@ Uso:
 """
 
 import argparse
-import json
 import os
 import sys
 
@@ -30,7 +33,14 @@ from rag_sus.assistente import CONDICOES, Assistente
 from rag_sus.avaliacao.gabarito import carregar_gabarito
 from rag_sus.avaliacao.juiz import Juiz
 from rag_sus.avaliacao.rodada import executar_rodada, gravar_folha_de_revisao
-from rag_sus.avaliacao.travas import RODADAS, commit_atual, status_git, verificar_congelamento
+from rag_sus.avaliacao.travas import (
+    RODADAS,
+    ParametrosMudaram,
+    commit_atual,
+    registrar_execucao,
+    status_git,
+    verificar_congelamento,
+)
 from rag_sus.busca import E5Embutidor, IndiceDeTrechos
 from rag_sus.provedores import (
     CotaDiariaEsgotada,
@@ -38,6 +48,7 @@ from rag_sus.provedores import (
     ModeloIndisponivel,
     juiz_do_ambiente,
     provedor_do_ambiente,
+    provedor_escolhido,
 )
 
 FOLHA = config.REVISAO_VEREDICTOS
@@ -66,9 +77,9 @@ def main() -> int:
     pasta = config.RODADAS / args.rodada
     print(f"Rodada {args.rodada}: {len(itens)} Perguntas x {len(condicoes)} Condições "
           f"= até {len(itens) * len(condicoes)} chamadas ao respondedor ({p.modelo_respondedor}), "
-          f"mais as do Juiz ({', '.join([p.modelo_juiz, *p.reservas_juiz])}, em cadeia). "
+          f"mais as do Juiz ({', '.join(p.cadeia_juiz)}, em cadeia). "
           f"Retoma o que já está em {pasta}.")
-    if os.environ.get("PROVEDOR", "gemini") == "gemini":
+    if provedor_escolhido() == "gemini":
         plano = os.environ.get("GEMINI_PLANO", "gratuito")
         print(f"Plano do Gemini: {plano}"
               + (" (gasta os créditos do Google AI Pro; o teto é o saldo pré-pago)."
@@ -77,18 +88,20 @@ def main() -> int:
         print("Nada foi chamado. Rode de novo com --confirmar para executar.")
         return 0
 
+    # Antes de carregar o índice: uma retomada com parâmetros diferentes dos registrados para aqui.
+    try:
+        registrar_execucao(pasta, commit_atual(config.RAIZ), p.__dict__,
+                           exigir_mesmos_parametros=args.rodada != "desenvolvimento")
+    except ParametrosMudaram as erro:
+        print(f"Recusado: {erro}")
+        return 2
+
     embutidor = E5Embutidor(pasta_cache=config.CACHE_MODELOS)
     indice = IndiceDeTrechos.carregar(config.INDICE, embutidor)
     texto = config.TEXTO_COMPLETO.read_text(encoding="utf-8")
     respondedor = provedor_do_ambiente(p.modelo_respondedor, p.esforco_respondedor, p.max_tokens_respondedor)
-    juiz = Juiz(juiz_do_ambiente([p.modelo_juiz, *p.reservas_juiz], p.esforco_juiz, p.max_tokens_juiz))
+    juiz = Juiz(juiz_do_ambiente(list(p.cadeia_juiz), p.esforco_juiz, p.max_tokens_juiz))
     assistente = Assistente(respondedor, indice, embutidor, k=p.k, texto_completo=texto)
-
-    pasta.mkdir(parents=True, exist_ok=True)
-    (pasta / "execucao.json").write_text(
-        json.dumps({"commit": commit_atual(config.RAIZ), "parametros": p.__dict__}, ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
 
     def progresso(linha: dict) -> None:
         marca = {True: "certo", False: "errado", None: "juiz"}[linha["acerto_regra"]]
