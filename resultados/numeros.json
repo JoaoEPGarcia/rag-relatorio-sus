@@ -1,4 +1,1399 @@
 {
+  "aviso_sintetico": {
+    "valor": "",
+    "texto": "",
+    "texto_en": "",
+    "descricao": "aviso de números inventados, só sobre Rodadas sintéticas (senão, vazio)",
+    "script": "scripts/04_analisar.py",
+    "formato": "texto"
+  },
+  "com_rag_abstencao_correta": {
+    "valor": 1.0,
+    "texto": "100,0%",
+    "texto_en": "100.0%",
+    "descricao": "Abstenção correta com RAG (sem resposta)",
+    "script": "scripts/04_analisar.py",
+    "formato": "pct1",
+    "aparece_em": [
+      "relatorio/tabelas/resultados_por_condicao.tex"
+    ]
+  },
+  "com_rag_abstencao_correta_inf": {
+    "valor": 0.7224672001371107,
+    "texto": "72,2%",
+    "texto_en": "72.2%",
+    "descricao": "Abstenção correta com RAG (sem resposta): limite inferior do IC de Wilson de 95%",
+    "script": "scripts/04_analisar.py",
+    "formato": "pct1",
+    "aparece_em": [
+      "relatorio/tabelas/resultados_por_condicao.tex"
+    ]
+  },
+  "com_rag_abstencao_correta_sup": {
+    "valor": 0.9999999999999999,
+    "texto": "100,0%",
+    "texto_en": "100.0%",
+    "descricao": "Abstenção correta com RAG (sem resposta): limite superior do IC de Wilson de 95%",
+    "script": "scripts/04_analisar.py",
+    "formato": "pct1",
+    "aparece_em": [
+      "relatorio/tabelas/resultados_por_condicao.tex"
+    ]
+  },
+  "com_rag_abstencoes_corretas": {
+    "valor": 10,
+    "texto": "10",
+    "texto_en": "10",
+    "descricao": "Abstenções corretas com RAG (sem resposta)",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "com_rag_acerto_citacao": {
+    "valor": 0.82,
+    "texto": "82,0%",
+    "texto_en": "82.0%",
+    "descricao": "Acerto da citação com RAG (respondíveis)",
+    "script": "scripts/04_analisar.py",
+    "formato": "pct1",
+    "aparece_em": [
+      "relatorio/tabelas/resultados_por_condicao.tex"
+    ]
+  },
+  "com_rag_acerto_citacao_inf": {
+    "valor": 0.6920394632569922,
+    "texto": "69,2%",
+    "texto_en": "69.2%",
+    "descricao": "Acerto da citação com RAG (respondíveis): limite inferior do IC de Wilson de 95%",
+    "script": "scripts/04_analisar.py",
+    "formato": "pct1",
+    "aparece_em": [
+      "relatorio/tabelas/resultados_por_condicao.tex"
+    ]
+  },
+  "com_rag_acerto_citacao_sup": {
+    "valor": 0.9022980732976582,
+    "texto": "90,2%",
+    "texto_en": "90.2%",
+    "descricao": "Acerto da citação com RAG (respondíveis): limite superior do IC de Wilson de 95%",
+    "script": "scripts/04_analisar.py",
+    "formato": "pct1",
+    "aparece_em": [
+      "relatorio/tabelas/resultados_por_condicao.tex"
+    ]
+  },
+  "com_rag_acerto_recuperacao": {
+    "valor": 0.86,
+    "texto": "86,0%",
+    "texto_en": "86.0%",
+    "descricao": "Acerto da recuperação com RAG (respondíveis)",
+    "script": "scripts/04_analisar.py",
+    "formato": "pct1",
+    "aparece_em": [
+      "relatorio/tabelas/resultados_por_condicao.tex"
+    ]
+  },
+  "com_rag_acerto_recuperacao_inf": {
+    "valor": 0.7381380628941446,
+    "texto": "73,8%",
+    "texto_en": "73.8%",
+    "descricao": "Acerto da recuperação com RAG (respondíveis): limite inferior do IC de Wilson de 95%",
+    "script": "scripts/04_analisar.py",
+    "formato": "pct1",
+    "aparece_em": [
+      "relatorio/tabelas/resultados_por_condicao.tex"
+    ]
+  },
+  "com_rag_acerto_recuperacao_sup": {
+    "valor": 0.9304916657298371,
+    "texto": "93,0%",
+    "texto_en": "93.0%",
+    "descricao": "Acerto da recuperação com RAG (respondíveis): limite superior do IC de Wilson de 95%",
+    "script": "scripts/04_analisar.py",
+    "formato": "pct1",
+    "aparece_em": [
+      "relatorio/tabelas/resultados_por_condicao.tex"
+    ]
+  },
+  "com_rag_acerto_resposta": {
+    "valor": 0.78,
+    "texto": "78,0%",
+    "texto_en": "78.0%",
+    "descricao": "Acerto da resposta com RAG (respondíveis)",
+    "script": "scripts/04_analisar.py",
+    "formato": "pct1",
+    "aparece_em": [
+      "relatorio/tabelas/resultados_por_condicao.tex"
+    ],
+    "usos_declarados": {
+      "scripts/05_figuras.py": [
+        "figuras/acerto_por_condicao.png",
+        "figuras/custo_por_condicao.png"
+      ]
+    }
+  },
+  "com_rag_acerto_resposta_inf": {
+    "valor": 0.6475845041874634,
+    "texto": "64,8%",
+    "texto_en": "64.8%",
+    "descricao": "Acerto da resposta com RAG (respondíveis): limite inferior do IC de Wilson de 95%",
+    "script": "scripts/04_analisar.py",
+    "formato": "pct1",
+    "aparece_em": [
+      "relatorio/tabelas/resultados_por_condicao.tex"
+    ],
+    "usos_declarados": {
+      "scripts/05_figuras.py": [
+        "figuras/acerto_por_condicao.png"
+      ]
+    }
+  },
+  "com_rag_acerto_resposta_sup": {
+    "valor": 0.8724608402978559,
+    "texto": "87,2%",
+    "texto_en": "87.2%",
+    "descricao": "Acerto da resposta com RAG (respondíveis): limite superior do IC de Wilson de 95%",
+    "script": "scripts/04_analisar.py",
+    "formato": "pct1",
+    "aparece_em": [
+      "relatorio/tabelas/resultados_por_condicao.tex"
+    ],
+    "usos_declarados": {
+      "scripts/05_figuras.py": [
+        "figuras/acerto_por_condicao.png"
+      ]
+    }
+  },
+  "com_rag_acertos_citacao": {
+    "valor": 41,
+    "texto": "41",
+    "texto_en": "41",
+    "descricao": "acertos da citação com RAG (respondíveis)",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "com_rag_acertos_recuperacao": {
+    "valor": 43,
+    "texto": "43",
+    "texto_en": "43",
+    "descricao": "acertos da recuperação com RAG (respondíveis)",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "com_rag_acertos_resposta": {
+    "valor": 39,
+    "texto": "39",
+    "texto_en": "39",
+    "descricao": "acertos da resposta com RAG (respondíveis)",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "com_rag_erro_mais_frequente": {
+    "valor": "abstenção indevida",
+    "texto": "abstenção indevida",
+    "texto_en": "unwarranted abstention",
+    "descricao": "Classe de erro mais frequente com RAG (empates juntos)",
+    "script": "scripts/04_analisar.py",
+    "formato": "texto"
+  },
+  "com_rag_erro_mais_frequente_n": {
+    "valor": 5,
+    "texto": "5",
+    "texto_en": "5",
+    "descricao": "respostas com RAG na Classe de erro mais frequente",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "com_rag_erros_abstencao_indevida": {
+    "valor": 5,
+    "texto": "5",
+    "texto_en": "5",
+    "descricao": "Classe de erro 'abstenção indevida' com RAG (Perguntas)",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "usos_declarados": {
+      "scripts/05_figuras.py": [
+        "figuras/erros_por_tipo.png"
+      ]
+    }
+  },
+  "com_rag_erros_citacao_errada": {
+    "valor": 2,
+    "texto": "2",
+    "texto_en": "2",
+    "descricao": "Classe de erro 'citação errada' com RAG (Perguntas)",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "usos_declarados": {
+      "scripts/05_figuras.py": [
+        "figuras/erros_por_tipo.png"
+      ]
+    }
+  },
+  "com_rag_erros_falha_leitura": {
+    "valor": 4,
+    "texto": "4",
+    "texto_en": "4",
+    "descricao": "Classe de erro 'falha de leitura' com RAG (Perguntas)",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "usos_declarados": {
+      "scripts/05_figuras.py": [
+        "figuras/erros_por_tipo.png"
+      ]
+    }
+  },
+  "com_rag_erros_falha_recuperacao": {
+    "valor": 2,
+    "texto": "2",
+    "texto_en": "2",
+    "descricao": "Classe de erro 'falha de recuperação' com RAG (Perguntas)",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "usos_declarados": {
+      "scripts/05_figuras.py": [
+        "figuras/erros_por_tipo.png"
+      ]
+    }
+  },
+  "com_rag_erros_resposta_inventada": {
+    "valor": 0,
+    "texto": "0",
+    "texto_en": "0",
+    "descricao": "Classe de erro 'resposta inventada' com RAG (Perguntas)",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "usos_declarados": {
+      "scripts/05_figuras.py": [
+        "figuras/erros_por_tipo.png"
+      ]
+    }
+  },
+  "com_rag_latencia_mediana_s": {
+    "valor": 3.2421652999983053,
+    "texto": "3,2",
+    "texto_en": "3.2",
+    "descricao": "latência mediana por Pergunta com RAG, em segundos",
+    "script": "scripts/04_analisar.py",
+    "formato": "dec1",
+    "aparece_em": [
+      "relatorio/tabelas/custo_por_condicao.tex"
+    ],
+    "usos_declarados": {
+      "scripts/05_figuras.py": [
+        "figuras/custo_por_condicao.png"
+      ]
+    }
+  },
+  "com_rag_n_com_erro": {
+    "valor": 13,
+    "texto": "13",
+    "texto_en": "13",
+    "descricao": "respostas com RAG com alguma Classe de erro (respondíveis e sem resposta)",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "com_rag_n_fallback": {
+    "valor": 0,
+    "texto": "0",
+    "texto_en": "0",
+    "descricao": "respostas com RAG dadas por outro modelo (fallback do servidor)",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/custo_por_condicao.tex"
+    ]
+  },
+  "com_rag_n_respondiveis": {
+    "valor": 50,
+    "texto": "50",
+    "texto_en": "50",
+    "descricao": "Perguntas respondíveis na Condição com RAG",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "com_rag_n_sem_resposta": {
+    "valor": 10,
+    "texto": "10",
+    "texto_en": "10",
+    "descricao": "Perguntas sem resposta na Condição com RAG",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "com_rag_tipo_conceito_abstencao_indevida": {
+    "valor": 0,
+    "texto": "0",
+    "texto_en": "0",
+    "descricao": "'abstenção indevida' com RAG, Tipo 'Conceito ou método'",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/erros_por_tipo.tex"
+    ]
+  },
+  "com_rag_tipo_conceito_acertos": {
+    "valor": 9,
+    "texto": "9",
+    "texto_en": "9",
+    "descricao": "acertos da resposta com RAG, Tipo 'Conceito ou método'",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/erros_por_tipo.tex"
+    ]
+  },
+  "com_rag_tipo_conceito_citacao_errada": {
+    "valor": 1,
+    "texto": "1",
+    "texto_en": "1",
+    "descricao": "'citação errada' com RAG, Tipo 'Conceito ou método'",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/erros_por_tipo.tex"
+    ],
+    "usos_declarados": {
+      "scripts/05_figuras.py": [
+        "figuras/erros_por_tipo.png"
+      ]
+    }
+  },
+  "com_rag_tipo_conceito_falha_leitura": {
+    "valor": 1,
+    "texto": "1",
+    "texto_en": "1",
+    "descricao": "'falha de leitura' com RAG, Tipo 'Conceito ou método'",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/erros_por_tipo.tex"
+    ],
+    "usos_declarados": {
+      "scripts/05_figuras.py": [
+        "figuras/erros_por_tipo.png"
+      ]
+    }
+  },
+  "com_rag_tipo_conceito_falha_recuperacao": {
+    "valor": 0,
+    "texto": "0",
+    "texto_en": "0",
+    "descricao": "'falha de recuperação' com RAG, Tipo 'Conceito ou método'",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/erros_por_tipo.tex"
+    ]
+  },
+  "com_rag_tipo_conceito_n": {
+    "valor": 10,
+    "texto": "10",
+    "texto_en": "10",
+    "descricao": "Perguntas do Tipo 'Conceito ou método'",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/erros_por_tipo.tex"
+    ],
+    "usos_declarados": {
+      "scripts/05_figuras.py": [
+        "figuras/erros_por_tipo.png"
+      ]
+    }
+  },
+  "com_rag_tipo_numero_legenda_abstencao_indevida": {
+    "valor": 1,
+    "texto": "1",
+    "texto_en": "1",
+    "descricao": "'abstenção indevida' com RAG, Tipo 'Número em legenda'",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/erros_por_tipo.tex"
+    ],
+    "usos_declarados": {
+      "scripts/05_figuras.py": [
+        "figuras/erros_por_tipo.png"
+      ]
+    }
+  },
+  "com_rag_tipo_numero_legenda_acertos": {
+    "valor": 9,
+    "texto": "9",
+    "texto_en": "9",
+    "descricao": "acertos da resposta com RAG, Tipo 'Número em legenda'",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/erros_por_tipo.tex"
+    ]
+  },
+  "com_rag_tipo_numero_legenda_citacao_errada": {
+    "valor": 0,
+    "texto": "0",
+    "texto_en": "0",
+    "descricao": "'citação errada' com RAG, Tipo 'Número em legenda'",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/erros_por_tipo.tex"
+    ]
+  },
+  "com_rag_tipo_numero_legenda_falha_leitura": {
+    "valor": 0,
+    "texto": "0",
+    "texto_en": "0",
+    "descricao": "'falha de leitura' com RAG, Tipo 'Número em legenda'",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/erros_por_tipo.tex"
+    ]
+  },
+  "com_rag_tipo_numero_legenda_falha_recuperacao": {
+    "valor": 0,
+    "texto": "0",
+    "texto_en": "0",
+    "descricao": "'falha de recuperação' com RAG, Tipo 'Número em legenda'",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/erros_por_tipo.tex"
+    ]
+  },
+  "com_rag_tipo_numero_legenda_n": {
+    "valor": 10,
+    "texto": "10",
+    "texto_en": "10",
+    "descricao": "Perguntas do Tipo 'Número em legenda'",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/erros_por_tipo.tex"
+    ],
+    "usos_declarados": {
+      "scripts/05_figuras.py": [
+        "figuras/erros_por_tipo.png"
+      ]
+    }
+  },
+  "com_rag_tipo_numero_prosa_abstencao_indevida": {
+    "valor": 1,
+    "texto": "1",
+    "texto_en": "1",
+    "descricao": "'abstenção indevida' com RAG, Tipo 'Número na prosa'",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/erros_por_tipo.tex"
+    ],
+    "usos_declarados": {
+      "scripts/05_figuras.py": [
+        "figuras/erros_por_tipo.png"
+      ]
+    }
+  },
+  "com_rag_tipo_numero_prosa_acertos": {
+    "valor": 9,
+    "texto": "9",
+    "texto_en": "9",
+    "descricao": "acertos da resposta com RAG, Tipo 'Número na prosa'",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/erros_por_tipo.tex"
+    ]
+  },
+  "com_rag_tipo_numero_prosa_citacao_errada": {
+    "valor": 0,
+    "texto": "0",
+    "texto_en": "0",
+    "descricao": "'citação errada' com RAG, Tipo 'Número na prosa'",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/erros_por_tipo.tex"
+    ]
+  },
+  "com_rag_tipo_numero_prosa_falha_leitura": {
+    "valor": 0,
+    "texto": "0",
+    "texto_en": "0",
+    "descricao": "'falha de leitura' com RAG, Tipo 'Número na prosa'",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/erros_por_tipo.tex"
+    ]
+  },
+  "com_rag_tipo_numero_prosa_falha_recuperacao": {
+    "valor": 0,
+    "texto": "0",
+    "texto_en": "0",
+    "descricao": "'falha de recuperação' com RAG, Tipo 'Número na prosa'",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/erros_por_tipo.tex"
+    ]
+  },
+  "com_rag_tipo_numero_prosa_n": {
+    "valor": 10,
+    "texto": "10",
+    "texto_en": "10",
+    "descricao": "Perguntas do Tipo 'Número na prosa'",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/erros_por_tipo.tex"
+    ],
+    "usos_declarados": {
+      "scripts/05_figuras.py": [
+        "figuras/erros_por_tipo.png"
+      ]
+    }
+  },
+  "com_rag_tipo_numero_tabela_abstencao_indevida": {
+    "valor": 3,
+    "texto": "3",
+    "texto_en": "3",
+    "descricao": "'abstenção indevida' com RAG, Tipo 'Número em tabela'",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/erros_por_tipo.tex"
+    ],
+    "usos_declarados": {
+      "scripts/05_figuras.py": [
+        "figuras/erros_por_tipo.png"
+      ]
+    }
+  },
+  "com_rag_tipo_numero_tabela_acertos": {
+    "valor": 7,
+    "texto": "7",
+    "texto_en": "7",
+    "descricao": "acertos da resposta com RAG, Tipo 'Número em tabela'",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/erros_por_tipo.tex"
+    ]
+  },
+  "com_rag_tipo_numero_tabela_citacao_errada": {
+    "valor": 1,
+    "texto": "1",
+    "texto_en": "1",
+    "descricao": "'citação errada' com RAG, Tipo 'Número em tabela'",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/erros_por_tipo.tex"
+    ],
+    "usos_declarados": {
+      "scripts/05_figuras.py": [
+        "figuras/erros_por_tipo.png"
+      ]
+    }
+  },
+  "com_rag_tipo_numero_tabela_falha_leitura": {
+    "valor": 0,
+    "texto": "0",
+    "texto_en": "0",
+    "descricao": "'falha de leitura' com RAG, Tipo 'Número em tabela'",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/erros_por_tipo.tex"
+    ]
+  },
+  "com_rag_tipo_numero_tabela_falha_recuperacao": {
+    "valor": 0,
+    "texto": "0",
+    "texto_en": "0",
+    "descricao": "'falha de recuperação' com RAG, Tipo 'Número em tabela'",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/erros_por_tipo.tex"
+    ]
+  },
+  "com_rag_tipo_numero_tabela_n": {
+    "valor": 10,
+    "texto": "10",
+    "texto_en": "10",
+    "descricao": "Perguntas do Tipo 'Número em tabela'",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/erros_por_tipo.tex"
+    ],
+    "usos_declarados": {
+      "scripts/05_figuras.py": [
+        "figuras/erros_por_tipo.png"
+      ]
+    }
+  },
+  "com_rag_tipo_sem_resposta_acertos": {
+    "valor": 10,
+    "texto": "10",
+    "texto_en": "10",
+    "descricao": "abstenções corretas com RAG nas Perguntas sem resposta",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/erros_por_tipo.tex"
+    ]
+  },
+  "com_rag_tipo_sem_resposta_n": {
+    "valor": 10,
+    "texto": "10",
+    "texto_en": "10",
+    "descricao": "Perguntas sem resposta",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/erros_por_tipo.tex"
+    ],
+    "usos_declarados": {
+      "scripts/05_figuras.py": [
+        "figuras/erros_por_tipo.png"
+      ]
+    }
+  },
+  "com_rag_tipo_sem_resposta_resposta_inventada": {
+    "valor": 0,
+    "texto": "0",
+    "texto_en": "0",
+    "descricao": "'resposta inventada' com RAG nas Perguntas sem resposta",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/erros_por_tipo.tex"
+    ]
+  },
+  "com_rag_tipo_sintese_abstencao_indevida": {
+    "valor": 0,
+    "texto": "0",
+    "texto_en": "0",
+    "descricao": "'abstenção indevida' com RAG, Tipo 'Síntese entre páginas'",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/erros_por_tipo.tex"
+    ]
+  },
+  "com_rag_tipo_sintese_acertos": {
+    "valor": 5,
+    "texto": "5",
+    "texto_en": "5",
+    "descricao": "acertos da resposta com RAG, Tipo 'Síntese entre páginas'",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/erros_por_tipo.tex"
+    ]
+  },
+  "com_rag_tipo_sintese_citacao_errada": {
+    "valor": 0,
+    "texto": "0",
+    "texto_en": "0",
+    "descricao": "'citação errada' com RAG, Tipo 'Síntese entre páginas'",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/erros_por_tipo.tex"
+    ]
+  },
+  "com_rag_tipo_sintese_falha_leitura": {
+    "valor": 3,
+    "texto": "3",
+    "texto_en": "3",
+    "descricao": "'falha de leitura' com RAG, Tipo 'Síntese entre páginas'",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/erros_por_tipo.tex"
+    ],
+    "usos_declarados": {
+      "scripts/05_figuras.py": [
+        "figuras/erros_por_tipo.png"
+      ]
+    }
+  },
+  "com_rag_tipo_sintese_falha_recuperacao": {
+    "valor": 2,
+    "texto": "2",
+    "texto_en": "2",
+    "descricao": "'falha de recuperação' com RAG, Tipo 'Síntese entre páginas'",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/erros_por_tipo.tex"
+    ],
+    "usos_declarados": {
+      "scripts/05_figuras.py": [
+        "figuras/erros_por_tipo.png"
+      ]
+    }
+  },
+  "com_rag_tipo_sintese_n": {
+    "valor": 10,
+    "texto": "10",
+    "texto_en": "10",
+    "descricao": "Perguntas do Tipo 'Síntese entre páginas'",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/erros_por_tipo.tex"
+    ],
+    "usos_declarados": {
+      "scripts/05_figuras.py": [
+        "figuras/erros_por_tipo.png"
+      ]
+    }
+  },
+  "com_rag_tokens_cache_leitura_total": {
+    "valor": 0,
+    "texto": "0",
+    "texto_en": "0",
+    "descricao": "tokens de entrada lidos do cache com RAG, soma da Rodada",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "com_rag_tokens_entrada_medio": {
+    "valor": 1744.5666666666666,
+    "texto": "1.745",
+    "texto_en": "1,745",
+    "descricao": "tokens de entrada com RAG, média por Pergunta",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/custo_por_condicao.tex"
+    ],
+    "usos_declarados": {
+      "scripts/05_figuras.py": [
+        "figuras/custo_por_condicao.png"
+      ]
+    }
+  },
+  "com_rag_tokens_entrada_total": {
+    "valor": 104674,
+    "texto": "104.674",
+    "texto_en": "104,674",
+    "descricao": "tokens de entrada com RAG, soma da Rodada",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "com_rag_tokens_saida_total": {
+    "valor": 40528,
+    "texto": "40.528",
+    "texto_en": "40,528",
+    "descricao": "tokens de saída com RAG, soma da Rodada",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "com_rag_x_contexto_completo_ambos": {
+    "valor": 38,
+    "texto": "38",
+    "texto_en": "38",
+    "descricao": "com RAG × contexto completo: as duas Condições acertam",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/comparacao_pareada.tex"
+    ]
+  },
+  "com_rag_x_contexto_completo_conclusao": {
+    "valor": "com RAG acerta menos",
+    "texto": "com RAG acerta menos",
+    "texto_en": "RAG gets fewer answers right",
+    "descricao": "com RAG × contexto completo: leitura do IC de Newcombe (todo acima, todo abaixo de zero ou incluindo o zero)",
+    "script": "scripts/04_analisar.py",
+    "formato": "texto"
+  },
+  "com_rag_x_contexto_completo_diferenca": {
+    "valor": -0.19999999999999996,
+    "texto": "−20,0 p.p.",
+    "texto_en": "−20.0 pp",
+    "descricao": "com RAG × contexto completo: diferença pareada do Acerto da resposta",
+    "script": "scripts/04_analisar.py",
+    "formato": "pp1",
+    "aparece_em": [
+      "relatorio/tabelas/comparacao_pareada.tex"
+    ]
+  },
+  "com_rag_x_contexto_completo_diferenca_inf": {
+    "valor": -0.3346683243410269,
+    "texto": "−33,5 p.p.",
+    "texto_en": "−33.5 pp",
+    "descricao": "com RAG × contexto completo: limite inferior do IC de Newcombe de 95%",
+    "script": "scripts/04_analisar.py",
+    "formato": "pp1",
+    "aparece_em": [
+      "relatorio/tabelas/comparacao_pareada.tex"
+    ]
+  },
+  "com_rag_x_contexto_completo_diferenca_sup": {
+    "valor": -0.06977648690336585,
+    "texto": "−7,0 p.p.",
+    "texto_en": "−7.0 pp",
+    "descricao": "com RAG × contexto completo: limite superior do IC de Newcombe de 95%",
+    "script": "scripts/04_analisar.py",
+    "formato": "pp1",
+    "aparece_em": [
+      "relatorio/tabelas/comparacao_pareada.tex"
+    ]
+  },
+  "com_rag_x_contexto_completo_n_pares": {
+    "valor": 50,
+    "texto": "50",
+    "texto_en": "50",
+    "descricao": "com RAG × contexto completo: Perguntas respondíveis pareadas",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "com_rag_x_contexto_completo_nenhum": {
+    "valor": 0,
+    "texto": "0",
+    "texto_en": "0",
+    "descricao": "com RAG × contexto completo: as duas Condições erram",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/comparacao_pareada.tex"
+    ]
+  },
+  "com_rag_x_contexto_completo_p_mcnemar": {
+    "valor": 0.00634765625,
+    "texto": "0,006",
+    "texto_en": "0.006",
+    "descricao": "com RAG × contexto completo: valor-p do teste exato de McNemar",
+    "script": "scripts/04_analisar.py",
+    "formato": "p3",
+    "aparece_em": [
+      "relatorio/tabelas/comparacao_pareada.tex"
+    ]
+  },
+  "com_rag_x_contexto_completo_so_com_rag": {
+    "valor": 1,
+    "texto": "1",
+    "texto_en": "1",
+    "descricao": "com RAG × contexto completo: só com RAG acerta",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/comparacao_pareada.tex"
+    ]
+  },
+  "com_rag_x_contexto_completo_so_contexto_completo": {
+    "valor": 11,
+    "texto": "11",
+    "texto_en": "11",
+    "descricao": "com RAG × contexto completo: só contexto completo acerta",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/comparacao_pareada.tex"
+    ]
+  },
+  "com_rag_x_sem_rag_ambos": {
+    "valor": 0,
+    "texto": "0",
+    "texto_en": "0",
+    "descricao": "com RAG × sem RAG: as duas Condições acertam",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/comparacao_pareada.tex"
+    ]
+  },
+  "com_rag_x_sem_rag_conclusao": {
+    "valor": "com RAG acerta mais",
+    "texto": "com RAG acerta mais",
+    "texto_en": "RAG gets more answers right",
+    "descricao": "com RAG × sem RAG: leitura do IC de Newcombe (todo acima, todo abaixo de zero ou incluindo o zero)",
+    "script": "scripts/04_analisar.py",
+    "formato": "texto"
+  },
+  "com_rag_x_sem_rag_diferenca": {
+    "valor": 0.78,
+    "texto": "78,0 p.p.",
+    "texto_en": "78.0 pp",
+    "descricao": "com RAG × sem RAG: diferença pareada do Acerto da resposta",
+    "script": "scripts/04_analisar.py",
+    "formato": "pp1",
+    "aparece_em": [
+      "relatorio/tabelas/comparacao_pareada.tex"
+    ]
+  },
+  "com_rag_x_sem_rag_diferenca_inf": {
+    "valor": 0.6295860929522328,
+    "texto": "63,0 p.p.",
+    "texto_en": "63.0 pp",
+    "descricao": "com RAG × sem RAG: limite inferior do IC de Newcombe de 95%",
+    "script": "scripts/04_analisar.py",
+    "formato": "pp1",
+    "aparece_em": [
+      "relatorio/tabelas/comparacao_pareada.tex"
+    ]
+  },
+  "com_rag_x_sem_rag_diferenca_sup": {
+    "valor": 0.8724608402978559,
+    "texto": "87,2 p.p.",
+    "texto_en": "87.2 pp",
+    "descricao": "com RAG × sem RAG: limite superior do IC de Newcombe de 95%",
+    "script": "scripts/04_analisar.py",
+    "formato": "pp1",
+    "aparece_em": [
+      "relatorio/tabelas/comparacao_pareada.tex"
+    ]
+  },
+  "com_rag_x_sem_rag_n_pares": {
+    "valor": 50,
+    "texto": "50",
+    "texto_en": "50",
+    "descricao": "com RAG × sem RAG: Perguntas respondíveis pareadas",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "com_rag_x_sem_rag_nenhum": {
+    "valor": 11,
+    "texto": "11",
+    "texto_en": "11",
+    "descricao": "com RAG × sem RAG: as duas Condições erram",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/comparacao_pareada.tex"
+    ]
+  },
+  "com_rag_x_sem_rag_p_mcnemar": {
+    "valor": 3.637978807091713e-12,
+    "texto": "< 0,001",
+    "texto_en": "< 0.001",
+    "descricao": "com RAG × sem RAG: valor-p do teste exato de McNemar",
+    "script": "scripts/04_analisar.py",
+    "formato": "p3",
+    "aparece_em": [
+      "relatorio/tabelas/comparacao_pareada.tex"
+    ]
+  },
+  "com_rag_x_sem_rag_so_com_rag": {
+    "valor": 39,
+    "texto": "39",
+    "texto_en": "39",
+    "descricao": "com RAG × sem RAG: só com RAG acerta",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/comparacao_pareada.tex"
+    ]
+  },
+  "com_rag_x_sem_rag_so_sem_rag": {
+    "valor": 0,
+    "texto": "0",
+    "texto_en": "0",
+    "descricao": "com RAG × sem RAG: só sem RAG acerta",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/comparacao_pareada.tex"
+    ]
+  },
+  "concordancia_repeticao1_com_rag": {
+    "valor": 0.9666666666666667,
+    "texto": "96,7%",
+    "texto_en": "96.7%",
+    "descricao": "concordância entre a Rodada principal e a repeticao1, com RAG (Veredictos não revisados)",
+    "script": "scripts/04_analisar.py",
+    "formato": "pct1",
+    "aparece_em": [
+      "relatorio/tabelas/concordancia.tex"
+    ]
+  },
+  "concordancia_repeticao1_com_rag_n": {
+    "valor": 60,
+    "texto": "60",
+    "texto_en": "60",
+    "descricao": "Perguntas comparadas na concordância entre a Rodada principal e a repeticao1, com RAG",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/concordancia.tex"
+    ]
+  },
+  "concordancia_repeticao1_contexto_completo": {
+    "valor": 0.95,
+    "texto": "95,0%",
+    "texto_en": "95.0%",
+    "descricao": "concordância entre a Rodada principal e a repeticao1, contexto completo (Veredictos não revisados)",
+    "script": "scripts/04_analisar.py",
+    "formato": "pct1",
+    "aparece_em": [
+      "relatorio/tabelas/concordancia.tex"
+    ]
+  },
+  "concordancia_repeticao1_contexto_completo_n": {
+    "valor": 60,
+    "texto": "60",
+    "texto_en": "60",
+    "descricao": "Perguntas comparadas na concordância entre a Rodada principal e a repeticao1, contexto completo",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/concordancia.tex"
+    ]
+  },
+  "concordancia_repeticao1_sem_rag": {
+    "valor": 1.0,
+    "texto": "100,0%",
+    "texto_en": "100.0%",
+    "descricao": "concordância entre a Rodada principal e a repeticao1, sem RAG (Veredictos não revisados)",
+    "script": "scripts/04_analisar.py",
+    "formato": "pct1",
+    "aparece_em": [
+      "relatorio/tabelas/concordancia.tex"
+    ]
+  },
+  "concordancia_repeticao1_sem_rag_n": {
+    "valor": 60,
+    "texto": "60",
+    "texto_en": "60",
+    "descricao": "Perguntas comparadas na concordância entre a Rodada principal e a repeticao1, sem RAG",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/concordancia.tex"
+    ]
+  },
+  "concordancia_repeticao2_com_rag": {
+    "valor": 0.95,
+    "texto": "95,0%",
+    "texto_en": "95.0%",
+    "descricao": "concordância entre a Rodada principal e a repeticao2, com RAG (Veredictos não revisados)",
+    "script": "scripts/04_analisar.py",
+    "formato": "pct1",
+    "aparece_em": [
+      "relatorio/tabelas/concordancia.tex"
+    ]
+  },
+  "concordancia_repeticao2_com_rag_n": {
+    "valor": 60,
+    "texto": "60",
+    "texto_en": "60",
+    "descricao": "Perguntas comparadas na concordância entre a Rodada principal e a repeticao2, com RAG",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/concordancia.tex"
+    ]
+  },
+  "concordancia_repeticao2_contexto_completo": {
+    "valor": 0.9666666666666667,
+    "texto": "96,7%",
+    "texto_en": "96.7%",
+    "descricao": "concordância entre a Rodada principal e a repeticao2, contexto completo (Veredictos não revisados)",
+    "script": "scripts/04_analisar.py",
+    "formato": "pct1",
+    "aparece_em": [
+      "relatorio/tabelas/concordancia.tex"
+    ]
+  },
+  "concordancia_repeticao2_contexto_completo_n": {
+    "valor": 60,
+    "texto": "60",
+    "texto_en": "60",
+    "descricao": "Perguntas comparadas na concordância entre a Rodada principal e a repeticao2, contexto completo",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/concordancia.tex"
+    ]
+  },
+  "concordancia_repeticao2_sem_rag": {
+    "valor": 1.0,
+    "texto": "100,0%",
+    "texto_en": "100.0%",
+    "descricao": "concordância entre a Rodada principal e a repeticao2, sem RAG (Veredictos não revisados)",
+    "script": "scripts/04_analisar.py",
+    "formato": "pct1",
+    "aparece_em": [
+      "relatorio/tabelas/concordancia.tex"
+    ]
+  },
+  "concordancia_repeticao2_sem_rag_n": {
+    "valor": 60,
+    "texto": "60",
+    "texto_en": "60",
+    "descricao": "Perguntas comparadas na concordância entre a Rodada principal e a repeticao2, sem RAG",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/concordancia.tex"
+    ]
+  },
+  "contexto_completo_abstencao_correta": {
+    "valor": 1.0,
+    "texto": "100,0%",
+    "texto_en": "100.0%",
+    "descricao": "Abstenção correta contexto completo (sem resposta)",
+    "script": "scripts/04_analisar.py",
+    "formato": "pct1",
+    "aparece_em": [
+      "relatorio/tabelas/resultados_por_condicao.tex"
+    ]
+  },
+  "contexto_completo_abstencao_correta_inf": {
+    "valor": 0.7224672001371107,
+    "texto": "72,2%",
+    "texto_en": "72.2%",
+    "descricao": "Abstenção correta contexto completo (sem resposta): limite inferior do IC de Wilson de 95%",
+    "script": "scripts/04_analisar.py",
+    "formato": "pct1",
+    "aparece_em": [
+      "relatorio/tabelas/resultados_por_condicao.tex"
+    ]
+  },
+  "contexto_completo_abstencao_correta_sup": {
+    "valor": 0.9999999999999999,
+    "texto": "100,0%",
+    "texto_en": "100.0%",
+    "descricao": "Abstenção correta contexto completo (sem resposta): limite superior do IC de Wilson de 95%",
+    "script": "scripts/04_analisar.py",
+    "formato": "pct1",
+    "aparece_em": [
+      "relatorio/tabelas/resultados_por_condicao.tex"
+    ]
+  },
+  "contexto_completo_abstencoes_corretas": {
+    "valor": 10,
+    "texto": "10",
+    "texto_en": "10",
+    "descricao": "Abstenções corretas contexto completo (sem resposta)",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "contexto_completo_acerto_citacao": {
+    "valor": 0.86,
+    "texto": "86,0%",
+    "texto_en": "86.0%",
+    "descricao": "Acerto da citação contexto completo (respondíveis)",
+    "script": "scripts/04_analisar.py",
+    "formato": "pct1",
+    "aparece_em": [
+      "relatorio/tabelas/resultados_por_condicao.tex"
+    ]
+  },
+  "contexto_completo_acerto_citacao_inf": {
+    "valor": 0.7381380628941446,
+    "texto": "73,8%",
+    "texto_en": "73.8%",
+    "descricao": "Acerto da citação contexto completo (respondíveis): limite inferior do IC de Wilson de 95%",
+    "script": "scripts/04_analisar.py",
+    "formato": "pct1",
+    "aparece_em": [
+      "relatorio/tabelas/resultados_por_condicao.tex"
+    ]
+  },
+  "contexto_completo_acerto_citacao_sup": {
+    "valor": 0.9304916657298371,
+    "texto": "93,0%",
+    "texto_en": "93.0%",
+    "descricao": "Acerto da citação contexto completo (respondíveis): limite superior do IC de Wilson de 95%",
+    "script": "scripts/04_analisar.py",
+    "formato": "pct1",
+    "aparece_em": [
+      "relatorio/tabelas/resultados_por_condicao.tex"
+    ]
+  },
+  "contexto_completo_acerto_resposta": {
+    "valor": 0.98,
+    "texto": "98,0%",
+    "texto_en": "98.0%",
+    "descricao": "Acerto da resposta contexto completo (respondíveis)",
+    "script": "scripts/04_analisar.py",
+    "formato": "pct1",
+    "aparece_em": [
+      "relatorio/tabelas/resultados_por_condicao.tex"
+    ],
+    "usos_declarados": {
+      "scripts/05_figuras.py": [
+        "figuras/acerto_por_condicao.png",
+        "figuras/custo_por_condicao.png"
+      ]
+    }
+  },
+  "contexto_completo_acerto_resposta_inf": {
+    "valor": 0.8950455641036219,
+    "texto": "89,5%",
+    "texto_en": "89.5%",
+    "descricao": "Acerto da resposta contexto completo (respondíveis): limite inferior do IC de Wilson de 95%",
+    "script": "scripts/04_analisar.py",
+    "formato": "pct1",
+    "aparece_em": [
+      "relatorio/tabelas/resultados_por_condicao.tex"
+    ],
+    "usos_declarados": {
+      "scripts/05_figuras.py": [
+        "figuras/acerto_por_condicao.png"
+      ]
+    }
+  },
+  "contexto_completo_acerto_resposta_sup": {
+    "valor": 0.9964607407283539,
+    "texto": "99,6%",
+    "texto_en": "99.6%",
+    "descricao": "Acerto da resposta contexto completo (respondíveis): limite superior do IC de Wilson de 95%",
+    "script": "scripts/04_analisar.py",
+    "formato": "pct1",
+    "aparece_em": [
+      "relatorio/tabelas/resultados_por_condicao.tex"
+    ],
+    "usos_declarados": {
+      "scripts/05_figuras.py": [
+        "figuras/acerto_por_condicao.png"
+      ]
+    }
+  },
+  "contexto_completo_acertos_citacao": {
+    "valor": 43,
+    "texto": "43",
+    "texto_en": "43",
+    "descricao": "acertos da citação contexto completo (respondíveis)",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "contexto_completo_acertos_resposta": {
+    "valor": 49,
+    "texto": "49",
+    "texto_en": "49",
+    "descricao": "acertos da resposta contexto completo (respondíveis)",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "contexto_completo_erros_abstencao_indevida": {
+    "valor": 0,
+    "texto": "0",
+    "texto_en": "0",
+    "descricao": "Classe de erro 'abstenção indevida' contexto completo (Perguntas)",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "contexto_completo_erros_citacao_errada": {
+    "valor": 6,
+    "texto": "6",
+    "texto_en": "6",
+    "descricao": "Classe de erro 'citação errada' contexto completo (Perguntas)",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "contexto_completo_erros_falha_leitura": {
+    "valor": 1,
+    "texto": "1",
+    "texto_en": "1",
+    "descricao": "Classe de erro 'falha de leitura' contexto completo (Perguntas)",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "contexto_completo_erros_falha_recuperacao": {
+    "valor": 0,
+    "texto": "0",
+    "texto_en": "0",
+    "descricao": "Classe de erro 'falha de recuperação' contexto completo (Perguntas)",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "contexto_completo_erros_resposta_inventada": {
+    "valor": 0,
+    "texto": "0",
+    "texto_en": "0",
+    "descricao": "Classe de erro 'resposta inventada' contexto completo (Perguntas)",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "contexto_completo_latencia_mediana_s": {
+    "valor": 6.14473100000032,
+    "texto": "6,1",
+    "texto_en": "6.1",
+    "descricao": "latência mediana por Pergunta contexto completo, em segundos",
+    "script": "scripts/04_analisar.py",
+    "formato": "dec1",
+    "aparece_em": [
+      "relatorio/tabelas/custo_por_condicao.tex"
+    ],
+    "usos_declarados": {
+      "scripts/05_figuras.py": [
+        "figuras/custo_por_condicao.png"
+      ]
+    }
+  },
+  "contexto_completo_n_fallback": {
+    "valor": 0,
+    "texto": "0",
+    "texto_en": "0",
+    "descricao": "respostas contexto completo dadas por outro modelo (fallback do servidor)",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/custo_por_condicao.tex"
+    ]
+  },
+  "contexto_completo_n_respondiveis": {
+    "valor": 50,
+    "texto": "50",
+    "texto_en": "50",
+    "descricao": "Perguntas respondíveis na Condição contexto completo",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "contexto_completo_n_sem_resposta": {
+    "valor": 10,
+    "texto": "10",
+    "texto_en": "10",
+    "descricao": "Perguntas sem resposta na Condição contexto completo",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "contexto_completo_tokens_cache_leitura_total": {
+    "valor": 0,
+    "texto": "0",
+    "texto_en": "0",
+    "descricao": "tokens de entrada lidos do cache contexto completo, soma da Rodada",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "contexto_completo_tokens_entrada_medio": {
+    "valor": 99196.98333333334,
+    "texto": "99.197",
+    "texto_en": "99,197",
+    "descricao": "tokens de entrada contexto completo, média por Pergunta",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/custo_por_condicao.tex"
+    ],
+    "usos_declarados": {
+      "scripts/05_figuras.py": [
+        "figuras/custo_por_condicao.png"
+      ]
+    }
+  },
+  "contexto_completo_tokens_entrada_total": {
+    "valor": 5951819,
+    "texto": "5.951.819",
+    "texto_en": "5,951,819",
+    "descricao": "tokens de entrada contexto completo, soma da Rodada",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "contexto_completo_tokens_saida_total": {
+    "valor": 66270,
+    "texto": "66.270",
+    "texto_en": "66,270",
+    "descricao": "tokens de saída contexto completo, soma da Rodada",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
   "corpus_legendas": {
     "valor": 104,
     "texto": "104",
@@ -63,6 +1458,212 @@
     "script": "scripts/01_extrair.py",
     "formato": "inteiro"
   },
+  "destaque_acerto_com_rag": {
+    "valor": 0.78,
+    "texto": "78,0%",
+    "texto_en": "78.0%",
+    "descricao": "destaque: Acerto da resposta com RAG (respondíveis)",
+    "script": "scripts/04_analisar.py",
+    "formato": "pct1"
+  },
+  "destaque_acerto_com_rag_inf": {
+    "valor": 0.6475845041874634,
+    "texto": "64,8%",
+    "texto_en": "64.8%",
+    "descricao": "destaque: Acerto da resposta com RAG (respondíveis): limite inferior do IC de Wilson de 95%",
+    "script": "scripts/04_analisar.py",
+    "formato": "pct1"
+  },
+  "destaque_acerto_com_rag_sup": {
+    "valor": 0.8724608402978559,
+    "texto": "87,2%",
+    "texto_en": "87.2%",
+    "descricao": "destaque: Acerto da resposta com RAG (respondíveis): limite superior do IC de Wilson de 95%",
+    "script": "scripts/04_analisar.py",
+    "formato": "pct1"
+  },
+  "destaque_acerto_sem_rag": {
+    "valor": 0.0,
+    "texto": "0,0%",
+    "texto_en": "0.0%",
+    "descricao": "destaque: Acerto da resposta sem RAG (respondíveis)",
+    "script": "scripts/04_analisar.py",
+    "formato": "pct1"
+  },
+  "destaque_n_respondiveis": {
+    "valor": 50,
+    "texto": "50",
+    "texto_en": "50",
+    "descricao": "destaque: Perguntas respondíveis em que o acerto é medido",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "usos_declarados": {
+      "scripts/05_figuras.py": [
+        "figuras/acerto_por_condicao.png"
+      ]
+    }
+  },
+  "figura_custo_razao_tokens": {
+    "valor": 56.86052888014216,
+    "texto": "57",
+    "texto_en": "57",
+    "descricao": "quantas vezes os tokens de entrada médios de uma Condição cabem nos da outra, contexto completo × com RAG, impresso na figura",
+    "script": "scripts/05_figuras.py",
+    "formato": "dec0",
+    "aparece_em": [
+      "figuras/custo_por_condicao.png"
+    ]
+  },
+  "figura_erros_total": {
+    "valor": 13,
+    "texto": "13",
+    "texto_en": "13",
+    "descricao": "erros com RAG, somadas todas as Classes de erro, impresso na figura",
+    "script": "scripts/05_figuras.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "figuras/erros_por_tipo.png"
+    ]
+  },
+  "gabarito_n_perguntas": {
+    "valor": 60,
+    "texto": "60",
+    "texto_en": "60",
+    "descricao": "Perguntas do Gabarito avaliadas",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "usos_declarados": {
+      "scripts/05_figuras.py": [
+        "figuras/erros_por_tipo.png",
+        "figuras/custo_por_condicao.png"
+      ]
+    }
+  },
+  "gabarito_n_respondiveis": {
+    "valor": 50,
+    "texto": "50",
+    "texto_en": "50",
+    "descricao": "Perguntas respondíveis do Gabarito",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "gabarito_n_sem_resposta": {
+    "valor": 10,
+    "texto": "10",
+    "texto_en": "10",
+    "descricao": "Perguntas sem resposta do Gabarito",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "gabarito_n_tipos": {
+    "valor": 5,
+    "texto": "5",
+    "texto_en": "5",
+    "descricao": "Tipos de pergunta entre as respondíveis",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "ic_nivel": {
+    "valor": 95,
+    "texto": "95",
+    "texto_en": "95",
+    "descricao": "nível de confiança dos intervalos de Wilson e de Newcombe, em %",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "usos_declarados": {
+      "scripts/05_figuras.py": [
+        "figuras/acerto_por_condicao.png"
+      ]
+    }
+  },
+  "parametros_commits": {
+    "valor": "85d3e4c, fc1a063 e ad0ad19",
+    "texto": "85d3e4c, fc1a063 e ad0ad19",
+    "texto_en": "85d3e4c, fc1a063 and ad0ad19",
+    "descricao": "commit(s) em que a Rodada principal rodou, na ordem, todos com os mesmos parâmetros congelados",
+    "script": "scripts/04_analisar.py",
+    "formato": "texto"
+  },
+  "parametros_k": {
+    "valor": 6,
+    "texto": "6",
+    "texto_en": "6",
+    "descricao": "Trechos recuperados por Pergunta na Condição com RAG (Rodada principal)",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "parametros_modelo_embeddings": {
+    "valor": "multilingual-e5-large",
+    "texto": "multilingual-e5-large",
+    "texto_en": "multilingual-e5-large",
+    "descricao": "modelo de embeddings da busca na Rodada principal, sem o dono do repositório",
+    "script": "scripts/04_analisar.py",
+    "formato": "texto"
+  },
+  "parametros_modelo_juiz": {
+    "valor": "gemini-3.6-flash, gemini-3-flash-preview e gemini-3.1-flash-lite",
+    "texto": "gemini-3.6-flash, gemini-3-flash-preview e gemini-3.1-flash-lite",
+    "texto_en": "gemini-3.6-flash, gemini-3-flash-preview and gemini-3.1-flash-lite",
+    "descricao": "modelo(s) que julgaram na Rodada principal (a cadeia do Juiz, na ordem de uso)",
+    "script": "scripts/04_analisar.py",
+    "formato": "texto"
+  },
+  "parametros_modelo_respondedor": {
+    "valor": "gemini-3.5-flash-lite",
+    "texto": "gemini-3.5-flash-lite",
+    "texto_en": "gemini-3.5-flash-lite",
+    "descricao": "modelo que responde às Perguntas na Rodada principal",
+    "script": "scripts/04_analisar.py",
+    "formato": "texto"
+  },
+  "parametros_n_commits": {
+    "valor": 3,
+    "texto": "3",
+    "texto_en": "3",
+    "descricao": "commits em que a Rodada principal rodou (mais de um: ela foi retomada em outro commit)",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "parametros_n_modelos_juiz": {
+    "valor": 3,
+    "texto": "3",
+    "texto_en": "3",
+    "descricao": "modelos que julgaram na Rodada principal (mais de um: a cadeia do Juiz, pela cota diária)",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "principal_n_fallback": {
+    "valor": 0,
+    "texto": "0",
+    "texto_en": "0",
+    "descricao": "respostas da Rodada principal dadas por outro modelo (fallback do servidor)",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "principal_n_respostas": {
+    "valor": 180,
+    "texto": "180",
+    "texto_en": "180",
+    "descricao": "respostas na Rodada principal (Perguntas × Condições)",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "principal_tokens_entrada_total": {
+    "valor": 6067592,
+    "texto": "6.067.592",
+    "texto_en": "6,067,592",
+    "descricao": "tokens de entrada na Rodada principal, três Condições",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "principal_tokens_saida_total": {
+    "valor": 133558,
+    "texto": "133.558",
+    "texto_en": "133,558",
+    "descricao": "tokens de saída na Rodada principal, três Condições",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
   "quebra_alvo": {
     "valor": 180,
     "texto": "180",
@@ -77,6 +1678,332 @@
     "texto_en": "30",
     "descricao": "máximo de palavras repetidas entre Trechos vizinhos",
     "script": "scripts/01_extrair.py",
+    "formato": "inteiro"
+  },
+  "repeticoes_comparadas": {
+    "valor": 2,
+    "texto": "2",
+    "texto_en": "2",
+    "descricao": "repetições da Rodada principal comparadas com ela em ao menos uma Condição completa (Veredictos não revisados)",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "repeticoes_condicoes_incompletas": {
+    "valor": 0,
+    "texto": "0",
+    "texto_en": "0",
+    "descricao": "Condições de repetição que ainda não responderam todas as Perguntas, fora da concordância",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "repeticoes_incompletas": {
+    "valor": "nenhuma",
+    "texto": "nenhuma",
+    "texto_en": "none",
+    "descricao": "repetições e Condições ainda incompletas, fora da concordância",
+    "script": "scripts/04_analisar.py",
+    "formato": "texto"
+  },
+  "repeticoes_leitura": {
+    "valor": "Para medir isso, a Rodada principal foi repetida, e cada repetição é comparada com ela.",
+    "texto": "Para medir isso, a Rodada principal foi repetida, e cada repetição é comparada com ela.",
+    "texto_en": "To measure this, the main run was repeated and compared with each repeat.",
+    "descricao": "frase do Relatório de avaliação sobre as repetições, escolhida pelas comparadas e incompletas",
+    "script": "scripts/04_analisar.py",
+    "formato": "texto"
+  },
+  "revisao_veredictos_juiz": {
+    "valor": 42,
+    "texto": "42",
+    "texto_en": "42",
+    "descricao": "Veredictos do Juiz na Rodada principal (três Condições)",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "revisao_veredictos_mudados": {
+    "valor": 0,
+    "texto": "0",
+    "texto_en": "0",
+    "descricao": "Veredictos do Juiz que a Revisão do autor mudou",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "revisao_veredictos_revisados": {
+    "valor": 42,
+    "texto": "42",
+    "texto_en": "42",
+    "descricao": "Veredictos do Juiz revisados pelo autor",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "rodadas_origem": {
+    "valor": "Rodada principal, com os Veredictos do Juiz revisados pelo autor",
+    "texto": "Rodada principal, com os Veredictos do Juiz revisados pelo autor",
+    "texto_en": "Main run, with the Judge's verdicts reviewed by the author",
+    "descricao": "de onde vêm as Rodadas analisadas, para a capa",
+    "script": "scripts/04_analisar.py",
+    "formato": "texto"
+  },
+  "sem_rag_abstencao_correta": {
+    "valor": 1.0,
+    "texto": "100,0%",
+    "texto_en": "100.0%",
+    "descricao": "Abstenção correta sem RAG (sem resposta)",
+    "script": "scripts/04_analisar.py",
+    "formato": "pct1",
+    "aparece_em": [
+      "relatorio/tabelas/resultados_por_condicao.tex"
+    ]
+  },
+  "sem_rag_abstencao_correta_inf": {
+    "valor": 0.7224672001371107,
+    "texto": "72,2%",
+    "texto_en": "72.2%",
+    "descricao": "Abstenção correta sem RAG (sem resposta): limite inferior do IC de Wilson de 95%",
+    "script": "scripts/04_analisar.py",
+    "formato": "pct1",
+    "aparece_em": [
+      "relatorio/tabelas/resultados_por_condicao.tex"
+    ]
+  },
+  "sem_rag_abstencao_correta_sup": {
+    "valor": 0.9999999999999999,
+    "texto": "100,0%",
+    "texto_en": "100.0%",
+    "descricao": "Abstenção correta sem RAG (sem resposta): limite superior do IC de Wilson de 95%",
+    "script": "scripts/04_analisar.py",
+    "formato": "pct1",
+    "aparece_em": [
+      "relatorio/tabelas/resultados_por_condicao.tex"
+    ]
+  },
+  "sem_rag_abstencoes_corretas": {
+    "valor": 10,
+    "texto": "10",
+    "texto_en": "10",
+    "descricao": "Abstenções corretas sem RAG (sem resposta)",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "sem_rag_acerto_citacao": {
+    "valor": 0.0,
+    "texto": "0,0%",
+    "texto_en": "0.0%",
+    "descricao": "Acerto da citação sem RAG (respondíveis)",
+    "script": "scripts/04_analisar.py",
+    "formato": "pct1",
+    "aparece_em": [
+      "relatorio/tabelas/resultados_por_condicao.tex"
+    ]
+  },
+  "sem_rag_acerto_citacao_inf": {
+    "valor": 6.938893903907228e-18,
+    "texto": "0,0%",
+    "texto_en": "0.0%",
+    "descricao": "Acerto da citação sem RAG (respondíveis): limite inferior do IC de Wilson de 95%",
+    "script": "scripts/04_analisar.py",
+    "formato": "pct1",
+    "aparece_em": [
+      "relatorio/tabelas/resultados_por_condicao.tex"
+    ]
+  },
+  "sem_rag_acerto_citacao_sup": {
+    "valor": 0.07134759913335872,
+    "texto": "7,1%",
+    "texto_en": "7.1%",
+    "descricao": "Acerto da citação sem RAG (respondíveis): limite superior do IC de Wilson de 95%",
+    "script": "scripts/04_analisar.py",
+    "formato": "pct1",
+    "aparece_em": [
+      "relatorio/tabelas/resultados_por_condicao.tex"
+    ]
+  },
+  "sem_rag_acerto_resposta": {
+    "valor": 0.0,
+    "texto": "0,0%",
+    "texto_en": "0.0%",
+    "descricao": "Acerto da resposta sem RAG (respondíveis)",
+    "script": "scripts/04_analisar.py",
+    "formato": "pct1",
+    "aparece_em": [
+      "relatorio/tabelas/resultados_por_condicao.tex"
+    ],
+    "usos_declarados": {
+      "scripts/05_figuras.py": [
+        "figuras/acerto_por_condicao.png",
+        "figuras/custo_por_condicao.png"
+      ]
+    }
+  },
+  "sem_rag_acerto_resposta_inf": {
+    "valor": 6.938893903907228e-18,
+    "texto": "0,0%",
+    "texto_en": "0.0%",
+    "descricao": "Acerto da resposta sem RAG (respondíveis): limite inferior do IC de Wilson de 95%",
+    "script": "scripts/04_analisar.py",
+    "formato": "pct1",
+    "aparece_em": [
+      "relatorio/tabelas/resultados_por_condicao.tex"
+    ],
+    "usos_declarados": {
+      "scripts/05_figuras.py": [
+        "figuras/acerto_por_condicao.png"
+      ]
+    }
+  },
+  "sem_rag_acerto_resposta_sup": {
+    "valor": 0.07134759913335872,
+    "texto": "7,1%",
+    "texto_en": "7.1%",
+    "descricao": "Acerto da resposta sem RAG (respondíveis): limite superior do IC de Wilson de 95%",
+    "script": "scripts/04_analisar.py",
+    "formato": "pct1",
+    "aparece_em": [
+      "relatorio/tabelas/resultados_por_condicao.tex"
+    ],
+    "usos_declarados": {
+      "scripts/05_figuras.py": [
+        "figuras/acerto_por_condicao.png"
+      ]
+    }
+  },
+  "sem_rag_acertos_citacao": {
+    "valor": 0,
+    "texto": "0",
+    "texto_en": "0",
+    "descricao": "acertos da citação sem RAG (respondíveis)",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "sem_rag_acertos_resposta": {
+    "valor": 0,
+    "texto": "0",
+    "texto_en": "0",
+    "descricao": "acertos da resposta sem RAG (respondíveis)",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "sem_rag_erros_abstencao_indevida": {
+    "valor": 50,
+    "texto": "50",
+    "texto_en": "50",
+    "descricao": "Classe de erro 'abstenção indevida' sem RAG (Perguntas)",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "sem_rag_erros_citacao_errada": {
+    "valor": 0,
+    "texto": "0",
+    "texto_en": "0",
+    "descricao": "Classe de erro 'citação errada' sem RAG (Perguntas)",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "sem_rag_erros_falha_leitura": {
+    "valor": 0,
+    "texto": "0",
+    "texto_en": "0",
+    "descricao": "Classe de erro 'falha de leitura' sem RAG (Perguntas)",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "sem_rag_erros_falha_recuperacao": {
+    "valor": 0,
+    "texto": "0",
+    "texto_en": "0",
+    "descricao": "Classe de erro 'falha de recuperação' sem RAG (Perguntas)",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "sem_rag_erros_resposta_inventada": {
+    "valor": 0,
+    "texto": "0",
+    "texto_en": "0",
+    "descricao": "Classe de erro 'resposta inventada' sem RAG (Perguntas)",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "sem_rag_latencia_mediana_s": {
+    "valor": 2.7360381500002404,
+    "texto": "2,7",
+    "texto_en": "2.7",
+    "descricao": "latência mediana por Pergunta sem RAG, em segundos",
+    "script": "scripts/04_analisar.py",
+    "formato": "dec1",
+    "aparece_em": [
+      "relatorio/tabelas/custo_por_condicao.tex"
+    ],
+    "usos_declarados": {
+      "scripts/05_figuras.py": [
+        "figuras/custo_por_condicao.png"
+      ]
+    }
+  },
+  "sem_rag_n_fallback": {
+    "valor": 0,
+    "texto": "0",
+    "texto_en": "0",
+    "descricao": "respostas sem RAG dadas por outro modelo (fallback do servidor)",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/custo_por_condicao.tex"
+    ]
+  },
+  "sem_rag_n_respondiveis": {
+    "valor": 50,
+    "texto": "50",
+    "texto_en": "50",
+    "descricao": "Perguntas respondíveis na Condição sem RAG",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "sem_rag_n_sem_resposta": {
+    "valor": 10,
+    "texto": "10",
+    "texto_en": "10",
+    "descricao": "Perguntas sem resposta na Condição sem RAG",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "sem_rag_tokens_cache_leitura_total": {
+    "valor": 0,
+    "texto": "0",
+    "texto_en": "0",
+    "descricao": "tokens de entrada lidos do cache sem RAG, soma da Rodada",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "sem_rag_tokens_entrada_medio": {
+    "valor": 184.98333333333332,
+    "texto": "185",
+    "texto_en": "185",
+    "descricao": "tokens de entrada sem RAG, média por Pergunta",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro",
+    "aparece_em": [
+      "relatorio/tabelas/custo_por_condicao.tex"
+    ],
+    "usos_declarados": {
+      "scripts/05_figuras.py": [
+        "figuras/custo_por_condicao.png"
+      ]
+    }
+  },
+  "sem_rag_tokens_entrada_total": {
+    "valor": 11099,
+    "texto": "11.099",
+    "texto_en": "11,099",
+    "descricao": "tokens de entrada sem RAG, soma da Rodada",
+    "script": "scripts/04_analisar.py",
+    "formato": "inteiro"
+  },
+  "sem_rag_tokens_saida_total": {
+    "valor": 26760,
+    "texto": "26.760",
+    "texto_en": "26,760",
+    "descricao": "tokens de saída sem RAG, soma da Rodada",
+    "script": "scripts/04_analisar.py",
     "formato": "inteiro"
   }
 }
