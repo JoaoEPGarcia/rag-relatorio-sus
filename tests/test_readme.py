@@ -101,7 +101,10 @@ def test_relatorio_tex_tira_do_registro_o_que_depende_das_rodadas():
     tex = (config.PROJETO / "relatorio" / "relatorio.tex").read_text(encoding="utf-8")
     corpo = tex[tex.index("\\begin{document}"):]
     assert "foi repetida" not in corpo and "\\NumRepeticoesLeitura" in corpo
-    assert "família" not in corpo and "\\NumParametrosModeloJuiz" in corpo
+    # o Juiz sai do registro: os modelos que de fato julgaram e quantos foram (um, ou a cadeia)
+    assert "família" not in corpo and "\\JuizDaRodada" in corpo
+    assert "\\NumParametrosModeloJuiz" in tex and "\\ifcase\\NumParametrosNModelosJuiz" in tex
+    assert "\\ifcase\\NumRevisaoVeredictosMudados" in tex and "mudou \\NumRevisaoVeredictosMudados" not in corpo
     assert "\\ifdefempty{\\NumAvisoSintetico}" in corpo
     assert "Veredictos do Juiz revisados" not in tex and "\\NumRodadasOrigem" in tex
     assert "scripts/reproduzir.py" in corpo.split("\\appendix")[1]

@@ -474,6 +474,7 @@ def test_parametros_da_rodada_principal_entram_no_registro(projeto):
     # textos com dígito (versão do modelo, hash do commit) também saem do registro, para o .tex não digitá-los
     assert r["parametros_modelo_respondedor"]["texto"] == "gemini-3.8-flash"
     assert r["parametros_modelo_juiz"]["texto"] == "gemini-3.8-flash-lite"
+    assert r["parametros_n_modelos_juiz"]["valor"] == 1
     assert r["parametros_commit"]["texto"] == "a1b2c3d"
 
 
@@ -489,6 +490,7 @@ def test_modelos_que_de_fato_julgaram_entram_no_registro_quando_a_cadeia_do_juiz
     r = rodar(projeto)
 
     assert r["parametros_modelo_juiz"]["texto"] == "gemini-3.6-flash e gemini-3-flash-preview"
+    assert r["parametros_n_modelos_juiz"]["valor"] == 2  # o .tex escolhe a frase da cadeia por este número
 
 
 @pytest.mark.parametrize("execucao", [None, {"commit": "a1b2c3d"}, {"commit": "a1b2c3d", "parametros": {}}])

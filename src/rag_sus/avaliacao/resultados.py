@@ -336,6 +336,8 @@ def _numeros_dos_parametros(principal: Path) -> list[Numero | Texto]:
               "modelo que responde às Perguntas na Rodada principal"),
         Texto("parametros_modelo_juiz", juntar(juizes), juntar(juizes, "and"),
               "modelo(s) que julgaram na Rodada principal (a cadeia do Juiz, na ordem de uso)"),
+        Numero("parametros_n_modelos_juiz", len(juizes),
+               "modelos que julgaram na Rodada principal (mais de um: a cadeia do Juiz, pela cota diária)"),
         Texto("parametros_commit", commit, commit,
               "commit em que a Rodada principal rodou, com os parâmetros congelados"),
     ]

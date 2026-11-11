@@ -223,6 +223,24 @@
 % a partir de resultados/numeros.json. Ver GUIA_ESTILO.md, "A regra dos números".
 \input{numeros.tex}
 
+% Frases que dependem de uma contagem do registro: o \ifcase escolhe a forma
+% (singular, plural, nenhum) sem digitar número no texto.
+\newcommand{\RevisaoMudou}{%
+  \ifcase\NumRevisaoVeredictosMudados\relax
+    a Revisão concordou com o Juiz em todos%
+  \else
+    a Revisão mudou \NumRevisaoVeredictosMudados{} deles%
+  \fi}
+\newcommand{\JuizDaRodada}{%
+  \ifcase\NumParametrosNModelosJuiz\relax
+  \or
+    O Juiz foi o \texttt{\NumParametrosModeloJuiz}.%
+  \else
+    O Juiz usou \NumParametrosNModelosJuiz{} modelos em cadeia, nesta
+    ordem: \NumParametrosModeloJuiz; quando a cota diária gratuita de um
+    acabava, o seguinte assumia.%
+  \fi}
+
 \title{\TituloRelatorio}
 
 \begin{document}
@@ -481,14 +499,13 @@ exatamente, na resposta. A regra é estrita de propósito, porque o prompt
 manda copiar os números como estão. Quando ela reprova, a resposta vai
 também ao Juiz, para pegar o falso negativo da regra (uma diferença
 expressa com o sinal trocado e a palavra ``para baixo'', por exemplo). As
-respostas descritivas vão sempre ao Juiz, o
-\texttt{\NumParametrosModeloJuiz}, que compara o conteúdo com o Gabarito e
-ignora as páginas.
+respostas descritivas vão sempre ao Juiz, um modelo de linguagem que
+compara o conteúdo com o Gabarito e ignora as páginas. \JuizDaRodada
 
 O Juiz não tem a última palavra. Na Rodada principal, ele deu
 \NumRevisaoVeredictosJuiz{} Veredictos, e o autor os conferiu numa folha;
 a Revisão vence o Juiz. Foram \NumRevisaoVeredictosRevisados{} Veredictos
-revisados, e a Revisão mudou \NumRevisaoVeredictosMudados{} deles. A análise final se
+revisados, e \RevisaoMudou. A análise final se
 recusa a publicar enquanto houver Veredicto do Juiz sem Revisão.
 
 \subsection{Pré-registro}
@@ -531,7 +548,7 @@ O Acerto da recuperação só existe com RAG.
     citação e da recuperação sobre as Perguntas respondíveis; Abstenção
     correta sobre as Perguntas sem resposta.}
   \label{tab:condicoes}
-  \small
+  \footnotesize
   \begin{tabelaplena}
   \begin{tabular}{@{}lllll@{}}
     \toprule
@@ -589,7 +606,7 @@ proporções pareadas), também de \NumIcNivel\%.
     Condição, em pontos percentuais, com o intervalo de Newcombe de
     \NumIcNivel\%; o valor-p é o do teste exato de McNemar.}
   \label{tab:pareada}
-  \small
+  \footnotesize
   \begin{tabelaplena}
   \begin{tabular}{@{}lrrrrll@{}}
     \toprule
@@ -607,12 +624,13 @@ Na comparação principal, foram \NumComRagXSemRagNPares{} pares: em
 \NumComRagXSemRagSoSemRag{} só a Condição sem RAG acertou. A diferença
 pareada foi de \NumComRagXSemRagDiferenca{} (IC de \NumIcNivel\%:
 \NumComRagXSemRagDiferencaInf{} a \NumComRagXSemRagDiferencaSup), com
-valor-p de McNemar igual a \NumComRagXSemRagPMcnemar. Contra o contexto
-completo, em \NumComRagXContextoCompletoSoComRag{} pares só com RAG acertou
-e em \NumComRagXContextoCompletoSoContextoCompleto{} só o contexto completo
-acertou; a diferença foi de \NumComRagXContextoCompletoDiferenca{} (IC:
+valor-p de McNemar \NumComRagXSemRagPMcnemar. Contra o contexto
+completo, os pares discordantes ficaram assim:
+\NumComRagXContextoCompletoSoComRag{} a favor de com RAG e
+\NumComRagXContextoCompletoSoContextoCompleto{} a favor do contexto
+completo; a diferença foi de \NumComRagXContextoCompletoDiferenca{} (IC:
 \NumComRagXContextoCompletoDiferencaInf{} a
-\NumComRagXContextoCompletoDiferencaSup), com valor-p de
+\NumComRagXContextoCompletoDiferencaSup), com valor-p
 \NumComRagXContextoCompletoPMcnemar.
 
 \begin{destaque}[O que o intervalo pareado permite dizer]
@@ -799,10 +817,9 @@ O que os dados deste Relatório de avaliação não autorizam afirmar:
     propor podem ser mais fáceis para um modelo responder.
   \item \textbf{Veredictos revisados por uma pessoa.} Dos
     \NumRevisaoVeredictosJuiz{} Veredictos do Juiz na Rodada principal,
-    \NumRevisaoVeredictosRevisados{} foram revisados pelo autor, que mudou
-    \NumRevisaoVeredictosMudados. A Revisão é de um revisor só, sem medida
-    de concordância entre revisores. O Juiz foi o
-    \texttt{\NumParametrosModeloJuiz}, e o respondedor, o
+    \NumRevisaoVeredictosRevisados{} foram revisados pelo autor, e
+    \RevisaoMudou. A Revisão é de um revisor só, sem medida
+    de concordância entre revisores. \JuizDaRodada{} O respondedor foi o
     \texttt{\NumParametrosModeloRespondedor}.
   \item \textbf{Repetições não revisadas.} A concordância entre Rodadas usa
     Veredictos automáticos e mede a estabilidade, e não o acerto.
