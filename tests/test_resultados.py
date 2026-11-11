@@ -529,6 +529,8 @@ def test_parametros_da_rodada_principal_entram_no_registro(projeto):
     # textos com dígito (versão do modelo, hash do commit) também saem do registro, para o .tex não digitá-los
     assert r["parametros_modelo_respondedor"]["texto"] == "gemini-3.8-flash"
     assert r["parametros_modelo_juiz"]["texto"] == "gemini-3.8-flash-lite"
+    # o README cita o modelo de embeddings sem o dono do repositório no Hugging Face
+    assert r["parametros_modelo_embeddings"]["texto"] == "multilingual-e5-large"
     assert r["parametros_n_modelos_juiz"]["valor"] == 1
     assert r["parametros_commits"]["texto"] == "a1b2c3d"  # execucao.json antigo: um "commit" só
     assert r["parametros_n_commits"]["valor"] == 1

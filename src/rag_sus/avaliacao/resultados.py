@@ -394,10 +394,13 @@ def _numeros_dos_parametros(principal: Path) -> list[Numero | Texto]:
             "rode de novo scripts/03_rodar_avaliacao.py --rodada principal, que os grava ao lado da Rodada"
         )
     juizes = _modelos_que_julgaram(principal) or [p["modelo_juiz"]]
+    embeddings = p["modelo_embeddings"].split("/")[-1]  # "intfloat/multilingual-e5-large" -> o nome do modelo
     return [
         Numero("parametros_k", p["k"], "Trechos recuperados por Pergunta na Condição com RAG (Rodada principal)"),
         Texto("parametros_modelo_respondedor", p["modelo_respondedor"], p["modelo_respondedor"],
               "modelo que responde às Perguntas na Rodada principal"),
+        Texto("parametros_modelo_embeddings", embeddings, embeddings,
+              "modelo de embeddings da busca na Rodada principal, sem o dono do repositório"),
         Texto("parametros_modelo_juiz", juntar(juizes), juntar(juizes, "and"),
               "modelo(s) que julgaram na Rodada principal (a cadeia do Juiz, na ordem de uso)"),
         Numero("parametros_n_modelos_juiz", len(juizes),
