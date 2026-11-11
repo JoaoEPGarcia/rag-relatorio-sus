@@ -1,0 +1,25 @@
+{
+  "parametros": {
+    "congelado": true,
+    "alvo_palavras": 180,
+    "sobreposicao_palavras": 30,
+    "modelo_embeddings": "intfloat/multilingual-e5-large",
+    "k": 6,
+    "modelo_respondedor": "gemini-3.5-flash-lite",
+    "esforco_respondedor": "medium",
+    "max_tokens_respondedor": 16000,
+    "modelo_juiz": "gemini-3.6-flash",
+    "esforco_juiz": "medium",
+    "max_tokens_juiz": 4000,
+    "repeticoes": 2,
+    "reservas_juiz": [
+      "gemini-3-flash-preview",
+      "gemini-3.1-flash-lite",
+      "gemini-3.8-flash"
+    ]
+  },
+  "commits": [
+    "9b7c477",
+    "ee25ff6"
+  ]
+}
