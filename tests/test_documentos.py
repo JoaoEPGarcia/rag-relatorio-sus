@@ -10,6 +10,7 @@ from rag_sus.documentos import (
     gerar_numeros_canonicos,
     gerar_numeros_tex,
     nome_macro,
+    nomes_do_registro_digitados,
     preencher_readme,
     texto_tex,
     textos_do_relatorio_de_avaliacao,
@@ -116,6 +117,27 @@ def test_digitos_soltos_no_markdown_ignora_codigo_links_e_marcadores():
         "Mas aqui há 42 hospitais digitados."
     )
     assert digitos_soltos_no_markdown(texto) == ["42"]
+
+
+def test_nome_com_digito_do_registro_digitado_em_codigo_e_pego():
+    # o conferidor de dígitos pula o código; um nome de modelo ou commit digitado ali fica velho sem aviso
+    registro = {
+        **REGISTRO,
+        "modelo": {"valor": "gemini-3.5-flash-lite", "texto": "gemini-3.5-flash-lite",
+                   "texto_en": "gemini-3.5-flash-lite", "formato": "texto"},
+        "embeddings": {"valor": "intfloat/multilingual-e5-large", "texto": "intfloat/multilingual-e5-large",
+                       "texto_en": "intfloat/multilingual-e5-large", "formato": "texto"},
+        "commits": {"valor": "85d3e4c, fc1a063 e ad0ad19", "texto": "85d3e4c, fc1a063 e ad0ad19",
+                    "texto_en": "85d3e4c, fc1a063 and ad0ad19", "formato": "texto"},
+    }
+    texto = (
+        "O modelo `gemini-3.5-flash-lite` e os vetores do `multilingual-e5-large`, no commit `fc1a063`.\n"
+        "Pelo marcador vale: `{{modelo}}`. Rode `scripts/03_rodar_avaliacao.py` e abra `localhost:8000`.\n"
+        "```\nuv run python scripts/03_rodar_avaliacao.py --rodada principal\n```\n"
+    )
+
+    assert nomes_do_registro_digitados(texto, registro) == [
+        "gemini-3.5-flash-lite", "multilingual-e5-large", "fc1a063"]
 
 
 def test_marcador_de_lista_numerada_nao_e_numero_digitado():

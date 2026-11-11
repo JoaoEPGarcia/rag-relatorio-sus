@@ -7,7 +7,9 @@ nenhum marcador fica sem valor, o conferidor passa, a seção em inglês sai com
 ponto decimal, e nada do projeto é escrito.
 """
 
+import json
 import os
+import re
 import subprocess
 import sys
 
@@ -16,7 +18,7 @@ import pytest
 from rag_sus import config, numeros
 from rag_sus.avaliacao.resultados import analisar
 from rag_sus.avaliacao.sinteticas import gerar_rodadas_sinteticas
-from rag_sus.documentos import digitos_soltos_no_markdown, preencher_readme
+from rag_sus.documentos import digitos_soltos_no_markdown, nome_macro, preencher_readme
 
 SAIDAS_DO_PROJETO = ("README.md", "NUMEROS_CANONICOS.md", "relatorio/numeros.tex", "resultados/numeros.json")
 
@@ -129,3 +131,26 @@ def test_relatorio_tex_escolhe_a_frase_dos_commits_pela_contagem():
     corpo = tex[tex.index("\\begin{document}"):]
     assert "\\ifcase\\NumParametrosNCommits" in tex and "\\CommitsDaRodada" in corpo
     assert "registrou o commit em que rodou" not in corpo
+
+
+# Contagens que saem por construção do desenho (corpus, Gabarito, parâmetros) nunca valem 0 ou 1;
+# as que saem das Rodadas podem valer. Médias e totais de tokens também não chegam a 1.
+_CONTAGENS_DO_DESENHO = ("corpus_", "gabarito_", "quebra_", "parametros_", "destaque_n_", "ic_")
+
+
+def test_contagem_das_rodadas_seguida_de_substantivo_passa_pelo_singular_e_plural():
+    # "em 1 pares", "mudou 0 deles": a frase tem de valer com 0, 1 ou N, e o \contagem escolhe a forma
+    registro = json.loads((config.PROJETO / "resultados" / "numeros.json").read_text(encoding="utf-8"))
+    das_rodadas = {
+        "\\" + nome_macro(chave) for chave, e in registro.items()
+        if e["formato"] == "inteiro" and not chave.startswith(_CONTAGENS_DO_DESENHO) and "tokens" not in chave
+    }
+    tex = (config.PROJETO / "relatorio" / "relatorio.tex").read_text(encoding="utf-8")
+    corpo = tex[tex.index(r"\begin{document}"):]
+
+    soltas = [
+        f"{m.group(1)} {m.group(2)}"
+        for m in re.finditer(r"(\\Num[A-Za-z]+)(?:\{\})?[ ~]+([A-Za-zÀ-ú]+s)\b", corpo)
+        if m.group(1) in das_rodadas and m.group(2) not in ("deles", "delas")
+    ]
+    assert soltas == [], r"use \contagem{\Num...}{singular}{plural}: " + str(soltas)

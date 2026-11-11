@@ -176,6 +176,34 @@ def digitos_soltos_no_markdown(texto: str) -> list[str]:
     return _NUMERO_SOLTO.findall(texto)
 
 
+_PALAVRA_COM_DIGITO = re.compile(r"[\w./-]*\d[\w./-]*")
+
+
+def nomes_do_registro_digitados(texto: str, registro: dict[str, dict]) -> list[str]:
+    """Trechos de código do Markdown que digitam um nome com dígito que o registro tem.
+
+    O conferidor de dígitos pula o código, porque comandos e caminhos têm
+    dígitos legítimos (`scripts/03_...`, `localhost:8000`). Mas um nome de
+    modelo ou um commit digitado ali fica velho quando a Rodada muda: ele tem de
+    vir de um {{marcador}}. Conta como digitado o trecho que contém um nome do
+    registro, ou que é parte de um (a `multilingual-e5-large` de
+    `intfloat/multilingual-e5-large`), com pelo menos cinco caracteres.
+    """
+    nomes = {
+        p for e in registro.values() if e.get("formato") == "texto"
+        for c in ("texto", "texto_en") for p in _PALAVRA_COM_DIGITO.findall(e.get(c) or "") if len(p) >= 5
+    }
+    texto = _MARCADOR.sub(" ", texto)
+    blocos = _BLOCO_DE_CODIGO.findall(texto)
+    trechos = blocos + _CODIGO_EM_LINHA.findall(_BLOCO_DE_CODIGO.sub(" ", texto))
+    achados: list[str] = []
+    for trecho in trechos:
+        for palavra in _PALAVRA_COM_DIGITO.findall(trecho):
+            if len(palavra) >= 5 and any(n in palavra or palavra in n for n in nomes) and palavra not in achados:
+                achados.append(palavra)
+    return achados
+
+
 _COMENTARIO_TEX = re.compile(r"(?<!\\)%.*")
 _COMANDO_COM_ARGUMENTOS = re.compile(r"\\[A-Za-z@]+\*?(\[[^\]]*\])*(\{[^{}]*\})*")
 _DIMENSAO = re.compile(r"\d+(?:\.\d+)?\s*(?:mm|cm|pt|em|ex)\b")

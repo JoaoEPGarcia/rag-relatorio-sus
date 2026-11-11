@@ -50,7 +50,7 @@ Os números abaixo são os da Rodada principal, analisada por `scripts/04_analis
    ```
    uv run python scripts/reproduzir.py
    ```
-   O comando extrai o PDF e constrói o índice, só se faltarem (na primeira vez, o índice baixa o modelo de embeddings). Depois, refaz a análise, as figuras, o README, as macros LaTeX e o `NUMEROS_CANONICOS.md`, compila o Relatório de avaliação e roda o conferidor de números e a conferência mecânica do Gabarito. Ele para no primeiro erro e diz em que passo parou. Sem a Rodada principal, ou com Veredicto do Juiz sem Revisão, ele para na análise, antes de escrever qualquer documento.
+   O comando extrai o PDF e constrói o índice, só se faltarem (na primeira vez, o índice baixa o modelo de embeddings). Depois, refaz a análise, as figuras, o README, as macros LaTeX e o `NUMEROS_CANONICOS.md`, compila o Relatório de avaliação, confere que nada no PDF vaza a margem, e roda o conferidor de números e a conferência mecânica do Gabarito. Ele para no primeiro erro e diz em que passo parou. Sem a Rodada principal, ou com Veredicto do Juiz sem Revisão, ele para na análise, antes de escrever qualquer documento.
 3. Para refazer as Rodadas, que chamam o Gemini, configure a máquina com o roteiro guiado `bash scripts/configurar_maquina.sh`. Ele cria a chave do Gemini, liga (se você quiser) os créditos do Google AI Pro (ou instala o Ollama e baixa o modelo), grava no `.env`, instala o Docker Desktop e testa a API no contêiner. O `.env` não vai para o git. Depois, rode a Rodada principal e o pipeline de novo:
    ```
    uv run python scripts/03_rodar_avaliacao.py --rodada principal --confirmar
@@ -65,7 +65,7 @@ Os números abaixo são os da Rodada principal, analisada por `scripts/04_analis
    ```
    Os números dessas Rodadas são inventados; o README, o PDF e as figuras saem na pasta temporária, e nada chega a `resultados/`.
 5. Para subir a API: `docker compose up --build` e abra `http://localhost:8000/docs`. Na primeira subida, o contêiner baixa o modelo de embeddings e constrói o índice.
-6. Testes: `uv run pytest`.
+6. Testes: `uv run pytest`. Para o commit conferir o lint e os números antes de gravar, ligue o gancho uma vez por clone: `git config core.hooksPath .githooks`.
 
 ## Limitações
 

@@ -24,6 +24,7 @@ ORDEM = [
     "figuras",
     "documentos",
     "compilação do Relatório de avaliação",
+    "conferência do PDF",
     "conferidor de números",
     "conferência do Gabarito",
 ]
@@ -100,7 +101,7 @@ def test_roda_todos_os_passos_na_ordem_menos_os_pulados(tmp_path, capsys):
 
     assert codigo == 0
     assert falsos.rodados == ["04_analisar.py", "05_figuras.py", "06_gerar_documentos.py", "pdflatex",
-                              "conferir_numeros.py", "conferir_gabarito.py"]
+                              "conferir_pdf.py", "conferir_numeros.py", "conferir_gabarito.py"]
     saida = capsys.readouterr().out
     assert "extração: pulado (os Trechos já existem)" in saida
     assert saida.rstrip().endswith("Pipeline completo.")

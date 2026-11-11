@@ -8,8 +8,9 @@ comando. Os passos, nesta ordem, param no primeiro erro com o nome do passo:
   3. figuras (05_figuras.py; precisa de `uv sync --all-groups`);
   4. documentos (06_gerar_documentos.py): macros, NUMEROS_CANONICOS.md e README;
   5. compilação do Relatório de avaliação (pdflatex, duas ou três passadas);
-  6. conferidor de números (conferir_numeros.py);
-  7. conferência mecânica do Gabarito (conferir_gabarito.py).
+  6. conferência do PDF (conferir_pdf.py): nada vaza a margem, nenhum Overfull;
+  7. conferidor de números (conferir_numeros.py);
+  8. conferência mecânica do Gabarito (conferir_gabarito.py).
 A Rodada paga (03_rodar_avaliacao.py) nunca roda por aqui.
 
 O .tex do Relatório de avaliação é o do projeto; o pdflatex roda na pasta

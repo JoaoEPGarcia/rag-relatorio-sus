@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Gancho de commit: o que o CI confere, antes do commit e não só no push.
+# Ligue uma vez por clone: git config core.hooksPath .githooks
+#   1. ruff (lint);
+#   2. conferidor de números: nenhum número digitado, e README.md, relatorio/numeros.tex
+#      e NUMEROS_CANONICOS.md em dia com o registro (rode o 06_gerar_documentos.py se falhar).
+# Os testes ficam no CI, para o commit continuar rápido.
+set -euo pipefail
+export PYTHONIOENCODING=utf-8 PYTHONUTF8=1
+cd "$(git rev-parse --show-toplevel)"
+uv run --quiet ruff check src tests scripts
+uv run --quiet python scripts/conferir_numeros.py

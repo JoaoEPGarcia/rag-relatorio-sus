@@ -225,6 +225,11 @@
 
 % Frases que dependem de uma contagem do registro: o \ifcase escolhe a forma
 % (singular, plural, nenhum) sem digitar número no texto.
+% \contagem{\Num...}{singular}{plural}: o número e o substantivo concordando.
+% Toda contagem das Rodadas seguida de substantivo passa por aqui (um teste
+% em tests/test_readme.py confere); só serve a inteiros sem ponto de milhar.
+\newcommand{\contagem}[3]{%
+  #1~\ifcase#1\relax #3\or #2\else #3\fi}
 \newcommand{\RevisaoMudou}{%
   \ifcase\NumRevisaoVeredictosMudados\relax
     a Revisão concordou com o Juiz em todos%
@@ -513,9 +518,10 @@ respostas descritivas vão sempre ao Juiz, um modelo de linguagem que
 compara o conteúdo com o Gabarito e ignora as páginas. \JuizDaRodada
 
 O Juiz não tem a última palavra. Na Rodada principal, ele deu
-\NumRevisaoVeredictosJuiz{} Veredictos, e o autor os conferiu numa folha;
-a Revisão vence o Juiz. Foram \NumRevisaoVeredictosRevisados{} Veredictos
-revisados, e \RevisaoMudou. A análise final se
+\contagem{\NumRevisaoVeredictosJuiz}{Veredicto}{Veredictos}, e o autor
+conferiu cada um numa folha; a Revisão vence o Juiz. O autor revisou
+\contagem{\NumRevisaoVeredictosRevisados}{Veredicto}{Veredictos}, e
+\RevisaoMudou. A análise final se
 recusa a publicar enquanto houver Veredicto do Juiz sem Revisão.
 
 \subsection{Pré-registro}
@@ -545,7 +551,7 @@ commitados. \CommitsDaRodada
 
 A Tabela~\ref{tab:condicoes} traz as três medidas nas três Condições, cada
 uma com o intervalo de Wilson. A Rodada principal fez
-\NumPrincipalNRespostas{} respostas (cada Pergunta em cada Condição). As
+\contagem{\NumPrincipalNRespostas}{resposta}{respostas} (cada Pergunta em cada Condição). As
 três primeiras colunas valem para as \NumDestaqueNRespondiveis{} Perguntas
 respondíveis; a última, para as \NumGabaritoNSemResposta{} sem resposta.
 O Acerto da recuperação só existe com RAG.
@@ -628,7 +634,8 @@ proporções pareadas), também de \NumIcNivel\%.
   \end{tabelaplena}
 \end{table}
 
-Na comparação principal, foram \NumComRagXSemRagNPares{} pares: em
+A comparação principal teve
+\contagem{\NumComRagXSemRagNPares}{par}{pares}: em
 \NumComRagXSemRagSoComRag{} deles só a Condição com RAG acertou, e em
 \NumComRagXSemRagSoSemRag{} só a Condição sem RAG acertou. A diferença
 pareada foi de \NumComRagXSemRagDiferenca{} (IC de \NumIcNivel\%:
@@ -824,9 +831,9 @@ O que os dados deste Relatório de avaliação não autorizam afirmar:
     linguagem e conferidas pelo autor no Relatório-fonte. A Revisão corrige erros, mas
     não apaga o viés de escolha: Perguntas que um modelo acha naturais de
     propor podem ser mais fáceis para um modelo responder.
-  \item \textbf{Veredictos revisados por uma pessoa.} Dos
-    \NumRevisaoVeredictosJuiz{} Veredictos do Juiz na Rodada principal,
-    \NumRevisaoVeredictosRevisados{} foram revisados pelo autor, e
+  \item \textbf{Veredictos revisados por uma pessoa.} O Juiz deu
+    \contagem{\NumRevisaoVeredictosJuiz}{Veredicto}{Veredictos} na Rodada
+    principal; o autor revisou \NumRevisaoVeredictosRevisados{} deles, e
     \RevisaoMudou. A Revisão é de um revisor só, sem medida
     de concordância entre revisores. \JuizDaRodada{} O respondedor foi o
     \texttt{\NumParametrosModeloRespondedor}.

@@ -60,6 +60,7 @@ def passos_do_pipeline(
         Passo("figuras", script("05_figuras.py")),
         Passo("documentos", script("06_gerar_documentos.py")),
         Passo("compilação do Relatório de avaliação", compilar),
+        Passo("conferência do PDF", script("conferir_pdf.py")),
         Passo("conferidor de números", script("conferir_numeros.py")),
         Passo("conferência do Gabarito", script("conferir_gabarito.py"), so_pdf_real),
     ]

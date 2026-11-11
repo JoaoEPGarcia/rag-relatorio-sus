@@ -4,7 +4,8 @@
 POR QUE ISTO EXISTE. A regra dos números só vale se alguém conferir. Este
 script falha (código 1) se:
   1. README.md difere do que README.base.md + registro geram (edição à mão);
-  2. README.base.md tem número digitado no texto corrido;
+  2. README.base.md tem número digitado no texto corrido, ou digita em código
+     um nome com dígito que o registro tem (modelo, commit);
   3. o .tex do Relatório de avaliação tem número digitado no texto corrido;
   4. relatorio/numeros.tex ou NUMEROS_CANONICOS.md estão desatualizados;
   5. o .tex usa uma macro \\Num... que o registro não define.
@@ -30,6 +31,7 @@ from rag_sus.documentos import (
     gerar_numeros_canonicos,
     gerar_numeros_tex,
     nome_macro,
+    nomes_do_registro_digitados,
     preencher_readme,
     usos,
 )
@@ -55,6 +57,9 @@ def main() -> int:
     soltos = digitos_soltos_no_markdown(base)
     if soltos:
         falhas.append(f"README.base.md tem número digitado: {soltos[:10]}")
+    nomes = nomes_do_registro_digitados(base, registro)
+    if nomes:
+        falhas.append(f"README.base.md digita em código um nome que o registro tem (use o marcador): {nomes}")
 
     tex = gerar.textos_tex()
     for nome, texto in tex.items():
