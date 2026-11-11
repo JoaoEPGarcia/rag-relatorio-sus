@@ -5,15 +5,16 @@ POR QUE ISTO EXISTE. Os números publicados (README, Relatório de avaliação,
 figuras) saem todos daqui, e nenhum é digitado (ADR 0003). `analisar` recebe
 a pasta das Rodadas e a folha de Revisão dos Veredictos e:
 
-- consolida a Rodada principal de cada Condição, exigindo a Revisão de todo
-  Veredicto do Juiz; a Revisão do autor vence o Juiz;
+- consolida a Rodada principal de cada Condição, exigindo todas as Perguntas
+  do Gabarito e a Revisão de todo Veredicto do Juiz; a Revisão do autor
+  vence o Juiz;
 - resume cada Condição (as três medidas com Wilson, respondíveis e sem
   resposta em separado, tokens, latência e fallbacks);
 - compara com RAG × sem RAG (comparação principal) e com RAG × contexto
   completo, pareando pelo id;
 - cruza as Classes de erro com o Tipo de pergunta na Condição com RAG;
-- mede a concordância com cada repetição que existir (Veredictos não
-  revisados);
+- mede a concordância com cada repetição que existir, só nas Condições em
+  que ela já respondeu todas as Perguntas (Veredictos não revisados);
 - escolhe, a partir do resultado, os textos que o README imprime ao lado dos
   números (a conclusão de cada comparação pelo IC da diferença e a Classe de
   erro mais frequente com RAG), em português e em inglês, para que nenhuma
@@ -29,6 +30,7 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Sequence
 from dataclasses import replace
 from pathlib import Path
 
@@ -36,9 +38,9 @@ from rag_sus import config, numeros
 from rag_sus.assistente import CONDICOES
 from rag_sus.avaliacao import estatistica
 from rag_sus.avaliacao.analise import comparar, concordancia, erros_por_tipo, resumir
-from rag_sus.avaliacao.gabarito import TIPOS_RESPONDIVEIS
+from rag_sus.avaliacao.gabarito import TIPOS_RESPONDIVEIS, carregar_gabarito
 from rag_sus.avaliacao.rodada import RevisaoIncompleta, carregar_linhas, consolidar
-from rag_sus.avaliacao.sinteticas import recusar_no_projeto, rodada_sintetica
+from rag_sus.avaliacao.sinteticas import gabarito_sintetico, recusar_no_projeto, rodada_sintetica
 from rag_sus.avaliacao.travas import RODADAS_PUBLICADAS, ler_commits
 from rag_sus.avaliacao.vocabulario import (
     CLASSES_DAS_RESPONDIVEIS,
@@ -59,6 +61,8 @@ from rag_sus.numeros import Numero, Texto
 REPETICOES = tuple(r for r in RODADAS_PUBLICADAS if r != "principal")
 # O nome de cada repetição na tabela de concordância, por extenso (sem dígito digitado no Relatório).
 NOMES_REPETICAO = {"repeticao1": "Primeira repetição", "repeticao2": "Segunda repetição"}
+NOMES_REPETICAO_EN = {"repeticao1": "first repeat", "repeticao2": "second repeat"}
+NOMES_CONDICAO_EN = {"com_rag": "RAG", "sem_rag": "no RAG", "contexto_completo": "full context"}
 
 SCRIPT = "scripts/04_analisar.py"
 TABELAS_NO_PROJETO = "relatorio/tabelas"  # como a coluna "Onde aparece" cita os arquivos de linhas
@@ -127,13 +131,41 @@ def _numeros_de_destaque(resumos: dict[str, dict]) -> list[Numero]:
     return lista
 
 
-def _consolidar_principal(principal: Path, folha: Path) -> dict[str, list[dict]]:
-    """Consolida as três Condições e, se faltar Revisão, lista as pendentes de todas de uma vez."""
+class RodadaIncompleta(RuntimeError):
+    pass
+
+
+def _faltando(ids_esperados: Sequence[str], linhas: list[dict]) -> list[str]:
+    """As Perguntas esperadas que a Rodada ainda não respondeu, na ordem esperada."""
+    respondidas = {l["id"] for l in linhas}
+    return [i for i in ids_esperados if i not in respondidas]
+
+
+def _consolidar_principal(principal: Path, folha: Path,
+                          ids_do_gabarito: Sequence[str] | None) -> dict[str, list[dict]]:
+    """Consolida as três Condições e, se faltar Revisão, lista as pendentes de todas de uma vez.
+
+    Cada Condição precisa ter respondido todas as Perguntas do Gabarito: os
+    números publicados são sobre o Gabarito inteiro, e uma Condição parada
+    pela cota no meio não vira resultado.
+    """
     ausentes = [c for c in CONDICOES if not (principal / f"{c}.jsonl").exists()]
     if ausentes:
         raise FileNotFoundError(
             f"falta a Rodada principal de {', '.join(ausentes)} em {principal}: "
             "rode scripts/03_rodar_avaliacao.py --rodada principal"
+        )
+    if ids_do_gabarito is None:
+        ids_do_gabarito = _ids_do_gabarito(principal)
+    incompletas = []
+    for c in CONDICOES:
+        faltando = _faltando(ids_do_gabarito, carregar_linhas(principal / f"{c}.jsonl"))
+        if faltando:
+            incompletas.append(f"{c}: {', '.join(faltando)}")
+    if incompletas:
+        raise RodadaIncompleta(
+            f"a Rodada principal não respondeu todas as Perguntas do Gabarito ({'; '.join(incompletas)}). "
+            "Rode scripts/03_rodar_avaliacao.py --rodada principal --confirmar, que continua de onde parou."
         )
     consolidadas, pendentes = {}, []
     for c in CONDICOES:
@@ -274,35 +306,67 @@ def _numeros_da_concordancia(pasta_rodadas: Path) -> list[Numero | Texto]:
 
     Compara os Veredictos automáticos (Juiz ou regra), sem a Revisão: as
     repetições não são revisadas, e a principal entra do mesmo jeito para a
-    comparação ser justa.
+    comparação ser justa. Só entra a Condição de repetição que respondeu
+    todas as Perguntas da principal; a parada no meio (pela cota, por
+    exemplo) fica fora e é registrada como incompleta, para nenhuma frase a
+    dar por feita.
     """
-    lista: list[Numero | Texto] = []
-    existentes = [r for r in REPETICOES if any(carregar_linhas(pasta_rodadas / r / f"{c}.jsonl") for c in CONDICOES)]
-    lista.append(Numero("repeticoes_comparadas", len(existentes),
-                        "repetições da Rodada principal comparadas com ela (Veredictos não revisados)"))
-    if existentes:
-        pt = "Para medir isso, a Rodada principal foi repetida, e cada repetição é comparada com ela."
-        en = "To measure this, the main run was repeated and compared with each repeat."
-    else:
-        pt = ("A Rodada principal não foi repetida: sem repetição, não há concordância a medir, e a tabela "
-              "abaixo sai vazia.")
-        en = "The main run was not repeated: without a repeat there is no agreement to measure."
-    lista.append(Texto("repeticoes_leitura", pt, en,
-                       "frase do Relatório de avaliação sobre as repetições, escolhida por repeticoes_comparadas"))
+    comparadas: list[tuple[str, str]] = []
+    incompletas: list[tuple[str, str]] = []
+    medidas: list[Numero | Texto] = []
     for rodada in REPETICOES:
         for c in CONDICOES:
             repeticao = carregar_linhas(pasta_rodadas / rodada / f"{c}.jsonl")
             principal = carregar_linhas(pasta_rodadas / "principal" / f"{c}.jsonl")
             if not repeticao:
                 continue
+            if _faltando([l["id"] for l in principal], repeticao):
+                incompletas.append((rodada, c))  # parada no meio (cota): ainda não é uma repetição
+                continue
+            comparadas.append((rodada, c))
             comuns = {l["id"] for l in principal} & {l["id"] for l in repeticao}
             o_que = f"concordância entre a Rodada principal e a {rodada}, {NOMES_CONDICAO[c]}"
-            lista += [
+            medidas += [
                 Numero(f"concordancia_{rodada}_{c}", concordancia(principal, repeticao),
                        f"{o_que} (Veredictos não revisados)", "pct1"),
                 Numero(f"concordancia_{rodada}_{c}_n", len(comuns), f"Perguntas comparadas na {o_que}"),
             ]
-    return lista
+    n_comparadas = len({rodada for rodada, _ in comparadas})
+    pt_incompletas = juntar([f"{NOMES_REPETICAO[r]}, {NOMES_CONDICAO[c]}" for r, c in incompletas], "e") \
+        if incompletas else "nenhuma"
+    en_incompletas = juntar([f"{NOMES_REPETICAO_EN[r]}, {NOMES_CONDICAO_EN[c]}" for r, c in incompletas], "and") \
+        if incompletas else "none"
+    if n_comparadas and incompletas:
+        pt = ("Para medir isso, a Rodada principal foi repetida, e cada repetição é comparada com ela nas "
+              f"Condições em que já respondeu todas as Perguntas; ainda incompleta, e fora da comparação: "
+              f"{pt_incompletas}.")
+        en = ("To measure this, the main run was repeated and compared with each repeat in the conditions it "
+              f"has fully answered; still incomplete, and left out: {en_incompletas}.")
+    elif n_comparadas:
+        pt = "Para medir isso, a Rodada principal foi repetida, e cada repetição é comparada com ela."
+        en = "To measure this, the main run was repeated and compared with each repeat."
+    elif incompletas:
+        pt = ("A repetição da Rodada principal ainda não respondeu todas as Perguntas em nenhuma Condição "
+              f"(incompleta: {pt_incompletas}): sem repetição completa, não há concordância a medir, e a tabela "
+              "abaixo sai vazia.")
+        en = (f"The main run is not yet repeated in any condition (incomplete: {en_incompletas}): without a "
+              "complete repeat there is no agreement to measure.")
+    else:
+        pt = ("A Rodada principal não foi repetida: sem repetição, não há concordância a medir, e a tabela "
+              "abaixo sai vazia.")
+        en = "The main run was not repeated: without a repeat there is no agreement to measure."
+    return [
+        Numero("repeticoes_comparadas", n_comparadas,
+               "repetições da Rodada principal comparadas com ela em ao menos uma Condição completa "
+               "(Veredictos não revisados)"),
+        Numero("repeticoes_condicoes_incompletas", len(incompletas),
+               "Condições de repetição que ainda não responderam todas as Perguntas, fora da concordância"),
+        Texto("repeticoes_incompletas", pt_incompletas, en_incompletas,
+              "repetições e Condições ainda incompletas, fora da concordância"),
+        Texto("repeticoes_leitura", pt, en,
+              "frase do Relatório de avaliação sobre as repetições, escolhida pelas comparadas e incompletas"),
+        *medidas,
+    ]
 
 
 class RodadaSemParametros(RuntimeError):
@@ -489,18 +553,31 @@ def _montar_tabelas(textos: dict[str, str]) -> dict[str, tuple[str, list[str]]]:
     return tabelas
 
 
+def _ids_do_gabarito(principal: Path) -> list[str]:
+    """As Perguntas que a Rodada principal precisa cobrir: as do Gabarito sintético ou as do real."""
+    if rodada_sintetica(principal):
+        return [i.id for i in gabarito_sintetico()]
+    return [i.id for i in carregar_gabarito(config.GABARITO, exigir_revisao=False)]
+
+
 def analisar(
     pasta_rodadas: Path,
     folha: Path,
     numeros_json: Path | None = None,
     pasta_tabelas: Path | None = None,
+    ids_do_gabarito: Sequence[str] | None = None,
 ) -> dict[str, str]:
-    """Registra os números da Rodada principal e devolve chave -> texto formatado."""
+    """Registra os números da Rodada principal e devolve chave -> texto formatado.
+
+    `ids_do_gabarito`: as Perguntas que a Rodada principal precisa cobrir em
+    cada Condição (padrão: as do avaliacao/gabarito.csv, ou as do Gabarito
+    sintético sobre Rodadas sintéticas).
+    """
     pasta_rodadas = Path(pasta_rodadas)
     numeros_json = Path(numeros_json or config.NUMEROS)
     pasta_tabelas = Path(pasta_tabelas or config.TABELAS)
     recusar_no_projeto(pasta_rodadas, numeros_json, pasta_tabelas, passo="a análise")
-    consolidadas = _consolidar_principal(pasta_rodadas / "principal", folha)
+    consolidadas = _consolidar_principal(pasta_rodadas / "principal", folha, ids_do_gabarito)
     resumos = {c: resumir(consolidadas[c]) for c in CONDICOES}
     lista: list[Numero | Texto] = (
         [Numero("ic_nivel", _nivel(), "nível de confiança dos intervalos de Wilson e de Newcombe, em %")]
