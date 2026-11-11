@@ -2,8 +2,13 @@
 """Testes da folha de Revisão do Gabarito em PDF (gerada do CSV, sem número digitado)."""
 
 import csv
+import os
+import re
+import subprocess
+import sys
 
-from rag_sus.avaliacao.folha_do_gabarito import escapar, gerar_tex
+from rag_sus.avaliacao.folha_do_gabarito import gerar_tex
+from rag_sus.avaliacao.folha_do_kit import escapar
 
 COLUNAS = ["id", "pergunta", "tipo", "resposta", "valores", "paginas", "revisado", "observacao"]
 
@@ -46,6 +51,34 @@ def test_folha_traz_cada_pergunta_com_pagina_do_arquivo_e_os_alertas_no_roteiro(
     assert r"\newcommand{\NumAtencao}{1}" in tex and r"\newcommand{\NumConferir}{1}" in tex
     assert "Considere trocar" in tex
     assert r"\begin{document}" in tex and r"\end{document}" in tex
+
+
+def relatorio_solto(tex):
+    """Cada "relatório" sem dizer qual (o glossário pede Relatório-fonte ou Relatório de avaliação).
+
+    O nome do documento, "relatório Gestão Hospitalar no SUS-SP", diz qual é.
+    """
+    return re.findall(r"(?i)\brelatório\b(?!-fonte| de avaliação| Gestão Hospitalar)", tex)
+
+
+def test_folha_diz_relatorio_fonte_e_nunca_relatorio_solto(tmp_path):
+    csv_ = tmp_path / "gabarito.csv"
+    gravar(csv_, [linha("G01"), linha("S01", tipo="sem_resposta", valores="", paginas="")])
+
+    assert relatorio_solto(gerar_tex(csv_, tmp_path / "fonte.pdf")) == []
+
+
+def test_kit_vem_do_projeto_mesmo_sobre_uma_raiz_temporaria(tmp_path):
+    # o kit é código, como o README.base.md: sob RAG_SUS_RAIZ, a raiz não tem estilo/
+    csv_ = tmp_path / "gabarito.csv"
+    gravar(csv_, [linha("G01")])
+    codigo = ("import sys; from pathlib import Path; from rag_sus.avaliacao.folha_do_gabarito import gerar_tex; "
+              "print(r'\\begin{document}' in gerar_tex(Path(sys.argv[1]), Path(sys.argv[2])))")
+    r = subprocess.run([sys.executable, "-c", codigo, str(csv_), str(tmp_path / "fonte.pdf")],
+                       env={**os.environ, "RAG_SUS_RAIZ": str(tmp_path / "raiz")}, capture_output=True, text=True)
+
+    assert r.returncode == 0, r.stderr
+    assert r.stdout.strip() == "True"
 
 
 def test_barra_dentro_de_citacao_de_tabela_nao_abre_item_novo(tmp_path):

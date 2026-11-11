@@ -59,7 +59,7 @@ from rag_sus.documentos import texto_tex
 from rag_sus.numeros import Numero, Texto
 
 REPETICOES = tuple(r for r in RODADAS_PUBLICADAS if r != "principal")
-# O nome de cada repetição na tabela de concordância, por extenso (sem dígito digitado no Relatório).
+# O nome de cada repetição na tabela de concordância, por extenso (sem dígito digitado no Relatório de avaliação).
 NOMES_REPETICAO = {"repeticao1": "Primeira repetição", "repeticao2": "Segunda repetição"}
 NOMES_REPETICAO_EN = {"repeticao1": "first repeat", "repeticao2": "second repeat"}
 NOMES_CONDICAO_EN = {"com_rag": "RAG", "sem_rag": "no RAG", "contexto_completo": "full context"}

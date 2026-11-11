@@ -15,7 +15,7 @@ import pytest
 
 from rag_sus import config
 from rag_sus.avaliacao.sinteticas import gerar_rodadas_sinteticas
-from rag_sus.pipeline import Passo, compilar_relatorio_de_avaliacao, passos_do_pipeline, rodar
+from rag_sus.pipeline import Passo, compilar_pdf, compilar_relatorio_de_avaliacao, passos_do_pipeline, rodar
 
 ORDEM = [
     "extração",
@@ -169,6 +169,24 @@ def test_passada_que_falha_para_a_compilacao_e_mostra_o_erro(tmp_path, capsys):
     assert compilar_relatorio_de_avaliacao(tmp_path / "relatorio.tex", tmp_path, pdflatex) == 1
     assert len(pdflatex.chamadas) == 1
     assert "! Erro qualquer." in capsys.readouterr().out
+
+
+def test_folhas_de_revisao_compilam_pelo_mesmo_caminho_e_leem_o_log_pelo_nome_do_tex(tmp_path, capsys):
+    # as folhas de Revisão (Gabarito, Veredictos) usam as mesmas passadas do Relatório de avaliação
+    tex = tmp_path / "revisao_gabarito.tex"
+    chamadas = []
+
+    def pdflatex(comando, cwd):
+        chamadas.append((comando, cwd))
+        pede = "Rerun to get cross-references right." if len(chamadas) == 2 else ""
+        (cwd / "revisao_gabarito.log").write_text(pede, encoding="utf-8")
+        return 0, ""
+
+    assert compilar_pdf(tex, tmp_path, "Folha de Revisão do Gabarito", pdflatex) == 0
+    assert len(chamadas) == 3
+    assert chamadas[0] == (["pdflatex", "-interaction=nonstopmode", "-halt-on-error", str(tex)], tmp_path)
+    saida = capsys.readouterr().out
+    assert "Folha de Revisão do Gabarito" in saida and str(tmp_path / "revisao_gabarito.pdf") in saida
 
 
 def test_sem_pdflatex_diz_o_que_instalar(tmp_path, capsys):

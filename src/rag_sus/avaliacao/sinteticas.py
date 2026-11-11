@@ -136,13 +136,14 @@ def _planos(itens: list[ItemGabarito], condicao: str, rng: random.Random) -> dic
     return planos
 
 
-def _variar(planos: dict[str, _Plano], rng: random.Random) -> dict[str, _Plano]:
+def _variar(itens: list[ItemGabarito], planos: dict[str, _Plano], rng: random.Random) -> dict[str, _Plano]:
     """Uma repetição: a maioria dos Veredictos se repete, alguns mudam."""
+    respondiveis = {i.id for i in itens if i.respondivel}
     saida = {}
     for id_, p in sorted(planos.items()):
         if rng.random() < _MUDA_NA_REPETICAO:
             acerto = not p.acerto
-            sem_resposta = id_.startswith("S")
+            sem_resposta = id_ not in respondiveis
             p = _Plano(acerto, abstencao=acerto if sem_resposta else False, citacao=acerto and not sem_resposta,
                        recuperacao=p.recuperacao, juiz_erra=p.juiz_erra)
         saida[id_] = p
@@ -160,7 +161,7 @@ class _AssistenteSintetico:
         p = self.planos[item.id]
         pagina = item.paginas[0] if item.paginas else 1
         if p.abstencao:
-            texto, citadas = "O relatório não trata deste assunto.", ()
+            texto, citadas = "O Relatório-fonte não trata deste assunto.", ()
         elif item.numerico:
             valor = item.valores[0] if p.acerto else item.valores[0] + 11
             texto, citadas = f"Foram {formatar(valor, 'inteiro')} internações.", (pagina if p.citacao else pagina + 1,)
@@ -262,7 +263,7 @@ def gerar_rodadas_sinteticas(
         (pasta / "execucao.json").write_text(
             json.dumps(execucao, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
         for c in CONDICOES:
-            plano = planos[c] if numero == 0 else _variar(planos[c], random.Random(f"{semente}-{rodada}-{c}"))
+            plano = planos[c] if numero == 0 else _variar(itens, planos[c], random.Random(f"{semente}-{rodada}-{c}"))
             assistente = _AssistenteSintetico(itens, plano, c, random.Random(f"{semente}-{rodada}-{c}-custo"),
                                               p.modelo_respondedor)
             juiz = _JuizSintetico(itens, plano, p.modelo_juiz)
