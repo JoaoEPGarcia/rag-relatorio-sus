@@ -221,3 +221,40 @@ def test_cadeia_passa_ao_proximo_modelo_quando_o_atual_esta_indisponivel():
     a, b = Preso("modelo-a"), ProvedorFalso("modelo-b")
     _, meta = ProvedorEmCadeia([a, b]).gerar_json(SISTEMA, "m", ESQUEMA)
     assert meta.modelo_que_respondeu == "modelo-b" and isinstance(meta, Metadados)
+
+
+class Preso(ProvedorFalso):
+    def gerar_json(self, sistema, mensagem, esquema):
+        self.chamadas += 1
+        from rag_sus.provedores import ModeloIndisponivel
+        raise ModeloIndisponivel(f"{self.modelo} não respondeu")
+
+
+def test_cadeia_em_que_nenhum_modelo_esgotou_a_cota_para_com_modelo_indisponivel_e_nao_com_cota():
+    # Todos presos (tempo esgotado, sobrecarga): não é a cota, e "rode amanhã" seria o conselho errado.
+    from rag_sus.provedores import CotaEsgotada, ModeloIndisponivel, ProvedorEmCadeia
+    cadeia = ProvedorEmCadeia([Preso("a"), Preso("b")])
+
+    with pytest.raises(ModeloIndisponivel, match="a, b") as erro:
+        cadeia.gerar_json(SISTEMA, "m", ESQUEMA)
+    assert not isinstance(erro.value, CotaEsgotada)
+    with pytest.raises(ModeloIndisponivel):  # a cadeia já esgotada repete o mesmo motivo
+        cadeia.gerar_json(SISTEMA, "m", ESQUEMA)
+
+
+def test_cadeia_com_cota_esgotada_em_algum_modelo_para_com_cota_diaria_e_diz_quais_estavam_presos():
+    from rag_sus.provedores import ProvedorEmCadeia
+    cadeia = ProvedorEmCadeia([ProvedorFalso("a", esgotado=True), Preso("b")])
+
+    with pytest.raises(CotaDiariaEsgotada) as erro:
+        cadeia.gerar_json(SISTEMA, "m", ESQUEMA)
+    mensagem = str(erro.value)
+    assert "cota diária esgotada em a" in mensagem and "indisponível em b" in mensagem
+
+
+def test_provedor_escolhido_vem_do_ambiente_e_o_padrao_e_o_gemini(monkeypatch):
+    from rag_sus.provedores import provedor_escolhido
+    monkeypatch.delenv("PROVEDOR", raising=False)
+    assert provedor_escolhido() == "gemini"
+    monkeypatch.setenv("PROVEDOR", "ollama")
+    assert provedor_escolhido() == "ollama"

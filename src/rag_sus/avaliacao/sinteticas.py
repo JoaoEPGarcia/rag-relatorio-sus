@@ -258,7 +258,7 @@ def gerar_rodadas_sinteticas(
     for numero, rodada in enumerate(RODADAS_PUBLICADAS[: repeticoes + 1]):
         pasta = pasta_rodadas / rodada
         pasta.mkdir(parents=True, exist_ok=True)
-        execucao = {"sintetica": True, "semente": semente, "commit": "sintetico", "parametros": p.__dict__}
+        execucao = {"sintetica": True, "semente": semente, "commits": ["sintetico"], "parametros": p.__dict__}
         (pasta / "execucao.json").write_text(
             json.dumps(execucao, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
         for c in CONDICOES:

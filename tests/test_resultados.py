@@ -475,7 +475,23 @@ def test_parametros_da_rodada_principal_entram_no_registro(projeto):
     assert r["parametros_modelo_respondedor"]["texto"] == "gemini-3.8-flash"
     assert r["parametros_modelo_juiz"]["texto"] == "gemini-3.8-flash-lite"
     assert r["parametros_n_modelos_juiz"]["valor"] == 1
-    assert r["parametros_commit"]["texto"] == "a1b2c3d"
+    assert r["parametros_commits"]["texto"] == "a1b2c3d"  # execucao.json antigo: um "commit" só
+    assert r["parametros_n_commits"]["valor"] == 1
+
+
+def test_todos_os_commits_em_que_a_rodada_principal_rodou_entram_no_registro_na_ordem(projeto):
+    # a Rodada é retomável: cada retomada acrescenta o commit dela ao execucao.json
+    destino = projeto["rodadas"] / "principal" / "execucao.json"
+    dados = json.loads(destino.read_text(encoding="utf-8"))
+    del dados["commit"]
+    dados["commits"] = ["85d3e4c", "fc1a063", "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678"]
+    destino.write_text(json.dumps(dados), encoding="utf-8")
+
+    r = rodar(projeto)
+
+    assert r["parametros_commits"]["texto"] == "85d3e4c, fc1a063 e a1b2c3d"
+    assert r["parametros_commits"]["texto_en"] == "85d3e4c, fc1a063 and a1b2c3d"
+    assert r["parametros_n_commits"]["valor"] == 3  # o .tex escolhe a frase (um commit ou vários) por este número
 
 
 def test_modelos_que_de_fato_julgaram_entram_no_registro_quando_a_cadeia_do_juiz_foi_usada(projeto):

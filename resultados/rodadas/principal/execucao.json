@@ -1,5 +1,9 @@
 {
-  "commit": "ad0ad19",
+  "commits": [
+    "85d3e4c",
+    "fc1a063",
+    "ad0ad19"
+  ],
   "parametros": {
     "congelado": true,
     "alvo_palavras": 180,

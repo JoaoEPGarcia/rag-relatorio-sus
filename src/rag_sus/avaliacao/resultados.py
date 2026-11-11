@@ -39,7 +39,7 @@ from rag_sus.avaliacao.analise import comparar, concordancia, erros_por_tipo, re
 from rag_sus.avaliacao.gabarito import TIPOS_RESPONDIVEIS
 from rag_sus.avaliacao.rodada import RevisaoIncompleta, carregar_linhas, consolidar
 from rag_sus.avaliacao.sinteticas import recusar_no_projeto, rodada_sintetica
-from rag_sus.avaliacao.travas import RODADAS_PUBLICADAS
+from rag_sus.avaliacao.travas import RODADAS_PUBLICADAS, ler_commits
 from rag_sus.avaliacao.vocabulario import (
     CLASSES_DAS_RESPONDIVEIS,
     CLASSES_DE_ERRO,
@@ -313,7 +313,8 @@ def _numeros_dos_parametros(principal: Path) -> list[Numero | Texto]:
     """Os parâmetros com que a Rodada principal rodou, lidos do execucao.json gravado ao lado dela.
 
     Entram no registro para o Relatório de avaliação citá-los sem digitar: o k
-    e os nomes dos modelos e do commit, que têm dígitos. São os da Rodada, e
+    e os nomes dos modelos e dos commits (a Rodada é retomável e pode ter
+    rodado em mais de um), que têm dígitos. São os da Rodada, e
     não os do parametros.toml de agora, que pode ter mudado depois dela.
     Sem execucao.json com parâmetros, a análise para aqui, antes de gravar
     qualquer coisa: o Relatório de avaliação cita esses parâmetros, e a
@@ -322,14 +323,13 @@ def _numeros_dos_parametros(principal: Path) -> list[Numero | Texto]:
     execucao = principal / "execucao.json"
     dados = json.loads(execucao.read_text(encoding="utf-8")) if execucao.exists() else {}
     p = dados.get("parametros")
-    if not p:
+    commits = [c[:7] if re.fullmatch(r"[0-9a-f]{40}", c) else c for c in ler_commits(dados)]
+    if not p or not commits:
         raise RodadaSemParametros(
-            f"{execucao} não traz os parametros com que a Rodada principal rodou (k, modelos): "
+            f"{execucao} não traz os parametros com que a Rodada principal rodou (k, modelos) e o commit: "
             "rode de novo scripts/03_rodar_avaliacao.py --rodada principal, que os grava ao lado da Rodada"
         )
     juizes = _modelos_que_julgaram(principal) or [p["modelo_juiz"]]
-    commit = dados["commit"]
-    commit = commit[:7] if re.fullmatch(r"[0-9a-f]{40}", commit) else commit
     return [
         Numero("parametros_k", p["k"], "Trechos recuperados por Pergunta na Condição com RAG (Rodada principal)"),
         Texto("parametros_modelo_respondedor", p["modelo_respondedor"], p["modelo_respondedor"],
@@ -338,8 +338,10 @@ def _numeros_dos_parametros(principal: Path) -> list[Numero | Texto]:
               "modelo(s) que julgaram na Rodada principal (a cadeia do Juiz, na ordem de uso)"),
         Numero("parametros_n_modelos_juiz", len(juizes),
                "modelos que julgaram na Rodada principal (mais de um: a cadeia do Juiz, pela cota diária)"),
-        Texto("parametros_commit", commit, commit,
-              "commit em que a Rodada principal rodou, com os parâmetros congelados"),
+        Texto("parametros_commits", juntar(commits), juntar(commits, "and"),
+              "commit(s) em que a Rodada principal rodou, na ordem, todos com os mesmos parâmetros congelados"),
+        Numero("parametros_n_commits", len(commits),
+               "commits em que a Rodada principal rodou (mais de um: ela foi retomada em outro commit)"),
     ]
 
 
